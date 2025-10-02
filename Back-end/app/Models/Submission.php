@@ -5,32 +5,32 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Task extends Model
+class Submission extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'pairing_id',
+        'task_id',
         'mentee_id',
-        'judul',
-        'deskripsi',
         'file_path',
-        'type',
+        'answer',
         'status',
+        'grade',
     ];
 
-    public function pairing()
+    /**
+     * Relasi ke Task
+     */
+    public function task()
     {
-        return $this->belongsTo(Pairing::class);
+        return $this->belongsTo(Task::class);
     }
 
+    /**
+     * Relasi ke User (mentee)
+     */
     public function mentee()
     {
         return $this->belongsTo(User::class, 'mentee_id');
     }
-    public function submissions()
-{
-    return $this->hasMany(Submission::class);
-}
-
 }
