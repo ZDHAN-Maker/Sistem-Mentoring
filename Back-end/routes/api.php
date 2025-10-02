@@ -6,6 +6,7 @@ use App\Http\Controllers\CalendarSyncController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MenteeController;
 use App\Http\Controllers\MentorController;
+use App\Http\Controllers\NotificationController;
 
 //Login, Register, Logout
 Route::post('/register', [AuthController::class, 'register']);
@@ -40,4 +41,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/mentors/{id}/tasks', [MentorController::class, 'giveTask']);
     Route::post('/mentors/report/{reportId}/feedback', [MentorController::class, 'giveFeedback']);
     Route::post('/mentors/{id}/materials', [MentorController::class, 'uploadMaterial']);
+});
+
+// Notification Management
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications', [NotificationController::class, 'store']);
+    Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
 });
