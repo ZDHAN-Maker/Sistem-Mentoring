@@ -9,7 +9,7 @@ class Notification extends Model
 {
     use HasFactory;
 
-    public $timestamps = false; // karena hanya pakai created_at
+    public $timestamps = false;
 
     protected $fillable = [
         'user_id',

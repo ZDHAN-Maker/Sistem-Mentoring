@@ -29,8 +29,7 @@ class Task extends Model
         return $this->belongsTo(User::class, 'mentee_id');
     }
     public function submissions()
-{
-    return $this->hasMany(Submission::class);
-}
-
+    {
+        return $this->hasMany(Submission::class);
+    }
 }

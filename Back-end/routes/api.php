@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MenteeController;
 use App\Http\Controllers\MentorController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\TaskController;
 
 //Login, Register, Logout
 Route::post('/register', [AuthController::class, 'register']);
@@ -49,4 +50,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/notifications', [NotificationController::class, 'store']);
     Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
+});
+
+// Task & Submission Management
+Route::middleware('auth:sanctum')->group(function () {
+
+    // ================== TASKS ==================
+    Route::get('/tasks', [TaskController::class, 'index']);           // semua task
+    Route::get('/tasks/{id}', [TaskController::class, 'show']);       // detail task
+
+    // Mentor hanya (create/update/delete task)
+    Route::post('/tasks', [TaskController::class, 'store']);          // buat task
+    Route::put('/tasks/{id}', [TaskController::class, 'update']);     // update task
+    Route::delete('/tasks/{id}', [TaskController::class, 'destroy']); // hapus task
+
+    // ================== SUBMISSIONS ==================
+    Route::post('/tasks/{taskId}/submit', [TaskController::class, 'submit']); // mentee submit
+    Route::put('/submissions/{submissionId}/review', [TaskController::class, 'review']); // mentor review
 });
