@@ -1,74 +1,84 @@
 <?php
 
-namespace App\Services;
+namespace App\Http\Controllers;
 
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
+use App\Services\ReportService;
+use Illuminate\Http\Request;
 
-class UserService
+class ReportController extends Controller
 {
-    /**
-     * Get all users
-     */
-    public function getAllUsers()
+    protected $reportService;
+
+    public function __construct(ReportService $reportService)
     {
-        return User::all();
+        $this->reportService = $reportService;
     }
 
     /**
-     * Get user by id
+     * GET /reports
      */
-    public function getUserById($id)
+    public function index()
     {
-        return User::findOrFail($id);
+        $reports = $this->reportService->getAllReports();
+        return response()->json($reports);
     }
 
     /**
-     * Update user profile
+     * GET /reports/mentee/{id}
      */
-    public function updateProfile($id, array $data)
+    public function getByMentee($id)
     {
-        $user = User::findOrFail($id);
-
-        // Update field yang diperbolehkan
-        $user->name  = $data['name'] ?? $user->name;
-        $user->email = $data['email'] ?? $user->email;
-
-        if (isset($data['password'])) {
-            $user->password = Hash::make($data['password']);
-        }
-
-        $user->save();
-
-        return $user;
+        $reports = $this->reportService->getReportsByMentee($id);
+        return response()->json($reports);
     }
 
     /**
-     * Change password
+     * GET /reports/mentor/{id}
      */
-    public function changePassword($id, $oldPassword, $newPassword)
+    public function getByMentor($id)
     {
-        $user = User::findOrFail($id);
-
-        if (!Hash::check($oldPassword, $user->password)) {
-            throw ValidationException::withMessages([
-                'password' => 'Old password is incorrect.'
-            ]);
-        }
-
-        $user->password = Hash::make($newPassword);
-        $user->save();
-
-        return $user;
+        $reports = $this->reportService->getReportsByMentor($id);
+        return response()->json($reports);
     }
 
     /**
-     * Delete user
+     * POST /reports
      */
-    public function deleteUser($id)
+    public function store(Request $request)
     {
-        $user = User::findOrFail($id);
-        return $user->delete();
+        $validated = $request->validate([
+            'pairing_id' => 'required|exists:pairings,id',
+            'mentor_id'  => 'required|exists:users,id',
+            'mentee_id'  => 'required|exists:users,id',
+            'judul'      => 'required|string|max:255',
+            'isi'        => 'required|string',
+        ]);
+
+        $report = $this->reportService->createReport($validated);
+        return response()->json(['message' => 'Report created successfully', 'report' => $report]);
+    }
+
+    /**
+     * PUT /reports/{id}
+     */
+    public function update(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'judul' => 'nullable|string|max:255',
+            'isi'   => 'nullable|string',
+            'status' => 'nullable|in:submitted,reviewed,approved,rejected',
+        ]);
+
+        $report = $this->reportService->updateReport($id, $validated);
+        return response()->json(['message' => 'Report updated successfully', 'report' => $report]);
+    }
+
+    /**
+     * DELETE /reports/{id}
+     */
+    public function destroy($id)
+    {
+        $this->reportService->deleteReport($id);
+        return response()->json(['message' => 'Report deleted successfully']);
     }
 }
