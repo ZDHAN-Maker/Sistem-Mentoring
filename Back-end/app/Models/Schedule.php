@@ -19,9 +19,4 @@ class Schedule extends Model
     {
         return $this->belongsTo(Pairing::class);
     }
-
-    public function calendarSyncs()
-    {
-        return $this->hasMany(CalendarSync::class);
-    }
 }
