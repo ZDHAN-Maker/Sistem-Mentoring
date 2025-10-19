@@ -8,18 +8,24 @@ use App\Http\Controllers\MenteeController;
 use App\Http\Controllers\MentorController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TaskController;
-
+use App\Http\Controllers\GoogleController;
+use App\Http\Controllers\GoogleWebhookController;
 //Login, Register, Logout
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
 
 // Calendar Sync
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/calendar/sync', [CalendarSyncController::class, 'sync']);
-    Route::put('/calendar/status/{id}', [CalendarSyncController::class, 'updateStatus']);
-    Route::get('/calendar/user/{userId}', [CalendarSyncController::class, 'getByUser']);
-});
+Route::middleware('auth:sanctum')->get('/google/redirect', [GoogleController::class, 'redirect']);
+Route::get('/google/callback', [GoogleController::class, 'callback']);
+
+
+// Webhook (public, akan dipanggil Google)
+Route::post('/google/webhook', [GoogleWebhookController::class, 'receive']);
+
+
+// Optional: daftar channel watch agar dapat push
+Route::middleware('auth:sanctum')->post('/google/watch', [GoogleWebhookController::class, 'watch']);
 
 //Dashboard
 Route::middleware('auth:sanctum')->get('/dashboard', [DashboardController::class, 'index']);
@@ -53,18 +59,16 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Task & Submission Management
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'role:mentor'])->group(function () {
+    Route::post('/tasks', [TaskController::class, 'store']);
+    Route::put('/tasks/{task}', [TaskController::class, 'update']);
+    Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
+    Route::put('/submissions/{submissionId}/review', [TaskController::class, 'review']);
+});
 
-    // ================== TASKS ==================
-    Route::get('/tasks', [TaskController::class, 'index']);           // semua task
-    Route::get('/tasks/{id}', [TaskController::class, 'show']);       // detail task
 
-    // Mentor hanya (create/update/delete task)
-    Route::post('/tasks', [TaskController::class, 'store']);          // buat task
-    Route::put('/tasks/{id}', [TaskController::class, 'update']);     // update task
-    Route::delete('/tasks/{id}', [TaskController::class, 'destroy']); // hapus task
-
-    // ================== SUBMISSIONS ==================
-    Route::post('/tasks/{taskId}/submit', [TaskController::class, 'submit']); // mentee submit
-    Route::put('/submissions/{submissionId}/review', [TaskController::class, 'review']); // mentor review
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/tasks', [TaskController::class, 'index']);
+    Route::get('/tasks/{task}', [TaskController::class, 'show']);
+    Route::post('/tasks/{task}/submit', [TaskController::class, 'submit']);
 });

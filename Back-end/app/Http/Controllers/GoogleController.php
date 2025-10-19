@@ -16,8 +16,7 @@ class GoogleController extends Controller
 
     public function callback(Request $request)
     {
-        $userId = auth('sanctum')->id(); // jika user sedang login di browser yang sama
-        // Jika tidak, sediakan mekanisme state/PKCE atau temp session untuk map user.
+        $userId = auth('sanctum')->id();
         if (!$userId) abort(401, 'Please login first then retry the Google connect.');
 
         $code = $request->query('code');
