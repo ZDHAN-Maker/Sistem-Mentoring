@@ -2,32 +2,18 @@
 
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\CalendarSyncController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MenteeController;
 use App\Http\Controllers\MentorController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TaskController;
-use App\Http\Controllers\GoogleController;
-use App\Http\Controllers\GoogleWebhookController;
-//Login, Register, Logout
+
+// Login, Register, Logout
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
 
-// Calendar Sync
-Route::middleware('auth:sanctum')->get('/google/redirect', [GoogleController::class, 'redirect']);
-Route::get('/google/callback', [GoogleController::class, 'callback']);
-
-
-// Webhook (public, akan dipanggil Google)
-Route::post('/google/webhook', [GoogleWebhookController::class, 'receive']);
-
-
-// Optional: daftar channel watch agar dapat push
-Route::middleware('auth:sanctum')->post('/google/watch', [GoogleWebhookController::class, 'watch']);
-
-//Dashboard
+// Dashboard
 Route::middleware('auth:sanctum')->get('/dashboard', [DashboardController::class, 'index']);
 
 // Mentee Management
@@ -65,7 +51,6 @@ Route::middleware(['auth:sanctum', 'role:mentor'])->group(function () {
     Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
     Route::put('/submissions/{submissionId}/review', [TaskController::class, 'review']);
 });
-
 
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/tasks', [TaskController::class, 'index']);
