@@ -1,9 +1,9 @@
 // src/App.jsx
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
-import Login from './components/Login';
-import Register from './components/Register';
-import Logout from './components/Logout';
+import Login from './Auth/Login';
+import Register from './Auth/Register';
+import Logout from './Auth/Logout';
 
 const App = () => {
   const [auth, setAuth] = useState(!!localStorage.getItem('token'));

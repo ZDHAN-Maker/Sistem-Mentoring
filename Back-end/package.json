@@ -8,11 +8,7 @@
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
-<<<<<<< HEAD
         "axios": "^1.12.2",
-=======
-        "axios": "^1.11.0",
->>>>>>> da5b1b2f05de3209f3089bd604b326bb32316d7b
         "concurrently": "^9.0.1",
         "laravel-vite-plugin": "^2.0.0",
         "tailwindcss": "^4.0.0",
