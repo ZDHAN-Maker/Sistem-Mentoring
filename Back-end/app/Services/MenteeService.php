@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\ProgressReport;
 use App\Models\Task;
+use Illuminate\Http\Request;
 
 class MenteeService
 {
@@ -21,7 +22,11 @@ class MenteeService
      */
     public function getMenteeById($id)
     {
-        return User::where('role', 'mentee')->findOrFail($id);
+        $mentee = User::where('role', 'mentee')->find($id);
+        if (!$mentee) {
+            throw new \Exception("Mentee not found");
+        }
+        return $mentee;
     }
 
     /**
@@ -43,15 +48,30 @@ class MenteeService
     /**
      * Mentee mengupload tugas baru
      */
-    public function uploadTask($menteeId, array $data)
+    public function uploadTask(Request $request, $menteeId)
     {
-        return Task::create([
-            'pairing_id' => $data['pairing_id'],
-            'mentee_id'  => $menteeId,
-            'judul'      => $data['judul'],
-            'deskripsi'  => $data['deskripsi'] ?? null,
-            'file_path'  => $data['file_path'] ?? null,
-            'status'     => 'submitted',
+        // Validasi request
+        $request->validate([
+            'pairing_id' => 'required|exists:pairings,id',
+            'judul'      => 'required|string',
+            'deskripsi'  => 'nullable|string',
+            'file_path'  => 'nullable|file|mimes:pdf,docx,jpg,png|max:10240',
         ]);
+
+        $filePath = null;
+        if ($request->hasFile('file_path') && $request->file('file_path')->isValid()) {
+            $file = $request->file('file_path');
+            $filePath = $file->store('tasks', 'public');
+        }
+
+        $task = Task::create([
+            'mentee_id'  => $menteeId,
+            'pairing_id' => $request->pairing_id,
+            'judul'      => $request->judul,
+            'deskripsi'  => $request->deskripsi,
+            'file_path'  => $filePath,
+        ]);
+
+        return $task;
     }
 }

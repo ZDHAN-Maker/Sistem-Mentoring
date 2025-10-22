@@ -19,17 +19,25 @@ class MenteeController extends Controller
      */
     public function index()
     {
-        $mentees = $this->menteeService->getAllMentees();
-        return response()->json($mentees);
+        try {
+            $mentees = $this->menteeService->getAllMentees();
+            return response()->json($mentees, 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error: ' . $e->getMessage()], 500);
+        }
     }
 
     /**
-     * Ambil detail mentee tertentu
+     * Ambil detail mentee
      */
     public function show($id)
     {
-        $mentee = $this->menteeService->getMenteeById($id);
-        return response()->json($mentee);
+        try {
+            $mentee = $this->menteeService->getMenteeById($id);
+            return response()->json($mentee, 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Mentee not found or other error: ' . $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -37,8 +45,12 @@ class MenteeController extends Controller
      */
     public function reports($id)
     {
-        $reports = $this->menteeService->getMenteeReports($id);
-        return response()->json($reports);
+        try {
+            $reports = $this->menteeService->getMenteeReports($id);
+            return response()->json($reports, 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error: ' . $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -46,8 +58,12 @@ class MenteeController extends Controller
      */
     public function tasks($id)
     {
-        $tasks = $this->menteeService->getMenteeTasks($id);
-        return response()->json($tasks);
+        try {
+            $tasks = $this->menteeService->getMenteeTasks($id);
+            return response()->json($tasks, 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error: ' . $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -55,18 +71,18 @@ class MenteeController extends Controller
      */
     public function uploadTask(Request $request, $id)
     {
-        $request->validate([
-            'pairing_id' => 'required|exists:pairings,id',
-            'judul'      => 'required|string',
-            'deskripsi'  => 'nullable|string',
-            'file_path'  => 'nullable|string',
-        ]);
+        try {
+            // langsung panggil service
+            $task = $this->menteeService->uploadTask($request, $id);
 
-        $task = $this->menteeService->uploadTask($id, $request->all());
-
-        return response()->json([
-            'message' => 'Tugas berhasil diupload',
-            'task'    => $task
-        ], 201);
+            return response()->json([
+                'message' => 'Tugas berhasil diupload',
+                'task'    => $task
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Gagal upload tugas: ' . $e->getMessage()
+            ], 400);
+        }
     }
 }
