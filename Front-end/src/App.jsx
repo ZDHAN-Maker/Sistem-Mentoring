@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import Login from './Auth/Login';
 import Register from './Auth/Register';
 import Logout from './Auth/Logout';
+import Dashboard from './components/Dashboard';
 
 const App = () => {
   const [auth, setAuth] = useState(!!localStorage.getItem('token'));
@@ -15,7 +16,7 @@ const App = () => {
         <Routes>
           {/* Redirect otomatis ke /login saat akses root "/" */}
           <Route path="/" element={<Navigate to="/login" />} />
-
+          <Route path="/dashboard" element={auth ? <Dashboard /> : <Navigate to="/login" />} />
           <Route path="/login" element={<Login setAuth={setAuth} />} />
           <Route path="/register" element={<Register setAuth={setAuth} />} />
           <Route path="/logout" element={<Logout setAuth={setAuth} />} />

@@ -25,7 +25,7 @@ const Login = ({ setAuth }) => {
       <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
         <div className="flex justify-center mb-6">
           <img
-            src="/path-to-your-logo.png" // Ganti dengan path logo yang sesuai
+            src="/path-to-your-logo.png"
             alt="Logo"
             className="w-24 h-24"
           />
