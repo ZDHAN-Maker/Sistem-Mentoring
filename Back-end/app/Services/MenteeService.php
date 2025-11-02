@@ -22,7 +22,8 @@ class MenteeService
      */
     public function getMenteeById($id)
     {
-        $mentee = User::where('role', 'mentee')->find($id);
+        $mentee = User::where('role', 'mentee')->where('id', $id)->first();
+
         if (!$mentee) {
             throw new \Exception("Mentee not found");
         }
@@ -34,7 +35,11 @@ class MenteeService
      */
     public function getMenteeReports($menteeId)
     {
-        return ProgressReport::where('mentee_id', $menteeId)->get();
+        $reports = ProgressReport::where('mentee_id', $menteeId)->get();
+        if ($reports->isEmpty()) {
+            throw new \Exception('No reports found for this mentee');
+        }
+        return $reports;
     }
 
     /**
@@ -62,7 +67,10 @@ class MenteeService
         if ($request->hasFile('file_path') && $request->file('file_path')->isValid()) {
             $file = $request->file('file_path');
             $filePath = $file->store('tasks', 'public');
+        } else {
+            throw new \Exception("File upload failed or no file provided.");
         }
+
 
         $task = Task::create([
             'mentee_id'  => $menteeId,

@@ -36,9 +36,11 @@ class MenteeController extends Controller
             $mentee = $this->menteeService->getMenteeById($id);
             return response()->json($mentee, 200);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Mentee not found or other error: ' . $e->getMessage()], 500);
+            // Jika mentee tidak ditemukan, kembalikan status 404
+            return response()->json(['message' => 'Mentee not found: ' . $e->getMessage()], 404);
         }
     }
+
 
     /**
      * Ambil semua laporan progress mentee
