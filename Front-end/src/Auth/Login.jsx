@@ -1,12 +1,13 @@
-// src/components/Login.jsx
 import React, { useState } from 'react';
 import { api } from '../axiosInstance';
+import { useNavigate } from 'react-router-dom';
 
 const Login = ({ setAuth }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const navigate = useNavigate(); // Hook untuk navigasi
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -14,9 +15,9 @@ const Login = ({ setAuth }) => {
       const response = await api.post('/login', { email, password });
       localStorage.setItem('token', response.data.token);
       setAuth(true);
-      window.location.href = '/dashboard';
+      navigate('/dashboard'); // Mengarahkan ke halaman dashboard setelah login berhasil
     } catch (error) {
-      setErrorMessage(error.response?.data?.message || 'Login failed! Please check your credentials.');
+      setErrorMessage(error.response?.data?.message || 'Login gagal! Periksa kredensial Anda.');
     }
   };
 
@@ -25,7 +26,7 @@ const Login = ({ setAuth }) => {
       <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
         <div className="flex justify-center mb-6">
           <img
-            src="/path-to-your-logo.png"
+            src="/assets/Logo Sistem Mentoring.png"  // Menampilkan logo dari folder public/assets
             alt="Logo"
             className="w-24 h-24"
           />
@@ -63,7 +64,7 @@ const Login = ({ setAuth }) => {
               onChange={() => setRememberMe(!rememberMe)}
               className="h-4 w-4 text-blue-500"
             />
-            <label htmlFor="remember-me" className="ml-2 text-sm text-gray-600">Remember Me</label>
+            <label htmlFor="remember-me" className="ml-2 text-sm text-gray-600">Ingat Saya</label>
           </div>
           {errorMessage && <p className="text-red-500 text-xs">{errorMessage}</p>}
           <button

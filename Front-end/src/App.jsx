@@ -16,15 +16,21 @@ const App = () => {
         <Routes>
           {/* Redirect otomatis ke /login saat akses root "/" */}
           <Route path="/" element={<Navigate to="/login" />} />
-          <Route path="/dashboard" element={auth ? <Dashboard /> : <Navigate to="/login" />} />
-          <Route path="/login" element={<Login setAuth={setAuth} />} />
-          <Route path="/register" element={<Register setAuth={setAuth} />} />
-          <Route path="/logout" element={<Logout setAuth={setAuth} />} />
 
-          {/* Jika sudah login, arahkan ke dashboard */}
+          {/* Rute untuk Dashboard, hanya bisa diakses jika sudah login */}
           <Route
             path="/dashboard"
-            element={auth ? <h2>Dashboard</h2> : <Navigate to="/login" />}
+            element={auth ? <Dashboard /> : <Navigate to="/login" />}
+          />
+
+          {/* Rute untuk login dan register */}
+          <Route path="/login" element={<Login setAuth={setAuth} />} />
+          <Route path="/register" element={<Register setAuth={setAuth} />} />
+
+          {/* Rute untuk logout */}
+          <Route
+            path="/logout"
+            element={<Logout setAuth={setAuth} />}
           />
         </Routes>
       </div>
