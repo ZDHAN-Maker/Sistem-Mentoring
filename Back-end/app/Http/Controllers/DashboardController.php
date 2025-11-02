@@ -19,19 +19,23 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        if ($user->role === 'admin') {
-            $stats = $this->dashboardService->getAdminStats();
-        } elseif ($user->role === 'mentor') {
-            $stats = $this->dashboardService->getMentorStats($user->id);
-        } else { // mentee
-            $stats = $this->dashboardService->getMenteeStats($user->id);
+            if ($user->role === 'admin') {
+                $stats = $this->dashboardService->getAdminStats();
+            } elseif ($user->role === 'mentor') {
+                $stats = $this->dashboardService->getMentorStats($user->id);
+            } else { // mentee
+                $stats = $this->dashboardService->getMenteeStats($user->id);
+            }
+
+            return response()->json([
+                'role'  => $user->role,
+                'stats' => $stats,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error: ' . $e->getMessage()], 500);
         }
-
-        return response()->json([
-            'role'  => $user->role,
-            'stats' => $stats,
-        ]);
     }
 }

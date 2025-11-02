@@ -48,12 +48,13 @@ class AuthController extends Controller
 
         $result = $this->authService->login($request->only('email', 'password'));
 
-        return response()->json([
+        return response()->json([  // Response dalam format JSON
             'message' => 'Login berhasil',
             'user'    => $result['user'],
             'token'   => $result['token']
         ]);
     }
+
 
     /**
      * Logout user

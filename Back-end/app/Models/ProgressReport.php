@@ -19,4 +19,9 @@ class ProgressReport extends Model
     {
         return $this->belongsTo(Pairing::class);
     }
+
+    public function mentee()
+    {
+        return $this->belongsTo(User::class, 'mentee_id');
+    }
 }

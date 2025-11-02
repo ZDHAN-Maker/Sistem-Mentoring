@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -55,10 +56,6 @@ class User extends Authenticatable
     }
 
     /**
-     * Relasi ke CalendarSync (Satu user dapat memiliki banyak calendar syncs)
-     */
-
-    /**
      * Relasi ke Tasks (Satu user bisa memiliki banyak tasks sebagai mentee)
      */
     public function tasks()
@@ -87,6 +84,6 @@ class User extends Authenticatable
      */
     public function progressReports()
     {
-        return $this->hasMany(ProgressReport::class);
+        return $this->hasMany(ProgressReport::class, 'mentee_id');
     }
 }

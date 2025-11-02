@@ -14,12 +14,20 @@ class AuthService
      */
     public function register(array $data)
     {
+        // Validasi role jika ada
+        $validRoles = ['admin', 'mentor', 'mentee'];
+        if (!in_array($data['role'], $validRoles)) {
+            throw ValidationException::withMessages([
+                'role' => ['Role yang dipilih tidak valid.']
+            ]);
+        }
+
         // Buat user baru
         $user = User::create([
             'name'      => $data['name'],
             'email'     => $data['email'],
             'password'  => Hash::make($data['password']),
-            'role'      => $data['role'] ?? 'mentee', 
+            'role'      => $data['role'] ?? 'mentee',
         ]);
 
         // Auto-login setelah register → buat token Sanctum

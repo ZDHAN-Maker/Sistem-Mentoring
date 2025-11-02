@@ -31,26 +31,31 @@ class DashboardService
     {
         $mentor = User::find($mentorId);
 
+        if (!$mentor) {
+            throw new \Exception("Mentor not found");
+        }
+
         return [
-            'total_mentees'   => $mentor->mentorPairings()->count(),  // Menggunakan relasi mentorPairings
-            'total_schedules' => $mentor->schedules()->count(),        // Menggunakan relasi schedules
-            'total_reports'   => $mentor->progressReports()->count(), // Menggunakan relasi progressReports
-            'pending_tasks'   => $mentor->tasks()->where('status', 'pending')->count(),  // Menggunakan relasi tasks
+            'total_mentees'   => $mentor->mentorPairings()->count(),
+            'total_schedules' => $mentor->schedules()->count(),
+            'total_reports'   => $mentor->progressReports()->count(),
+            'pending_tasks'   => $mentor->tasks()->where('status', 'pending')->count(),
         ];
     }
 
-    /**
-     * Ambil statistik untuk dashboard Mentee
-     */
     public function getMenteeStats($menteeId)
     {
         $mentee = User::find($menteeId);
 
+        if (!$mentee) {
+            throw new \Exception("Mentee not found");
+        }
+
         return [
-            'my_schedules'    => $mentee->schedules()->count(),    // Menggunakan relasi schedules
-            'my_reports'      => $mentee->progressReports()->count(),  // Menggunakan relasi progressReports
-            'my_tasks'        => $mentee->tasks()->count(),  // Menggunakan relasi tasks
-            'completed_tasks' => $mentee->tasks()->where('status', 'completed')->count(),  // Menggunakan relasi tasks
+            'my_schedules'    => $mentee->schedules()->count(),
+            'my_reports'      => $mentee->progressReports()->count(),
+            'my_tasks'        => $mentee->tasks()->count(),
+            'completed_tasks' => $mentee->tasks()->where('status', 'completed')->count(),
         ];
     }
 }
