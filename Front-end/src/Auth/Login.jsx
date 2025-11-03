@@ -82,7 +82,7 @@ const Login = ({ setAuth }) => {
         <div className="flex items-center justify-center mt-4">
           <button className="w-full py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 flex justify-center items-center">
             <img src="/path-to-google-icon.png" alt="Google" className="w-5 h-5 mr-2" />
-            Daftar Dengan Google
+            Masuk
           </button>
         </div>
 

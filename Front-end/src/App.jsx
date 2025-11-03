@@ -4,6 +4,7 @@ import Login from './Auth/Login';
 import Register from './Auth/Register';
 import Logout from './Auth/Logout';
 import Dashboard from './components/Dashboard';
+import LearningActivities from './components/Role/Mentor/LearningActivities';
 
 const App = () => {
   const [auth, setAuth] = useState(!!localStorage.getItem('token'));
@@ -11,8 +12,6 @@ const App = () => {
   return (
     <Router>
       <div>
-        <h1>Welcome to Mentee App</h1>
-
         <Routes>
           {/* Redirect otomatis ke /login saat akses root "/" */}
           <Route path="/" element={<Navigate to="/login" />} />
@@ -22,6 +21,9 @@ const App = () => {
             path="/dashboard"
             element={auth ? <Dashboard /> : <Navigate to="/login" />}
           />
+
+          {/* Rute untuk Learning Activities */}
+          <Route path="/learning-activities" element={auth ? <LearningActivities /> : <Navigate to="/login" />} />
 
           {/* Rute untuk login dan register */}
           <Route path="/login" element={<Login setAuth={setAuth} />} />

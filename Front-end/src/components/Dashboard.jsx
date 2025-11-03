@@ -9,7 +9,7 @@ const Dashboard = () => {
         <div>
           <div className="flex flex-col items-center mb-8">
             <img
-              src="/logo.png"
+              src="/assets/Logo Sistem Mentoring.png"
               alt="Logo"
               className="w-20 h-20 object-contain mb-2"
             />
