@@ -7,16 +7,37 @@ const Login = ({ setAuth }) => {
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
-  const navigate = useNavigate(); // Hook untuk navigasi
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
       const response = await api.post('/login', { email, password });
-      localStorage.setItem('token', response.data.token);
+
+      // Cek struktur token
+      const token = response.data.token || response.data.access_token;
+
+      if (!token) {
+        throw new Error('Token tidak ditemukan dalam response API');
+      }
+
+      // Simpan token
+      localStorage.setItem('token', token);
+
+      // Jika Remember Me dicentang, bisa simpan email juga
+      if (rememberMe) {
+        localStorage.setItem('rememberedEmail', email);
+      } else {
+        localStorage.removeItem('rememberedEmail');
+      }
+
+      // Update state auth dan redirect
       setAuth(true);
-      navigate('/dashboard'); // Mengarahkan ke halaman dashboard setelah login berhasil
+      setTimeout(() => navigate('/dashboard'), 100);
+
     } catch (error) {
+      console.error('Error login:', error);
       setErrorMessage(error.response?.data?.message || 'Login gagal! Periksa kredensial Anda.');
     }
   };
@@ -26,12 +47,14 @@ const Login = ({ setAuth }) => {
       <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
         <div className="flex justify-center mb-6">
           <img
-            src="/assets/Logo Sistem Mentoring.png"  // Menampilkan logo dari folder public/assets
+            src="/assets/Logo Sistem Mentoring.png"
             alt="Logo"
             className="w-24 h-24"
           />
         </div>
+
         <h2 className="text-3xl font-bold text-center mb-6">Masuk</h2>
+
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
@@ -45,6 +68,7 @@ const Login = ({ setAuth }) => {
               required
             />
           </div>
+
           <div className="mb-4">
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
             <input
@@ -57,6 +81,7 @@ const Login = ({ setAuth }) => {
               required
             />
           </div>
+
           <div className="flex items-center mb-4">
             <input
               type="checkbox"
@@ -66,10 +91,12 @@ const Login = ({ setAuth }) => {
             />
             <label htmlFor="remember-me" className="ml-2 text-sm text-gray-600">Ingat Saya</label>
           </div>
-          {errorMessage && <p className="text-red-500 text-xs">{errorMessage}</p>}
+
+          {errorMessage && <p className="text-red-500 text-sm mb-2">{errorMessage}</p>}
+
           <button
             type="submit"
-            className="w-full py-3 bg-brown-500 text-white font-semibold rounded-lg hover:bg-brown-600"
+            className="w-full py-3 bg-[#b38867] text-white font-semibold rounded-lg hover:bg-[#a27355]"
           >
             Masuk
           </button>
@@ -77,13 +104,6 @@ const Login = ({ setAuth }) => {
 
         <div className="flex justify-between mt-4">
           <a href="#" className="text-sm text-blue-500 hover:underline">Lupa Password?</a>
-        </div>
-
-        <div className="flex items-center justify-center mt-4">
-          <button className="w-full py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 flex justify-center items-center">
-            <img src="/path-to-google-icon.png" alt="Google" className="w-5 h-5 mr-2" />
-            Masuk
-          </button>
         </div>
 
         <p className="text-center text-sm text-gray-500 mt-4">
