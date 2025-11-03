@@ -40,13 +40,15 @@ const Login = ({ setAuth }) => {
         localStorage.removeItem('rememberedEmail');
       }
 
-      // Update state auth dan redirect ke halaman dashboard
+      // Update state auth dan redirect ke halaman dashboard sesuai role
       setAuth(true);
       setTimeout(() => {
         if (role === 'admin') {
           navigate('/admin-dashboard');  // Redirect ke halaman admin jika role admin
+        } else if (role === 'mentor') {
+          navigate('/mentor-dashboard');  // Redirect ke halaman mentor
         } else {
-          navigate('/dashboard');  // Redirect ke halaman dashboard biasa
+          navigate('/mentee-dashboard');  // Redirect ke halaman mentee
         }
       }, 100);
 
