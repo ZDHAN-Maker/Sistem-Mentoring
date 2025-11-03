@@ -1,7 +1,14 @@
 import React from "react";
 import { FaBook, FaTasks } from "react-icons/fa";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 const Dashboard = () => {
+  const navigate = useNavigate(); // Gunakan navigate yang benar
+
+  const handleGoToLearningActivities = () => {
+    navigate('/learning-activities'); // Arahkan ke Learning Activities
+  };
+
   return (
     <div className="flex min-h-screen bg-[#f8fafc]">
       {/* Sidebar */}
@@ -20,7 +27,11 @@ const Dashboard = () => {
             <li className="bg-[#b38867] text-white rounded-md px-3 py-2 mb-2 cursor-pointer">
               Dashboard
             </li>
-            <li className="text-gray-700 hover:bg-gray-100 rounded-md px-3 py-2 mb-2 cursor-pointer">
+            {/* Perbaiki event click untuk Learning Activities */}
+            <li
+              className="text-gray-700 hover:bg-gray-100 rounded-md px-3 py-2 mb-2 cursor-pointer"
+              onClick={handleGoToLearningActivities} // Menambahkan event handler
+            >
               Learning Activities
             </li>
             <li className="text-gray-700 hover:bg-gray-100 rounded-md px-3 py-2 mb-2 cursor-pointer">
