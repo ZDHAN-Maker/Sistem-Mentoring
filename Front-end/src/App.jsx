@@ -19,13 +19,11 @@ const App = () => {
   return (
     <Router>
       <Routes>
-        {/* Redirect to the correct dashboard if the user is logged in */}
         <Route
           path="/"
           element={auth ? <Navigate to={`/${role}-dashboard`} /> : <Navigate to="/login" />}
         />
-
-        {/* Dashboard routes based on role */}
+        
         <Route
           path="/admin-dashboard"
           element={auth && role === 'admin' ? <DashboardAdmin role={role} /> : <Navigate to="/login" />}
@@ -39,7 +37,6 @@ const App = () => {
           element={auth && role === 'mentee' ? <DashboardMentee role={role} /> : <Navigate to="/login" />}
         />
         
-        {/* Login route */}
         <Route path="/login" element={<Login setAuth={setAuth} />} />
       </Routes>
     </Router>
