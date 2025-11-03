@@ -24,16 +24,20 @@ const Dashboard = () => {
 
           <div className="text-gray-500 text-xs uppercase mb-2">Learning</div>
           <ul>
+            {/* Dashboard Button */}
             <li className="bg-[#b38867] text-white rounded-md px-3 py-2 mb-2 cursor-pointer">
               Dashboard
             </li>
-            {/* Perbaiki event click untuk Learning Activities */}
+
+            {/* Learning Activities Button */}
             <li
               className="text-gray-700 hover:bg-gray-100 rounded-md px-3 py-2 mb-2 cursor-pointer"
-              onClick={handleGoToLearningActivities} // Menambahkan event handler
+              onClick={handleGoToLearningActivities} // Event untuk klik Learning Activities
             >
               Learning Activities
             </li>
+
+            {/* Other Menu Items */}
             <li className="text-gray-700 hover:bg-gray-100 rounded-md px-3 py-2 mb-2 cursor-pointer">
               Tutoring Schedule
             </li>

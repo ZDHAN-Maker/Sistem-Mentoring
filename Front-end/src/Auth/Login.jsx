@@ -12,29 +12,43 @@ const Login = ({ setAuth }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validasi email dan password
+    if (!email || !password) {
+      setErrorMessage('Email dan password wajib diisi!');
+      return;
+    }
+
     try {
       const response = await api.post('/login', { email, password });
 
-      // Cek struktur token
+      // Simpan token dan role (jika ada)
       const token = response.data.token || response.data.access_token;
+      const role = response.data.role;  // Pastikan API mengembalikan role pengguna
 
       if (!token) {
         throw new Error('Token tidak ditemukan dalam response API');
       }
 
-      // Simpan token
+      // Simpan token dan role di localStorage
       localStorage.setItem('token', token);
+      localStorage.setItem('role', role);  // Simpan role
 
-      // Jika Remember Me dicentang, bisa simpan email juga
+      // Jika Remember Me dicentang, simpan email
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', email);
       } else {
         localStorage.removeItem('rememberedEmail');
       }
 
-      // Update state auth dan redirect
+      // Update state auth dan redirect ke halaman dashboard
       setAuth(true);
-      setTimeout(() => navigate('/dashboard'), 100);
+      setTimeout(() => {
+        if (role === 'admin') {
+          navigate('/admin-dashboard');  // Redirect ke halaman admin jika role admin
+        } else {
+          navigate('/dashboard');  // Redirect ke halaman dashboard biasa
+        }
+      }, 100);
 
     } catch (error) {
       console.error('Error login:', error);
