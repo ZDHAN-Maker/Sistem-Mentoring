@@ -1,8 +1,8 @@
-import React from 'react';
-import Sidebar from '../components/Sidebar';  // Import Sidebar
-import Navbar from '../components/Navbar';    // Import Navbar
+import React from "react";
+import Sidebar from "../../../components/Sidebar";   
+import Navbar from "../../../components/Navbar";     
 
-const Dashboard = ({ role }) => {
+const DashboardAdmin = ({ role }) => {
   return (
     <div className="flex min-h-screen bg-[#f8fafc]">
       {/* Sidebar */}
@@ -18,7 +18,7 @@ const Dashboard = ({ role }) => {
           <h1 className="text-3xl font-semibold">Dashboard</h1>
           <div className="mt-6">
             {/* Tempat konten utama */}
-            <p>Selamat datang di Dashboard</p>
+            <p>Selamat datang di Dashboard Admin</p>
           </div>
         </main>
       </div>
@@ -26,4 +26,4 @@ const Dashboard = ({ role }) => {
   );
 };
 
-export default Dashboard;
+export default DashboardAdmin;
