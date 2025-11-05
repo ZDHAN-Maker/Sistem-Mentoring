@@ -56,9 +56,13 @@ const Login = ({ setAuth }) => {
 
   return (
     <div className="min-h-screen flex justify-center items-center bg-gray-50">
-      <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
+      <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-lg">
         <div className="flex justify-center mb-6">
-          <img src="/path-to-your-logo.png" alt="Logo" className="w-24 h-24" />
+          <img
+            src="/assets/Logo Sistem Mentoring.png" // Pastikan path logo sudah benar
+            alt="Logo"
+            className="w-24 h-24"
+          />
         </div>
         <h2 className="text-3xl font-bold text-center mb-6">Masuk</h2>
         <form onSubmit={handleSubmit}>
@@ -102,7 +106,7 @@ const Login = ({ setAuth }) => {
 
           <button
             type="submit"
-            className="w-full py-3 bg-[#b38867] text-white font-semibold rounded-lg hover:bg-[#a27355]"
+            className="w-full py-3 mt-4 bg-[#b38867] text-white font-semibold rounded-lg hover:bg-[#a27355]"
           >
             Masuk
           </button>
