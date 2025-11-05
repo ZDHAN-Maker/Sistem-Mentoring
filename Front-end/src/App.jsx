@@ -1,6 +1,5 @@
-import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './context/AuthContext'; // Pastikan path ini benar
+import { useAuth } from './context/AuthContext';
 import Login from './Auth/Login'; 
 import Register from './Auth/Register'; 
 import DashboardAdmin from './pages/Role/Admin/DashboardAdmin';
