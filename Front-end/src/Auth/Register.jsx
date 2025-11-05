@@ -1,17 +1,19 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../axiosInstance";
 
 const Register = ({ setAuth }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [passwordConfirmation, setPasswordConfirmation] = useState(""); // Menambahkan state untuk password konfirmasi
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const navigate = useNavigate();  // Hook untuk melakukan navigasi setelah register
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validasi untuk memastikan password dan konfirmasi password sama
+    // Validasi: Pastikan password dan password konfirmasi cocok
     if (password !== passwordConfirmation) {
       setErrorMessage("Password dan konfirmasi password tidak cocok.");
       return;
@@ -19,19 +21,34 @@ const Register = ({ setAuth }) => {
 
     try {
       // Mengirim data dengan password dan password_confirmation
-      const response = await api.post("/register", { name, email, password, password_confirmation: passwordConfirmation });
+      const response = await api.post("/register", {
+        name,
+        email,
+        password,
+        password_confirmation: passwordConfirmation,  // Kirim password_confirmation
+      });
+
+      // Menyimpan token ke localStorage setelah registrasi berhasil
+      const token = response.data.token;
+      localStorage.setItem("token", token);
       
-      // Menyimpan token ke localStorage dan melakukan redirect ke dashboard
-      localStorage.setItem("token", response.data.token);
-      setAuth(true);
-      window.location.href = "/dashboard"; // Redirect ke halaman dashboard
+      // Set auth true
+      setAuth(true); 
+
+      // Redirect ke halaman login setelah registrasi berhasil
+      navigate("/login");  // Arahkan ke halaman login setelah berhasil registrasi
+
     } catch (error) {
-      setErrorMessage(error.response?.data?.message || "Pendaftaran gagal! Silakan coba lagi.");
+      // Tangani error jika terjadi masalah saat registrasi
+      setErrorMessage(
+        error.response?.data?.message || "Pendaftaran gagal! Silakan coba lagi."
+      );
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* Header */}
       <div className="w-full bg-white p-4 shadow-md flex items-center justify-between">
         <div className="flex items-center">
           <img
@@ -41,86 +58,84 @@ const Register = ({ setAuth }) => {
           />
           <span className="text-xl ml-2 font-semibold">Sistem Mentoring</span>
         </div>
-        <div>
-          <a href="/login" className="text-sm text-gray-700 hover:text-blue-600">
-            Masuk
-          </a>
-        </div>
+        <a href="/login" className="text-sm text-gray-700 hover:text-blue-600">Masuk</a>
       </div>
 
+      {/* Form Register */}
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
         <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-lg">
-          <h2 className="text-3xl font-bold text-center mb-6">Daftar Akun Mentoring</h2>
+          <h2 className="text-3xl font-bold text-left mb-1">Daftar Akun Mentoring</h2>
+          <p className="text-sm text-gray-500 mb-6">Silahkan isi form berikut</p>
 
+          {/* Formulir pendaftaran */}
           <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label className="block text-sm font-semibold text-gray-700">
-                Nama Lengkap
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full mt-2 p-3 border border-gray-300 rounded-lg"
-                placeholder="Nama Lengkap"
-                required
-              />
-            </div>
+            <label className="block text-sm font-semibold text-gray-700">Nama Lengkap</label>
+            <input
+              className="w-full mt-2 p-3 border border-gray-300 rounded-lg mb-4"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Nama Lengkap"
+              required
+            />
 
-            <div className="mb-4">
-              <label className="block text-sm font-semibold text-gray-700">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full mt-2 p-3 border border-gray-300 rounded-lg"
-                placeholder="Alamat Email"
-                required
-              />
-            </div>
+            <label className="block text-sm font-semibold text-gray-700">Email</label>
+            <input
+              className="w-full mt-2 p-3 border border-gray-300 rounded-lg mb-4"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Alamat Email"
+              required
+            />
 
-            <div className="mb-4">
-              <label className="block text-sm font-semibold text-gray-700">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full mt-2 p-3 border border-gray-300 rounded-lg"
-                placeholder="Password Baru"
-                required
-              />
-            </div>
+            <label className="block text-sm font-semibold text-gray-700">Password</label>
+            <input
+              className="w-full mt-2 p-3 border border-gray-300 rounded-lg mb-4"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password Baru"
+              required
+            />
 
-            <div className="mb-4">
-              <label className="block text-sm font-semibold text-gray-700">
-                Konfirmasi Password
-              </label>
-              <input
-                type="password"
-                value={passwordConfirmation}
-                onChange={(e) => setPasswordConfirmation(e.target.value)}
-                className="w-full mt-2 p-3 border border-gray-300 rounded-lg"
-                placeholder="Konfirmasi Password"
-                required
-              />
-            </div>
+            <label className="block text-sm font-semibold text-gray-700">Konfirmasi Password</label>
+            <input
+              className="w-full mt-2 p-3 border border-gray-300 rounded-lg mb-4"
+              type="password"
+              value={passwordConfirmation}
+              onChange={(e) => setPasswordConfirmation(e.target.value)}
+              placeholder="Konfirmasi Password"
+              required
+            />
 
+            {/* Pesan error */}
             {errorMessage && (
-              <p className="text-red-500 text-xs">{errorMessage}</p>
+              <p className="text-red-500 text-xs mt-2">{errorMessage}</p>
             )}
 
+            {/* Tombol Daftar */}
             <button
               type="submit"
-              className="w-full py-3 mt-4 bg-[#b38867] text-white font-semibold rounded-lg hover:bg-[#a27355]"
+              className="w-full py-3 mt-6 bg-[#b38867] text-white font-semibold rounded-lg hover:bg-[#a27355]"
             >
               Daftar
             </button>
           </form>
 
+          <hr className="my-6" />
+
+          {/* Tombol Daftar Dengan Google (opsional) */}
+          <button className="w-full py-3 border rounded-lg flex items-center justify-center">
+            <img
+              src="/assets/google.png"
+              alt="Google"
+              className="w-5 h-5 mr-2"
+            />
+            Daftar Dengan Google
+          </button>
+
+          {/* Link untuk masuk */}
           <p className="text-center text-sm text-gray-500 mt-4">
             Sudah Punya Akun?{" "}
             <a href="/login" className="text-blue-500 hover:underline">

@@ -1,56 +1,48 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { api } from '../axiosInstance';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { api } from "../axiosInstance";
 
 const Login = ({ setAuth }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!email || !password) {
-      setErrorMessage('Email dan password wajib diisi!');
+      setErrorMessage("Email dan password wajib diisi!");
       return;
     }
-
     try {
-      const response = await api.post('/login', { email, password });
+      const response = await api.post("/login", { email, password });
 
       const token = response.data.token || response.data.access_token;
-      const role = response.data.role;
+      // ⬇️ ambil role dari objek user, fallback ke root jika backend beda
+      const role = response.data.user?.role || response.data.role;
 
-      if (!token) {
-        throw new Error('Token tidak ditemukan dalam response API');
+      if (!token || !role) {
+        throw new Error("Token/role tidak ada di response API");
       }
 
-      localStorage.setItem('token', token);
-      localStorage.setItem('role', role);
+      localStorage.setItem("token", token);
+      localStorage.setItem("role", role);
 
-      if (rememberMe) {
-        localStorage.setItem('rememberedEmail', email);
-      } else {
-        localStorage.removeItem('rememberedEmail');
-      }
+      if (rememberMe) localStorage.setItem("rememberedEmail", email);
+      else localStorage.removeItem("rememberedEmail");
 
       setAuth(true);
 
-      setTimeout(() => {
-        if (role === 'admin') {
-          navigate('/admin-dashboard');
-        } else if (role === 'mentor') {
-          navigate('/mentor-dashboard');
-        } else {
-          navigate('/mentee-dashboard');
-        }
-      }, 100);
-
+      // redirect tanpa setTimeout
+      if (role === "admin") navigate("/admin-dashboard");
+      else if (role === "mentor") navigate("/mentor-dashboard");
+      else navigate("/mentee-dashboard");
     } catch (error) {
-      console.error('Error login:', error);
-      setErrorMessage(error.response?.data?.message || 'Login gagal! Periksa kredensial Anda.');
+      console.error("Error login:", error);
+      setErrorMessage(
+        error.response?.data?.message || "Login gagal! Periksa kredensial Anda."
+      );
     }
   };
 
@@ -67,7 +59,12 @@ const Login = ({ setAuth }) => {
         <h2 className="text-3xl font-bold text-center mb-6">Masuk</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Email
+            </label>
             <input
               id="email"
               type="email"
@@ -80,7 +77,12 @@ const Login = ({ setAuth }) => {
           </div>
 
           <div className="mb-4">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Password
+            </label>
             <input
               id="password"
               type="password"
@@ -99,10 +101,14 @@ const Login = ({ setAuth }) => {
               onChange={() => setRememberMe(!rememberMe)}
               className="h-4 w-4 text-blue-500"
             />
-            <label htmlFor="remember-me" className="ml-2 text-sm text-gray-600">Ingat Saya</label>
+            <label htmlFor="remember-me" className="ml-2 text-sm text-gray-600">
+              Ingat Saya
+            </label>
           </div>
 
-          {errorMessage && <p className="text-red-500 text-sm mb-2">{errorMessage}</p>}
+          {errorMessage && (
+            <p className="text-red-500 text-sm mb-2">{errorMessage}</p>
+          )}
 
           <button
             type="submit"
@@ -113,11 +119,13 @@ const Login = ({ setAuth }) => {
         </form>
 
         <div className="flex justify-between mt-4">
-          <a href="#" className="text-sm text-blue-500 hover:underline">Lupa Password?</a>
+          <a href="#" className="text-sm text-blue-500 hover:underline">
+            Lupa Password?
+          </a>
         </div>
 
         <p className="text-center text-sm text-gray-500 mt-4">
-          Belum Punya Akun?{' '}
+          Belum Punya Akun?{" "}
           <a href="/register" className="text-blue-500 hover:underline">
             Daftar Sekarang
           </a>
