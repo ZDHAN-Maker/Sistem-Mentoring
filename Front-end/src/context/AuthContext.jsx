@@ -1,14 +1,8 @@
-// src/context/AuthContext.jsx
-
-import React, { createContext, useContext, useState } from 'react';
+// src/context/AuthContext.js
+import React, { createContext, useState } from 'react';
 
 // Membuat context
 const AuthContext = createContext();
-
-// Membuat custom hook untuk menggunakan AuthContext
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
 
 // Komponen provider untuk AuthContext
 export const AuthProvider = ({ children }) => {
@@ -32,3 +26,5 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
+export default AuthContext;
