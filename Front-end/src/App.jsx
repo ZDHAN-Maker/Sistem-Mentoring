@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './Auth/Login';
+import Register from './Auth/Register'; // Tambahkan import Register
 import DashboardAdmin from './pages/Role/Admin/DashboardAdmin';
 import DashboardMentor from './pages/Role/Mentor/DashboardMentor';
 import DashboardMentee from './pages/Role/Mentee/DashboardMentee';
@@ -24,6 +25,10 @@ const App = () => {
         {/* Redirect default ke login jika belum login */}
         <Route path="/" element={auth ? <Navigate to={`/${role}-dashboard`} /> : <Navigate to="/login" />} />
         
+        {/* Rute untuk halaman login dan register */}
+        <Route path="/login" element={<Login setAuth={setAuth} />} />
+        <Route path="/register" element={<Register setAuth={setAuth} />} /> {/* Tambahkan rute ini */}
+        
         {/* Dashboard berdasarkan role */}
         <Route
           path="/admin-dashboard"
@@ -37,9 +42,6 @@ const App = () => {
           path="/mentee-dashboard"
           element={auth && role === 'mentee' ? <DashboardMentee role={role} /> : <Navigate to="/login" />}
         />
-
-        {/* Rute untuk Login */}
-        <Route path="/login" element={<Login setAuth={setAuth} />} />
       </Routes>
     </Router>
   );

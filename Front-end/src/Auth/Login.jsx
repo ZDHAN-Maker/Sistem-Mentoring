@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { api } from '../axiosInstance';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../axiosInstance';
 
 const Login = ({ setAuth }) => {
   const [email, setEmail] = useState('');
@@ -12,7 +12,6 @@ const Login = ({ setAuth }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validasi email dan password
     if (!email || !password) {
       setErrorMessage('Email dan password wajib diisi!');
       return;
@@ -21,34 +20,31 @@ const Login = ({ setAuth }) => {
     try {
       const response = await api.post('/login', { email, password });
 
-      // Simpan token dan role (jika ada)
       const token = response.data.token || response.data.access_token;
-      const role = response.data.role;  // Pastikan API mengembalikan role pengguna
+      const role = response.data.role;
 
       if (!token) {
         throw new Error('Token tidak ditemukan dalam response API');
       }
 
-      // Simpan token dan role di localStorage
       localStorage.setItem('token', token);
-      localStorage.setItem('role', role);  // Simpan role
+      localStorage.setItem('role', role);
 
-      // Jika Remember Me dicentang, simpan email
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', email);
       } else {
         localStorage.removeItem('rememberedEmail');
       }
 
-      // Update state auth dan redirect ke halaman dashboard sesuai role
       setAuth(true);
+
       setTimeout(() => {
         if (role === 'admin') {
-          navigate('/admin-dashboard');  // Redirect ke halaman admin jika role admin
+          navigate('/admin-dashboard');
         } else if (role === 'mentor') {
-          navigate('/mentor-dashboard');  // Redirect ke halaman mentor
+          navigate('/mentor-dashboard');
         } else {
-          navigate('/mentee-dashboard');  // Redirect ke halaman mentee
+          navigate('/mentee-dashboard');
         }
       }, 100);
 
@@ -62,15 +58,9 @@ const Login = ({ setAuth }) => {
     <div className="min-h-screen flex justify-center items-center bg-gray-50">
       <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
         <div className="flex justify-center mb-6">
-          <img
-            src="/assets/Logo Sistem Mentoring.png"
-            alt="Logo"
-            className="w-24 h-24"
-          />
+          <img src="/path-to-your-logo.png" alt="Logo" className="w-24 h-24" />
         </div>
-
         <h2 className="text-3xl font-bold text-center mb-6">Masuk</h2>
-
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
