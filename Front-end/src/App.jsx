@@ -1,37 +1,18 @@
-import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./Auth/Login";
-import Register from "./Auth/Register"; // Pastikan Register di-import dengan benar
-import DashboardAdmin from "./pages/Role/Admin/DashboardAdmin";
-import DashboardMentor from "./pages/Role/Mentor/DashboardMentor";
-import DashboardMentee from "./pages/Role/Mentee/DashboardMentee";
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext'; // Pastikan path ini benar
+import Login from './Auth/Login'; 
+import Register from './Auth/Register'; 
+import DashboardAdmin from './pages/Role/Admin/DashboardAdmin';
+import DashboardMentor from './pages/Role/Mentor/DashboardMentor';
+import DashboardMentee from './pages/Role/Mentee/DashboardMentee';
 
 const App = () => {
-  const [auth, setAuth] = useState(false);
-  const [role, setRole] = useState(null);
-
-  useEffect(() => {
-    // Mengambil token dan role dari localStorage
-    const storedToken = localStorage.getItem("token");
-    const storedRole = localStorage.getItem("role");
-
-    console.log("Stored Token:", storedToken); // Debugging
-    console.log("Stored Role:", storedRole);   // Debugging
-
-    // Jika token dan role ada, set autentikasi dan role
-    if (storedToken && storedRole) {
-      setAuth(true);
-      setRole(storedRole);
-    } else {
-      setAuth(false);
-      setRole(null);
-    }
-  }, []);
+  const { auth, role } = useAuth(); // Mengambil auth dan role dari context
 
   return (
     <Router>
       <Routes>
-        {/* Halaman utama, jika sudah login akan redirect ke dashboard sesuai role */}
         <Route
           path="/"
           element={
@@ -42,41 +23,23 @@ const App = () => {
             )
           }
         />
+        
+        {/* Rute untuk login dan register */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-        {/* Rute untuk halaman login dan register */}
-        <Route path="/login" element={<Login setAuth={setAuth} />} />
-        <Route path="/register" element={<Register setAuth={setAuth} />} />
-
-        {/* Rute dashboard untuk setiap role */}
+        {/* Rute dashboard berdasarkan role */}
         <Route
           path="/admin-dashboard"
-          element={
-            auth && role === "admin" ? (
-              <DashboardAdmin role={role} />
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
+          element={auth && role === 'admin' ? <DashboardAdmin /> : <Navigate to="/login" />}
         />
         <Route
           path="/mentor-dashboard"
-          element={
-            auth && role === "mentor" ? (
-              <DashboardMentor role={role} />
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
+          element={auth && role === 'mentor' ? <DashboardMentor /> : <Navigate to="/login" />}
         />
         <Route
           path="/mentee-dashboard"
-          element={
-            auth && role === "mentee" ? (
-              <DashboardMentee role={role} />
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
+          element={auth && role === 'mentee' ? <DashboardMentee /> : <Navigate to="/login" />}
         />
       </Routes>
     </Router>
