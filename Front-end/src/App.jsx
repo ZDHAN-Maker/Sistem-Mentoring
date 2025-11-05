@@ -15,10 +15,16 @@ const App = () => {
     const storedToken = localStorage.getItem("token");
     const storedRole = localStorage.getItem("role");
 
+    console.log("Stored Token:", storedToken); // Debugging
+    console.log("Stored Role:", storedRole);   // Debugging
+
     // Jika token dan role ada, set autentikasi dan role
     if (storedToken && storedRole) {
       setAuth(true);
       setRole(storedRole);
+    } else {
+      setAuth(false);
+      setRole(null);
     }
   }, []);
 

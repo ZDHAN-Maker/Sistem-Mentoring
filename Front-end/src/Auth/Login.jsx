@@ -1,6 +1,7 @@
+// src/Auth/Login.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "../axiosInstance";
+import { api } from "../axiosInstance";  // pastikan path ke axiosInstance.js sudah benar
 
 const Login = ({ setAuth }) => {
   const [email, setEmail] = useState("");
@@ -20,9 +21,8 @@ const Login = ({ setAuth }) => {
       // Melakukan request login ke backend
       const response = await api.post("/login", { email, password });
 
-      // Periksa apakah token dan role ada dalam response
       const token = response.data.token || response.data.access_token;
-      const role = response.data.user?.role || response.data.role; // Mengambil role dari user atau role yang ada
+      const role = response.data.user?.role || response.data.role;
 
       if (!token || !role) {
         throw new Error("Token atau role tidak ditemukan dalam response API");
@@ -47,7 +47,7 @@ const Login = ({ setAuth }) => {
         navigate("/admin-dashboard");
       } else if (role === "mentor") {
         navigate("/mentor-dashboard");
-      } else {
+      } else if (role === "mentee") {
         navigate("/mentee-dashboard");
       }
     } catch (error) {

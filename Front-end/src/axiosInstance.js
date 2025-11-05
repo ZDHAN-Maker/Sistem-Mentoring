@@ -10,9 +10,18 @@ const api = axios.create({
   },
 });
 
-// Mengatur token JWT ke header jika sudah login
-const setAuthHeader = (token) => {
-  api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-};
+// Menambahkan interceptor untuk menyertakan token di setiap request
+api.interceptors.request.use((config) => {
+  // Mengambil token dari localStorage
+  const token = localStorage.getItem("token");
+  if (token) {
+    // Jika token ada, tambahkan ke header Authorization
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => {
+  // Menangani error request jika ada
+  return Promise.reject(error);
+});
 
-export { api, setAuthHeader };
+export { api };
