@@ -15,29 +15,41 @@ const Login = ({ setAuth }) => {
       setErrorMessage("Email dan password wajib diisi!");
       return;
     }
+
     try {
+      // Melakukan request login ke backend
       const response = await api.post("/login", { email, password });
 
+      // Periksa apakah token dan role ada dalam response
       const token = response.data.token || response.data.access_token;
-      // ⬇️ ambil role dari objek user, fallback ke root jika backend beda
-      const role = response.data.user?.role || response.data.role;
+      const role = response.data.user?.role || response.data.role; // Mengambil role dari user atau role yang ada
 
       if (!token || !role) {
-        throw new Error("Token/role tidak ada di response API");
+        throw new Error("Token atau role tidak ditemukan dalam response API");
       }
 
+      // Menyimpan token dan role ke localStorage
       localStorage.setItem("token", token);
       localStorage.setItem("role", role);
 
-      if (rememberMe) localStorage.setItem("rememberedEmail", email);
-      else localStorage.removeItem("rememberedEmail");
+      // Jika rememberMe dicentang, simpan email di localStorage
+      if (rememberMe) {
+        localStorage.setItem("rememberedEmail", email);
+      } else {
+        localStorage.removeItem("rememberedEmail");
+      }
 
+      // Set status autentikasi menjadi true
       setAuth(true);
 
-      // redirect tanpa setTimeout
-      if (role === "admin") navigate("/admin-dashboard");
-      else if (role === "mentor") navigate("/mentor-dashboard");
-      else navigate("/mentee-dashboard");
+      // Redirect ke dashboard sesuai role
+      if (role === "admin") {
+        navigate("/admin-dashboard");
+      } else if (role === "mentor") {
+        navigate("/mentor-dashboard");
+      } else {
+        navigate("/mentee-dashboard");
+      }
     } catch (error) {
       console.error("Error login:", error);
       setErrorMessage(
@@ -59,10 +71,7 @@ const Login = ({ setAuth }) => {
         <h2 className="text-3xl font-bold text-center mb-6">Masuk</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700"
-            >
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
               Email
             </label>
             <input
@@ -77,10 +86,7 @@ const Login = ({ setAuth }) => {
           </div>
 
           <div className="mb-4">
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700"
-            >
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Password
             </label>
             <input
