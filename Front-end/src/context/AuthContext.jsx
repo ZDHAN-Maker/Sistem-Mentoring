@@ -1,27 +1,28 @@
 // src/context/AuthContext.js
 import React, { createContext, useState } from 'react';
 
-// Membuat context
 const AuthContext = createContext();
 
-// Komponen provider untuk AuthContext
 export const AuthProvider = ({ children }) => {
   const [auth, setAuth] = useState(false);
   const [role, setRole] = useState(null);
+  const [token, setToken] = useState(null);
 
-  // Fungsi untuk mengubah status auth dan role
-  const login = (role) => {
+  // Fungsi login menerima token & role
+  const login = (token, role) => {
     setAuth(true);
     setRole(role);
+    setToken(token);
   };
 
   const logout = () => {
     setAuth(false);
     setRole(null);
+    setToken(null);
   };
 
   return (
-    <AuthContext.Provider value={{ auth, role, login, logout }}>
+    <AuthContext.Provider value={{ auth, role, token, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
