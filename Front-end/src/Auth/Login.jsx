@@ -208,15 +208,15 @@ const Login = () => {
               {/* Tombol Google */}
               <button
                 type="button"
-                className="w-full py-2.5 border border-gray-300 rounded-lg flex items-center justify-center gap-2 
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg flex items-center justify-center gap-3 
              font-medium text-gray-700 bg-white hover:bg-gray-50 transition"
               >
                 <img
-                  src="/Front-end/assets/google.png"
+                  src="/assets/google.png"
                   alt="Google Logo"
-                  className="w-4 h-4 object-contain"
+                  className="w-7 h-7 object-contain"
                 />
-                <span>Daftar Dengan Google</span>
+                <span className="text-base">Daftar Dengan Google</span>
               </button>
             </form>
 
