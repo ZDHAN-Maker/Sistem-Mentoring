@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../axiosInstance'
 import { useAuth } from '../context/useAuth'
+import Header from '../components/Header' // Pastikan kamu punya komponen ini
 
 const Register = () => {
   const [name, setName] = useState('')
@@ -10,7 +11,7 @@ const Register = () => {
   const [passwordConfirmation, setPasswordConfirmation] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const navigate = useNavigate()
-  const { registerUser } = useAuth() // 👈 fungsi baru di context untuk simpan data user
+  const { registerUser } = useAuth() // Fungsi dari context
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -21,7 +22,6 @@ const Register = () => {
     }
 
     try {
-      // Default role: mentee
       const response = await api.post('/register', {
         name,
         email,
@@ -36,10 +36,7 @@ const Register = () => {
         role: 'mentee'
       }
 
-      // Simpan user ke context biar persist di aplikasi
       registerUser(userData)
-
-      // Setelah register berhasil → arahkan ke login
       navigate('/login')
     } catch (error) {
       console.error('Error register:', error)
@@ -50,117 +47,116 @@ const Register = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <div className="w-full bg-white p-4 shadow-md flex items-center justify-between">
-        <div className="flex items-center">
-          <img
-            src="/assets/Logo Sistem Mentoring.png"
-            alt="Logo"
-            className="w-10 h-10"
-          />
-          <span className="text-xl ml-2 font-semibold">Sistem Mentoring</span>
+    <div className="min-h-screen flex flex-col bg-white">
+      <Header />
+
+      <main className="grow flex items-center justify-center py-14 bg-gray-50">
+        <div className="w-full max-w-lg px-4">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_6px_24px_rgba(0,0,0,0.06)] p-8 md:p-10">
+            <h2 className="text-2xl font-bold text-center mb-2">
+              Daftar Akun Baru
+            </h2>
+
+            <form onSubmit={handleSubmit}>
+              {/* Nama */}
+              <div className="mb-4">
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Nama Lengkap
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#b38867]"
+                  placeholder="Nama Lengkap"
+                  required
+                />
+              </div>
+
+              {/* Email */}
+              <div className="mb-4">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#b38867]"
+                  placeholder="Email"
+                  required
+                />
+              </div>
+
+              {/* Password */}
+              <div className="mb-4">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#b38867]"
+                  placeholder="Password"
+                  required
+                />
+              </div>
+
+              {/* Konfirmasi Password */}
+              <div className="mb-4">
+                <label
+                  htmlFor="password_confirmation"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Konfirmasi Password
+                </label>
+                <input
+                  id="password_confirmation"
+                  type="password"
+                  value={passwordConfirmation}
+                  onChange={(e) => setPasswordConfirmation(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#b38867]"
+                  placeholder="Konfirmasi Password"
+                  required
+                />
+              </div>
+
+              {errorMessage && (
+                <p className="text-red-500 text-sm mb-2">{errorMessage}</p>
+              )}
+
+              <button
+                type="submit"
+                className="w-full py-3 mt-2 bg-[#b38867] text-white font-semibold rounded-lg hover:bg-[#a27355]"
+              >
+                Daftar
+              </button>
+            </form>
+
+            <p className="text-center text-sm text-gray-500 mt-6">
+              Sudah punya akun?{' '}
+              <a href="/login" className="text-[#b38867] hover:underline">
+                Masuk Sekarang
+              </a>
+            </p>
+          </div>
         </div>
-        <a href="/login" className="text-sm text-gray-700 hover:text-blue-600">
-          Masuk
-        </a>
-      </div>
-
-      {/* Form Register */}
-      <div className="flex justify-center items-center min-h-[calc(100vh-80px)] bg-gray-50">
-        <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-lg">
-          <h2 className="text-3xl font-bold text-left mb-1">
-            Daftar Akun Mentoring
-          </h2>
-          <p className="text-sm text-gray-500 mb-6">Silakan isi form berikut</p>
-
-          <form onSubmit={handleSubmit}>
-            <label className="block text-sm font-semibold text-gray-700">
-              Nama Lengkap
-            </label>
-            <input
-              className="w-full mt-2 p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-[#b38867] focus:outline-none"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Nama Lengkap"
-              required
-            />
-
-            <label className="block text-sm font-semibold text-gray-700">
-              Email
-            </label>
-            <input
-              className="w-full mt-2 p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-[#b38867] focus:outline-none"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Alamat Email"
-              required
-            />
-
-            <label className="block text-sm font-semibold text-gray-700">
-              Password
-            </label>
-            <input
-              className="w-full mt-2 p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-[#b38867] focus:outline-none"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password Baru"
-              required
-            />
-
-            <label className="block text-sm font-semibold text-gray-700">
-              Konfirmasi Password
-            </label>
-            <input
-              className="w-full mt-2 p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-[#b38867] focus:outline-none"
-              type="password"
-              value={passwordConfirmation}
-              onChange={(e) => setPasswordConfirmation(e.target.value)}
-              placeholder="Konfirmasi Password"
-              required
-            />
-
-            {errorMessage && (
-              <p className="text-red-500 text-xs mt-2">{errorMessage}</p>
-            )}
-
-            <button
-              type="submit"
-              className="w-full py-3 mt-6 bg-[#b38867] text-white font-semibold rounded-lg hover:bg-[#a27355] transition"
-            >
-              Daftar
-            </button>
-          </form>
-
-          <hr className="my-6" />
-
-          {/* Tombol Google - seperti di halaman login */}
-          <button
-            type="button"
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg flex items-center justify-center gap-3 
-                       font-medium text-gray-700 bg-white hover:bg-gray-50 transition"
-          >
-            <img
-              src="/assets/google.png"
-              alt="Google Logo"
-              className="w-7 h-7 object-contain"
-            />
-            <span className="text-base">Daftar Dengan Google</span>
-          </button>
-
-          <p className="text-center text-sm text-gray-500 mt-4">
-            Sudah punya akun?{' '}
-            <a href="/login" className="text-blue-500 hover:underline">
-              Masuk sekarang
-            </a>
-          </p>
-        </div>
-      </div>
+      </main>
     </div>
-  );
+  )
 }
 
 export default Register

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../axiosInstance';
 import { useAuth } from '../context/useAuth';
-
+import Header from '../components/Header';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -53,70 +53,9 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      {/* Header */}
-      <header className="w-full bg-white border-b border-gray-100 shadow-sm">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
-          {/* Logo + Search */}
-          <div className="flex items-center gap-4">
-            <img
-              src="/assets/Logo Sistem Mentoring.png"
-              alt="Logo Sistem Mentoring"
-              className="w-10 h-10 object-contain"
-            />
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Cari Program"
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#b38867] w-64"
-              />
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="gray"
-                className="absolute left-3 top-2.5 w-5 h-5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M21 21l-4.35-4.35m0 0a7.5 7.5 0 1110.6-10.6 7.5 7.5 0 01-10.6 10.6z"
-                />
-              </svg>
-            </div>
-          </div>
-
-          {/* Menu Navigasi */}
-          <nav className="flex items-center gap-8 text-sm font-medium text-gray-700">
-            <a href="/program" className="hover:text-[#b38867]">
-              Program
-            </a>
-            <a href="/langganan" className="hover:text-[#b38867]">
-              Langganan
-            </a>
-            <a href="/elearning" className="hover:text-[#b38867]">
-              E-Learning
-            </a>
-          </nav>
-
-          {/* Tombol Aksi */}
-          <div className="flex items-center gap-3">
-            <a
-              href="/register"
-              className="px-5 py-2 border border-[#b38867] text-[#b38867] rounded-lg text-sm font-semibold hover:bg-[#b38867] hover:text-white transition"
-            >
-              Daftar
-            </a>
-            <a
-              href="/login"
-              className="px-5 py-2 bg-[#b38867] text-white rounded-lg text-sm font-semibold hover:bg-[#a27355] transition"
-            >
-              Masuk
-            </a>
-          </div>
-        </div>
-      </header>
+     <div className="min-h-screen flex flex-col bg-white">
+      {/* 🔹 Gunakan komponen Header */}
+      <Header />
 
       {/* Main content */}
       <main className="grow flex items-center justify-center py-14 bg-gray-50">
@@ -216,14 +155,14 @@ const Login = () => {
                   alt="Google Logo"
                   className="w-7 h-7 object-contain"
                 />
-                <span className="text-base">Daftar Dengan Google</span>
+                <span className="text-base">Masuk Dengan Google</span>
               </button>
             </form>
 
             <p className="text-center text-sm text-gray-500 mt-6">
-              Sudah Punya Akun?{' '}
+              Belum punya akun?{' '}
               <a href="/register" className="text-[#b38867] hover:underline">
-                Masuk Sekarang
+                Daftar Sekarang
               </a>
             </p>
           </div>
