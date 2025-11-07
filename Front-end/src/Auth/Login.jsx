@@ -53,107 +53,183 @@ const Login = () => {
   };
 
   return (
-    <main className="grow flex items-center justify-center py-14 bg-gray-50">
-      {/* Card wrapper */}
-      <div className="w-full max-w-lg px-4">
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_6px_24px_rgba(0,0,0,0.06)] p-8 md:p-10">
-          <h2 className="text-2xl font-bold text-center mb-2">
-            Masuk ke Akun Mentoring
-          </h2>
-          <p className="text-center text-gray-500 mb-6">
-            Silakan masukkan kredensial Anda
-          </p>
-
-          <form onSubmit={handleSubmit}>
-            {/* Email */}
-            <div className="mb-4">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
+    <div className="min-h-screen flex flex-col bg-white">
+      {/* Header */}
+      <header className="w-full bg-white border-b border-gray-100 shadow-sm">
+        <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
+          {/* Logo + Search */}
+          <div className="flex items-center gap-4">
+            <img
+              src="/assets/Logo Sistem Mentoring.png"
+              alt="Logo Sistem Mentoring"
+              className="w-10 h-10 object-contain"
+            />
+            <div className="relative">
               <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#b38867]"
-                placeholder="Alamat Email"
-                required
+                type="text"
+                placeholder="Cari Program"
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#b38867] w-64"
               />
-            </div>
-
-            {/* Password + toggle */}
-            <div className="mb-4 relative">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#b38867]"
-                placeholder="Password"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-9 text-sm text-gray-500 hover:text-[#b38867]"
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+                stroke="gray"
+                className="absolute left-3 top-2.5 w-5 h-5"
               >
-                {showPassword ? 'Sembunyikan' : 'Lihat'}
-              </button>
-            </div>
-
-            {/* Remember + Lupa */}
-            <div className="flex items-center justify-between mb-4">
-              <label className="flex items-center text-sm text-gray-600">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={() => setRememberMe(!rememberMe)}
-                  className="h-4 w-4 mr-2 text-[#b38867]"
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 21l-4.35-4.35m0 0a7.5 7.5 0 1110.6-10.6 7.5 7.5 0 01-10.6 10.6z"
                 />
-                Ingat Saya
-              </label>
-              <a href="#" className="text-sm text-[#b38867] hover:underline">Lupa Password?</a>
+              </svg>
             </div>
+          </div>
 
-            {errorMessage && <p className="text-red-500 text-sm mb-2">{errorMessage}</p>}
+          {/* Menu Navigasi */}
+          <nav className="flex items-center gap-8 text-sm font-medium text-gray-700">
+            <a href="/program" className="hover:text-[#b38867]">
+              Program
+            </a>
+            <a href="/langganan" className="hover:text-[#b38867]">
+              Langganan
+            </a>
+            <a href="/elearning" className="hover:text-[#b38867]">
+              E-Learning
+            </a>
+          </nav>
 
-            {/* Tombol utama */}
-            <button
-              type="submit"
-              className="w-full py-3 mt-2 bg-[#b38867] text-white font-semibold rounded-lg hover:bg-[#a27355]"
+          {/* Tombol Aksi */}
+          <div className="flex items-center gap-3">
+            <a
+              href="/register"
+              className="px-5 py-2 border border-[#b38867] text-[#b38867] rounded-lg text-sm font-semibold hover:bg-[#b38867] hover:text-white transition"
+            >
+              Daftar
+            </a>
+            <a
+              href="/login"
+              className="px-5 py-2 bg-[#b38867] text-white rounded-lg text-sm font-semibold hover:bg-[#a27355] transition"
             >
               Masuk
-            </button>
-
-            {/* Divider */}
-            <div className="flex items-center my-6">
-              <div className="grow border-t border-gray-200"></div>
-              <span className="mx-3 text-gray-400 text-sm">atau</span>
-              <div className="grow border-t border-gray-200"></div>
-            </div>
-
-            {/* Tombol Google konsisten */}
-            <button
-              type="button"
-              className="w-full py-3 border border-gray-300 rounded-lg flex items-center justify-center gap-3 
-                     font-medium text-gray-700 bg-white hover:bg-gray-50 transition"
-            >
-              <img src="/assets/google.png" alt="Google Logo" className="w-5 h-5" />
-              <span>Daftar dengan Google</span>
-            </button>
-          </form>
-
-          <p className="text-center text-sm text-gray-500 mt-6">
-            Belum punya akun?{' '}
-            <a href="/register" className="text-[#b38867] hover:underline">Daftar Sekarang</a>
-          </p>
+            </a>
+          </div>
         </div>
-      </div>
-    </main>
+      </header>
 
+      {/* Main content */}
+      <main className="grow flex items-center justify-center py-14 bg-gray-50">
+        <div className="w-full max-w-lg px-4">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_6px_24px_rgba(0,0,0,0.06)] p-8 md:p-10">
+            <h2 className="text-2xl font-bold text-center mb-2">Masuk</h2>
+
+            <form onSubmit={handleSubmit}>
+              {/* Email */}
+              <div className="mb-4">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#b38867]"
+                  placeholder="Email"
+                  required
+                />
+              </div>
+
+              {/* Password + toggle */}
+              <div className="mb-4 relative">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#b38867]"
+                  placeholder="Password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-9 text-sm text-gray-500 hover:text-[#b38867]"
+                >
+                  {showPassword ? 'Sembunyikan' : 'Lihat'}
+                </button>
+              </div>
+
+              {/* Remember + Lupa */}
+              <div className="flex items-center justify-between mb-4">
+                <label className="flex items-center text-sm text-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={() => setRememberMe(!rememberMe)}
+                    className="h-4 w-4 mr-2 text-[#b38867]"
+                  />
+                  Remember Me
+                </label>
+                <a href="#" className="text-sm text-[#b38867] hover:underline">
+                  Lupa Password?
+                </a>
+              </div>
+
+              {errorMessage && (
+                <p className="text-red-500 text-sm mb-2">{errorMessage}</p>
+              )}
+
+              {/* Tombol utama */}
+              <button
+                type="submit"
+                className="w-full py-3 mt-2 bg-[#b38867] text-white font-semibold rounded-lg hover:bg-[#a27355]"
+              >
+                Masuk
+              </button>
+
+              {/* Divider */}
+              <div className="flex items-center my-6">
+                <div className="grow border-t border-gray-200"></div>
+                <span className="mx-3 text-gray-400 text-sm">atau</span>
+                <div className="grow border-t border-gray-200"></div>
+              </div>
+
+              {/* Tombol Google */}
+              <button
+                type="button"
+                className="w-full py-2.5 border border-gray-300 rounded-lg flex items-center justify-center gap-2 
+             font-medium text-gray-700 bg-white hover:bg-gray-50 transition"
+              >
+                <img
+                  src="/Front-end/assets/google.png"
+                  alt="Google Logo"
+                  className="w-4 h-4 object-contain"
+                />
+                <span>Daftar Dengan Google</span>
+              </button>
+            </form>
+
+            <p className="text-center text-sm text-gray-500 mt-6">
+              Sudah Punya Akun?{' '}
+              <a href="/register" className="text-[#b38867] hover:underline">
+                Masuk Sekarang
+              </a>
+            </p>
+          </div>
+        </div>
+      </main>
+    </div>
   );
 };
 
