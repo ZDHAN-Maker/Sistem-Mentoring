@@ -53,158 +53,107 @@ const Login = () => {
   };
 
   return (
-    <div className='min-h-screen flex flex-col bg-white'>
-      {/* Navbar sederhana */}
-      <header className='flex items-center justify-between px-10 py-4 border-b border-gray-200'>
-        <div className='flex items-center gap-3'>
-          <img
-            src='/assets/Logo Sistem Mentoring.png'
-            alt='Logo'
-            className='w-10 h-10'
-          />
-          <input
-            type='text'
-            placeholder='Cari Program'
-            className='border border-gray-300 rounded-md px-3 py-1 text-sm w-64'
-          />
-        </div>
-
-        <nav className='flex items-center gap-8 text-sm font-medium text-gray-700'>
-          <a href='#' className='hover:text-[#b38867]'>
-            Program
-          </a>
-          <a href='#' className='hover:text-[#b38867]'>
-            Langganan
-          </a>
-          <a href='#' className='hover:text-[#b38867]'>
-            E-Learning
-          </a>
-        </nav>
-
-        <div className='flex gap-4'>
-          <a
-            href='/register'
-            className='px-4 py-2 border border-[#b38867] rounded-md text-[#b38867] hover:bg-[#b38867] hover:text-white transition'
-          >
-            Daftar
-          </a>
-          <a
-            href='/login'
-            className='px-4 py-2 bg-[#b38867] text-white rounded-md hover:bg-[#a27355] transition'
-          >
-            Masuk
-          </a>
-        </div>
-      </header>
-
-      {/* Form Login */}
-      <main className='grow flex justify-center items-center'>
-        <div className='w-full max-w-md bg-white p-8'>
-          <h2 className='text-2xl font-bold text-center mb-2'>
+    <main className="grow flex items-center justify-center py-14 bg-gray-50">
+      {/* Card wrapper */}
+      <div className="w-full max-w-lg px-4">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_6px_24px_rgba(0,0,0,0.06)] p-8 md:p-10">
+          <h2 className="text-2xl font-bold text-center mb-2">
             Masuk ke Akun Mentoring
           </h2>
-          <p className='text-center text-gray-500 mb-6'>
+          <p className="text-center text-gray-500 mb-6">
             Silakan masukkan kredensial Anda
           </p>
 
           <form onSubmit={handleSubmit}>
-            <div className='mb-4'>
-              <label
-                htmlFor='email'
-                className='block text-sm font-medium text-gray-700 mb-1'
-              >
+            {/* Email */}
+            <div className="mb-4">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email
               </label>
               <input
-                id='email'
-                type='email'
+                id="email"
+                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className='w-full p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#b38867]'
-                placeholder='Alamat Email'
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#b38867]"
+                placeholder="Alamat Email"
                 required
               />
             </div>
 
-            <div className='mb-4 relative'>
-              <label
-                htmlFor='password'
-                className='block text-sm font-medium text-gray-700 mb-1'
-              >
+            {/* Password + toggle */}
+            <div className="mb-4 relative">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password
               </label>
               <input
-                id='password'
+                id="password"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className='w-full p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#b38867]'
-                placeholder='Password'
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#b38867]"
+                placeholder="Password"
                 required
               />
               <button
-                type='button'
+                type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className='absolute right-3 top-9 text-sm text-gray-500 hover:text-[#b38867]'
+                className="absolute right-3 top-9 text-sm text-gray-500 hover:text-[#b38867]"
               >
                 {showPassword ? 'Sembunyikan' : 'Lihat'}
               </button>
             </div>
 
-            <div className='flex items-center justify-between mb-4'>
-              <label className='flex items-center text-sm text-gray-600'>
+            {/* Remember + Lupa */}
+            <div className="flex items-center justify-between mb-4">
+              <label className="flex items-center text-sm text-gray-600">
                 <input
-                  type='checkbox'
+                  type="checkbox"
                   checked={rememberMe}
                   onChange={() => setRememberMe(!rememberMe)}
-                  className='h-4 w-4 mr-2 text-[#b38867]'
+                  className="h-4 w-4 mr-2 text-[#b38867]"
                 />
                 Ingat Saya
               </label>
-              <a href='#' className='text-sm text-[#b38867] hover:underline'>
-                Lupa Password?
-              </a>
+              <a href="#" className="text-sm text-[#b38867] hover:underline">Lupa Password?</a>
             </div>
 
-            {errorMessage && (
-              <p className='text-red-500 text-sm mb-2'>{errorMessage}</p>
-            )}
+            {errorMessage && <p className="text-red-500 text-sm mb-2">{errorMessage}</p>}
 
+            {/* Tombol utama */}
             <button
-              type='submit'
-              className='w-full py-3 mt-2 bg-[#b38867] text-white font-semibold rounded-lg hover:bg-[#a27355]'
+              type="submit"
+              className="w-full py-3 mt-2 bg-[#b38867] text-white font-semibold rounded-lg hover:bg-[#a27355]"
             >
               Masuk
             </button>
 
-            <div className='flex items-center my-6'>
-              <div className='grow border-t border-gray-300'></div>
-              <span className='mx-3 text-gray-400 text-sm'>atau</span>
-              <div className='grow border-t border-gray-300'></div>
+            {/* Divider */}
+            <div className="flex items-center my-6">
+              <div className="grow border-t border-gray-200"></div>
+              <span className="mx-3 text-gray-400 text-sm">atau</span>
+              <div className="grow border-t border-gray-200"></div>
             </div>
 
+            {/* Tombol Google konsisten */}
             <button
-              type='button'
-              className='w-full py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-100 flex items-center justify-center'
+              type="button"
+              className="w-full py-3 border border-gray-300 rounded-lg flex items-center justify-center gap-3 
+                     font-medium text-gray-700 bg-white hover:bg-gray-50 transition"
             >
-              <img
-                src='https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png'
-                alt='Google Logo'
-                className='inline-block w-5 mr-3'
-              />
-              Masuk Dengan Google
+              <img src="/assets/google.png" alt="Google Logo" className="w-5 h-5" />
+              <span>Daftar dengan Google</span>
             </button>
           </form>
 
-          <p className='text-center text-sm text-gray-500 mt-6'>
+          <p className="text-center text-sm text-gray-500 mt-6">
             Belum punya akun?{' '}
-            <a href='/register' className='text-[#b38867] hover:underline'>
-              Daftar Sekarang
-            </a>
+            <a href="/register" className="text-[#b38867] hover:underline">Daftar Sekarang</a>
           </p>
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
+
   );
 };
 
