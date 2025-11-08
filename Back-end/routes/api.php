@@ -13,7 +13,9 @@ Route::middleware('api')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
     Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
+    Route::middleware('auth:sanctum')->get('/users', [AuthController::class, 'getUser']);
 });
+
 // Dashboard
 Route::middleware('auth:sanctum')->get('/dashboard', [DashboardController::class, 'index']);
 

@@ -1,63 +1,62 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { api } from '../axiosInstance';
-import { useAuth } from '../context/useAuth';
-import Header from '../components/Header';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { api } from "../axiosInstance"; // Pastikan api sudah diset withCredentials: true
+import { useAuth } from "../context/useAuth";
+import Header from "../components/Header";
+
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { setAuthData } = useAuth(); // ubah jadi penyimpan state auth global
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!email || !password) {
-      setErrorMessage('Email dan password wajib diisi!');
-      return;
-    }
-
-    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-    if (!emailRegex.test(email)) {
-      setErrorMessage('Format email tidak valid!');
+      setErrorMessage("Email dan password wajib diisi!");
       return;
     }
 
     try {
-      const response = await api.post('/login', { email, password });
+      // 🔹 Kirim request login (cookie disimpan otomatis oleh browser)
+      const response = await api.post(
+        "/login",
+        { email, password },
+        { withCredentials: true } // wajib untuk cookie HttpOnly
+      );
 
-      console.log('Response login:', response.data);
+      // Tidak perlu simpan token, cukup ambil role & user
+      const user = response.data.user;
+      const role = user?.role;
 
-      const token = response.data.token || response.data.access_token;
-      const role = response.data.user?.role || response.data.role;
+      if (!role) throw new Error("Role tidak ditemukan dalam response API");
 
-      if (!token || !role) {
-        throw new Error('Token atau role tidak ditemukan dalam response API');
-      }
+      // Simpan data user di context global (bukan token)
+      setAuthData({ isAuthenticated: true, role, user });
 
-      login(token, role);
+      // 🔹 Redirect berdasarkan role
+      if (role === "admin") navigate("/admin-dashboard");
+      else if (role === "mentor") navigate("/mentor-dashboard");
+      else if (role === "mentee") navigate("/mentee-dashboard");
+      else setErrorMessage("Role tidak dikenali!");
 
-      if (role === 'admin') navigate('/admin-dashboard');
-      else if (role === 'mentor') navigate('/mentor-dashboard');
-      else if (role === 'mentee') navigate('/mentee-dashboard');
-      else setErrorMessage('Role tidak dikenali!');
     } catch (error) {
-      console.error('Error login:', error);
+      console.error("Error login:", error);
       setErrorMessage(
-        error.response?.data?.message || 'Login gagal! Periksa kredensial Anda.'
+        error.response?.data?.message ||
+          "Login gagal! Periksa email atau password Anda."
       );
     }
   };
 
   return (
-     <div className="min-h-screen flex flex-col bg-white">
-      {/* 🔹 Gunakan komponen Header */}
+    <div className="min-h-screen flex flex-col bg-white">
       <Header />
 
-      {/* Main content */}
       <main className="grow flex items-center justify-center py-14 bg-gray-50">
         <div className="w-full max-w-lg px-4">
           <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_6px_24px_rgba(0,0,0,0.06)] p-8 md:p-10">
@@ -66,10 +65,7 @@ const Login = () => {
             <form onSubmit={handleSubmit}>
               {/* Email */}
               <div className="mb-4">
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                   Email
                 </label>
                 <input
@@ -83,17 +79,14 @@ const Login = () => {
                 />
               </div>
 
-              {/* Password + toggle */}
+              {/* Password */}
               <div className="mb-4 relative">
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                   Password
                 </label>
                 <input
                   id="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#b38867]"
@@ -105,11 +98,11 @@ const Login = () => {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-9 text-sm text-gray-500 hover:text-[#b38867]"
                 >
-                  {showPassword ? 'Sembunyikan' : 'Lihat'}
+                  {showPassword ? "Sembunyikan" : "Lihat"}
                 </button>
               </div>
 
-              {/* Remember + Lupa */}
+              {/* Remember me */}
               <div className="flex items-center justify-between mb-4">
                 <label className="flex items-center text-sm text-gray-600">
                   <input
@@ -129,7 +122,6 @@ const Login = () => {
                 <p className="text-red-500 text-sm mb-2">{errorMessage}</p>
               )}
 
-              {/* Tombol utama */}
               <button
                 type="submit"
                 className="w-full py-3 mt-2 bg-[#b38867] text-white font-semibold rounded-lg hover:bg-[#a27355]"
@@ -137,30 +129,23 @@ const Login = () => {
                 Masuk
               </button>
 
-              {/* Divider */}
               <div className="flex items-center my-6">
                 <div className="grow border-t border-gray-200"></div>
                 <span className="mx-3 text-gray-400 text-sm">atau</span>
                 <div className="grow border-t border-gray-200"></div>
               </div>
 
-              {/* Tombol Google */}
               <button
                 type="button"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg flex items-center justify-center gap-3 
-             font-medium text-gray-700 bg-white hover:bg-gray-50 transition"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg flex items-center justify-center gap-3 font-medium text-gray-700 bg-white hover:bg-gray-50 transition"
               >
-                <img
-                  src="/assets/google.png"
-                  alt="Google Logo"
-                  className="w-7 h-7 object-contain"
-                />
+                <img src="/assets/google.png" alt="Google Logo" className="w-7 h-7 object-contain" />
                 <span className="text-base">Masuk Dengan Google</span>
               </button>
             </form>
 
             <p className="text-center text-sm text-gray-500 mt-6">
-              Belum punya akun?{' '}
+              Belum punya akun?{" "}
               <a href="/register" className="text-[#b38867] hover:underline">
                 Daftar Sekarang
               </a>

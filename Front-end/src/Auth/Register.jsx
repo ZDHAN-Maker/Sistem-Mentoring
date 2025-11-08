@@ -1,24 +1,24 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { api } from '../axiosInstance'
-import { useAuth } from '../context/useAuth'
-import Header from '../components/Header' // Pastikan kamu punya komponen ini
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { api } from '../axiosInstance'; // Pastikan api sudah dikonfigurasi dengan withCredentials: true
+import { useAuth } from '../context/useAuth';
+import Header from '../components/Header'; // Pastikan kamu punya komponen ini
 
 const Register = () => {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [passwordConfirmation, setPasswordConfirmation] = useState('')
-  const [errorMessage, setErrorMessage] = useState('')
-  const navigate = useNavigate()
-  const { registerUser } = useAuth() // Fungsi dari context
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const navigate = useNavigate();
+  const { registerUser } = useAuth(); // Fungsi dari context
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (password !== passwordConfirmation) {
-      setErrorMessage('Password dan konfirmasi password tidak cocok.')
-      return
+      setErrorMessage('Password dan konfirmasi password tidak cocok.');
+      return;
     }
 
     try {
@@ -27,24 +27,28 @@ const Register = () => {
         email,
         password,
         password_confirmation: passwordConfirmation,
-        role: 'mentee'
-      })
+        role: 'mentee', // Mengirimkan role 'mentee' saat register
+      });
 
+      // User data tidak perlu mengambil token secara eksplisit karena token sudah disimpan di cookie HttpOnly
       const userData = {
         name: response.data.user?.name || name,
         email: response.data.user?.email || email,
-        role: 'mentee'
-      }
+        role: 'mentee', // Menyimpan role sebagai mentee
+      };
 
-      registerUser(userData)
-      navigate('/login')
+      // Register user dan simpan di context
+      registerUser(userData);
+
+      // Redirect ke login page setelah register
+      navigate('/login');
     } catch (error) {
-      console.error('Error register:', error)
+      console.error('Error register:', error);
       setErrorMessage(
         error.response?.data?.message || 'Pendaftaran gagal! Silakan coba lagi.'
-      )
+      );
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -156,7 +160,7 @@ const Register = () => {
         </div>
       </main>
     </div>
-  )
-}
+  );
+};
 
-export default Register
+export default Register;

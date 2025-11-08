@@ -1,6 +1,5 @@
 <?php
 
-// app/Http/Controllers/AuthController.php
 namespace App\Http\Controllers;
 
 use App\Services\AuthService;
@@ -18,7 +17,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Register user baru
+     * REGISTER
      */
     public function register(Request $request)
     {
@@ -29,41 +28,73 @@ class AuthController extends Controller
             'role'     => 'in:admin,mentor,mentee'
         ]);
 
-        $result = $this->authService->register($request->all());
+        $user = $this->authService->register($request->all());
+
+        // Login langsung setelah register (opsional)
+        Auth::login($user);
+
+        // Regenerasi session untuk keamanan
+        $request->session()->regenerate();
 
         return response()->json([
             'message' => 'Registrasi berhasil',
-            'user'    => $result['user'],
-        ])->cookie($result['cookie']); // Kirim cookie
+            'user'    => $user,
+        ]);
     }
 
     /**
-     * Login user
+     * LOGIN
+     * Mode: Cookie-based (HTTP-only) — tidak kirim token di body.
      */
     public function login(Request $request)
     {
         $request->validate([
             'email'    => 'required|string|email',
-            'password' => 'required|string'
+            'password' => 'required|string',
         ]);
 
-        $result = $this->authService->login($request->only('email', 'password'));
+        if (!Auth::attempt($request->only('email', 'password'))) {
+            return response()->json(['message' => 'Email atau password salah'], 401);
+        }
 
-        return response()->json([  // Response dalam format JSON
+        // Regenerasi session agar aman dari session fixation
+        $request->session()->regenerate();
+
+        return response()->json([
             'message' => 'Login berhasil',
-            'user'    => $result['user'],
-        ])->cookie($result['cookie']); // Kirim cookie
+            'user'    => Auth::user(),
+        ]);
     }
 
     /**
-     * Logout user
+     * LOGOUT
      */
     public function logout(Request $request)
     {
-        $this->authService->logout($request->user());
+        Auth::guard('web')->logout();
+
+        // Hapus session & cookie Sanctum
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
         return response()->json([
             'message' => 'Logout berhasil'
-        ])->cookie(Cookie::forget('token')); 
+        ]);
+    }
+
+    /**
+     * GET CURRENT USER
+     */
+    public function getUser(Request $request)
+    {
+        if (Auth::check()) {
+            return response()->json([
+                'auth' => true,
+                'role' => Auth::user()->role,
+                'user' => Auth::user(),
+            ]);
+        }
+
+        return response()->json(['auth' => false]);
     }
 }
