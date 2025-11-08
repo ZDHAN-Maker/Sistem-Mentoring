@@ -1,26 +1,13 @@
 // src/App.jsx
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "./context/useAuth";
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './context/useAuth';
 
-import Login from "./Auth/Login";
-import Register from "./Auth/Register";
-import DashboardAdmin from "./pages/Role/Admin/DashboardAdmin";
-import DashboardMentor from "./pages/Role/Mentor/DashboardMentor";
-import DashboardMentee from "./pages/Role/Mentee/DashboardMentee";
-
-const ProtectedRoute = ({ children, allowedRole }) => {
-  const { auth, role } = useAuth();
-
-  if (!auth) {
-    return <Navigate to="/login" />;
-  }
-
-  if (allowedRole && role !== allowedRole) {
-    return <Navigate to="/login" />;
-  }
-
-  return children;
-};
+import Login from './Auth/Login';
+import Register from './Auth/Register';
+import DashboardAdmin from './pages/Role/Admin/DashboardAdmin';
+import DashboardMentor from './pages/Role/Mentor/DashboardMentor';
+import DashboardMentee from './pages/Role/Mentee/DashboardMentee';
+import ProtectedRoute from './components/PrivateRoute';
 
 const App = () => {
   const { auth, role } = useAuth();
@@ -29,40 +16,43 @@ const App = () => {
     <Router>
       <Routes>
         <Route
-          path="/"
+          path='/'
           element={
             auth ? (
               <Navigate to={`/${role}-dashboard`} />
             ) : (
-              <Navigate to="/login" />
+              <Navigate to='/login' />
             )
           }
         />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path='/login' element={<Login />} />
+        <Route path='/register' element={<Register />} />
 
+        {/* Admin Dashboard */}
         <Route
-          path="/admin-dashboard"
+          path='/admin-dashboard'
           element={
-            <ProtectedRoute allowedRole="admin">
+            <ProtectedRoute allowedRole='admin'>
               <DashboardAdmin />
             </ProtectedRoute>
           }
         />
 
+        {/* Mentor Dashboard */}
         <Route
-          path="/mentor-dashboard"
+          path='/mentor-dashboard'
           element={
-            <ProtectedRoute allowedRole="mentor">
+            <ProtectedRoute allowedRole='mentor'>
               <DashboardMentor />
             </ProtectedRoute>
           }
         />
 
+        {/* Mentee Dashboard */}
         <Route
-          path="/mentee-dashboard"
+          path='/mentee-dashboard'
           element={
-            <ProtectedRoute allowedRole="mentee">
+            <ProtectedRoute allowedRole='mentee'>
               <DashboardMentee />
             </ProtectedRoute>
           }

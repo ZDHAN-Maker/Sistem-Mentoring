@@ -1,10 +1,11 @@
+// src/components/Sidebar.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 
 const Sidebar = () => {
   const navigate = useNavigate();
-  const { role } = useAuth();
+  const { role } = useAuth(); // Ambil role dari context
 
   const handleNavigation = (path) => {
     navigate(path);
@@ -32,7 +33,7 @@ const Sidebar = () => {
           <li
             className="bg-[#b38867] text-white rounded-md px-3 py-2 mb-2 cursor-pointer"
             onClick={() =>
-              handleNavigation(role === 'mentor' ? '/dashboard' : '/mentee/dashboard')
+              handleNavigation(role === 'mentor' ? '/mentor-dashboard' : '/mentee-dashboard')
             }
           >
             Dashboard
