@@ -1,11 +1,13 @@
 <?php
 
+// app/Services/AuthService.php
 namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Cookie;
 
 class AuthService
 {
@@ -33,9 +35,13 @@ class AuthService
         // Auto-login setelah register → buat token Sanctum
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        // Setel token ke cookie HttpOnly
+        $cookie = cookie('token', $token, 60, null, null, true, true); // secure dan HttpOnly
+
         return [
             'user'  => $user,
             'token' => $token,
+            'cookie' => $cookie, // Kirim cookie
         ];
     }
 
@@ -55,9 +61,13 @@ class AuthService
         // Buat token baru
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        // Setel token ke cookie HttpOnly
+        $cookie = cookie('token', $token, 60, null, null, true, true); // secure dan HttpOnly
+
         return [
             'user'  => $user,
             'token' => $token,
+            'cookie' => $cookie, // Kirim cookie
         ];
     }
 
@@ -68,6 +78,9 @@ class AuthService
     {
         // Hapus semua token milik user
         $user->tokens()->delete();
+
+        // Hapus cookie token
+        Cookie::queue(Cookie::forget('token'));
 
         return true;
     }

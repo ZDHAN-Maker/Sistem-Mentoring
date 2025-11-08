@@ -8,19 +8,14 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Tambahkan ini untuk memastikan cookie dikirim
 });
 
-// Menambahkan interceptor untuk menyertakan token di setiap request
+// Menggunakan interceptor untuk memastikan semua request menggunakan cookie
 api.interceptors.request.use((config) => {
-  // Mengambil token dari localStorage
-  const token = localStorage.getItem("token");
-  if (token) {
-    // Jika token ada, tambahkan ke header Authorization
-    config.headers['Authorization'] = `Bearer ${token}`;
-  }
+  // Dengan menggunakan cookie HttpOnly, kita tidak perlu menambahkan token ke header
   return config;
 }, (error) => {
-  // Menangani error request jika ada
   return Promise.reject(error);
 });
 

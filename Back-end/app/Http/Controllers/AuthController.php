@@ -1,10 +1,12 @@
 <?php
 
+// app/Http/Controllers/AuthController.php
 namespace App\Http\Controllers;
 
 use App\Services\AuthService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 
 class AuthController extends Controller
 {
@@ -32,8 +34,7 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Registrasi berhasil',
             'user'    => $result['user'],
-            'token'   => $result['token']
-        ], 201);
+        ])->cookie($result['cookie']); // Kirim cookie
     }
 
     /**
@@ -51,10 +52,8 @@ class AuthController extends Controller
         return response()->json([  // Response dalam format JSON
             'message' => 'Login berhasil',
             'user'    => $result['user'],
-            'token'   => $result['token']
-        ]);
+        ])->cookie($result['cookie']); // Kirim cookie
     }
-
 
     /**
      * Logout user
@@ -65,6 +64,6 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Logout berhasil'
-        ]);
+        ])->cookie(Cookie::forget('token')); 
     }
 }
