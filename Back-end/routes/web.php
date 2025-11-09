@@ -3,8 +3,10 @@
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/sanctum/csrf-cookie', function () {
-    return response()->json(['csrf' => csrf_token()]);
+Route::group(['middleware' => 'web'], function () {
+    Route::get('/sanctum/csrf-cookie', function () {
+        return response()->noContent();
+    });
 });
 
 Route::post('/login', [AuthController::class, 'login']);

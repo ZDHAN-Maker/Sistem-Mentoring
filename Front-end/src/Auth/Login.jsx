@@ -31,14 +31,14 @@ const Login = () => {
       // 2️⃣ Kirim login request
       const loginResponse = await api.post(
         "/login",
-        { email, password, rememberMe },
+        { email, password, remember: rememberMe },
         { withCredentials: true }
       );
 
       console.log("Login sukses:", loginResponse.data);
 
       // 3️⃣ Ambil data user aktif
-      const userResponse = await api.get("/user");
+      const userResponse = await api.get("/api/user");
       const user = userResponse.data.user || userResponse.data;
       const role = user.role;
 

@@ -37,7 +37,7 @@ const Register = () => {
       );
 
       // 3️⃣ Ambil user aktif setelah auto-login
-      const userResponse = await api.get("/user");
+      const userResponse = await api.get("/api/user");
       const user = userResponse.data.user || userResponse.data;
       const role = user.role;
 

@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }) => {
     setRole(role);
     setToken(token);
     localStorage.setItem('role', role);
-    localStorage.setItem('token', token);
+    if (token) localStorage.setItem('token', token);
   };
 
   const logout = () => {
@@ -32,15 +32,21 @@ export const AuthProvider = ({ children }) => {
     setRole('mentee');
   };
 
+  const setAuthData = ({ isAuthenticated, user, role }) => {
+    setAuth(isAuthenticated);
+    setUser(user);
+    setRole(role);
+  };
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        await api.get('/sanctum/csrf-cookie'); // tambahkan ini
-        const response = await api.get('/api/users');
-        if (response.data.auth) {
+        await api.get('/sanctum/csrf-cookie');
+        const response = await api.get('/api/user'); // ✅ fix disini
+        if (response.data) {
           setAuth(true);
           setRole(response.data.role);
-          setUser(response.data.user);
+          setUser(response.data);
         } else {
           setAuth(false);
         }
@@ -49,13 +55,12 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    // Hanya panggil checkAuth jika token ada
     if (token) checkAuth();
   }, [token]);
 
   return (
     <AuthContext.Provider
-      value={{ auth, role, token, user, login, logout, registerUser, errorMessage }}
+      value={{ auth, role, token, user, login, logout, registerUser, errorMessage, setAuthData }}
     >
       {children}
     </AuthContext.Provider>
