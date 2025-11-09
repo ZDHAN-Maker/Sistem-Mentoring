@@ -36,7 +36,7 @@ class AuthService
         $token = $user->createToken('auth_token')->plainTextToken;
 
         // Setel token ke cookie HttpOnly
-        $cookie = cookie('token', $token, 60, null, null, true, true); // secure dan HttpOnly
+        $cookie = cookie('token', $token, 60, null, null, false, true); // secure dan HttpOnly
 
         return [
             'user'  => $user,
@@ -62,7 +62,7 @@ class AuthService
         $token = $user->createToken('auth_token')->plainTextToken;
 
         // Setel token ke cookie HttpOnly
-        $cookie = cookie('token', $token, 60, null, null, true, true); // secure dan HttpOnly
+        $cookie = cookie('token', $token, 60, null, null, false, true); // secure dan HttpOnly
 
         return [
             'user'  => $user,

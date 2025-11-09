@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../axiosInstance'; // Pastikan api sudah dikonfigurasi dengan withCredentials: true
+import { api } from '../axiosInstance'; // sudah withCredentials: true
 import { useAuth } from '../context/useAuth';
-import Header from '../components/Header'; // Pastikan kamu punya komponen ini
+import Header from '../components/Header';
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -11,7 +11,7 @@ const Register = () => {
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
-  const { registerUser } = useAuth(); // Fungsi dari context
+  const { setAuthData } = useAuth(); // ubah: pakai setter dari context auth
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,26 +22,31 @@ const Register = () => {
     }
 
     try {
-      const response = await api.post('/register', {
-        name,
-        email,
-        password,
-        password_confirmation: passwordConfirmation,
-        role: 'mentee', // Mengirimkan role 'mentee' saat register
-      });
+      // 🔹 Kirim request ke backend Laravel
+      const response = await api.post(
+        '/register',
+        {
+          name,
+          email,
+          password,
+          password_confirmation: passwordConfirmation,
+          role: 'mentee', // role default
+        },
+        { withCredentials: true } // penting agar cookie HttpOnly dikirim & disimpan
+      );
 
-      // User data tidak perlu mengambil token secara eksplisit karena token sudah disimpan di cookie HttpOnly
-      const userData = {
-        name: response.data.user?.name || name,
-        email: response.data.user?.email || email,
-        role: 'mentee', // Menyimpan role sebagai mentee
-      };
+      // Ambil data user dari response
+      const user = response.data.user;
+      const role = user?.role || 'mentee';
 
-      // Register user dan simpan di context
-      registerUser(userData);
+      // Simpan di context agar state global tahu user sudah login
+      setAuthData({ isAuthenticated: true, user, role });
 
-      // Redirect ke login page setelah register
-      navigate('/login');
+      // 🔹 Langsung arahkan ke dashboard (karena user sudah otomatis login setelah register)
+      if (role === 'admin') navigate('/admin-dashboard');
+      else if (role === 'mentor') navigate('/mentor-dashboard');
+      else navigate('/mentee-dashboard');
+
     } catch (error) {
       console.error('Error register:', error);
       setErrorMessage(
