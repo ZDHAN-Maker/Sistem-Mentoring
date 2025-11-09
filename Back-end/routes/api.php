@@ -9,10 +9,9 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TaskController;
 
 // Login, Register, Logout
-Route::middleware('auth:sanctum')->get('/users', [AuthController::class, 'getUser']);
-
-// Kalau masih ingin register via API (tanpa session), bisa tetap di sini:
-Route::post('/register', [AuthController::class, 'register']);
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return $request->user();
+});
 // Dashboard
 Route::middleware('auth:sanctum')->get('/dashboard', [DashboardController::class, 'index']);
 
