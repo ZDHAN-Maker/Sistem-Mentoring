@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "../axiosInstance"; // baseURL: http://127.0.0.1:8000, withCredentials: true
+import { api } from "../axiosInstance";
 import { useAuth } from "../context/useAuth";
 import Header from "../components/Header";
 
@@ -23,48 +23,58 @@ const Login = () => {
     }
 
     try {
-      // 1️⃣ Dapatkan CSRF cookie dulu (WAJIB sebelum login)
-      await api.get("/sanctum/csrf-cookie", { withCredentials: true });
+      // 1️⃣ Ambil CSRF cookie agar Laravel mengenali sesi
+      await api.get("/sanctum/csrf-cookie");
 
-      // 2️⃣ Kirim request login (gunakan credentials untuk cookie)
+      // 2️⃣ Kirim request login
       const loginResponse = await api.post(
         "/login",
-        { email, password, remember: rememberMe ? 1 : 0 },
+        { email, password, remember: rememberMe },
         { withCredentials: true }
       );
 
-      if (loginResponse.status !== 204 && loginResponse.status !== 200) {
-        throw new Error("Login gagal! Status tidak valid.");
+      // 3️⃣ Cek apakah berhasil login
+      if (![200, 204].includes(loginResponse.status)) {
+        throw new Error(`Login gagal (${loginResponse.status})`);
       }
 
-      // 3️⃣ Ambil user yang sedang login
-      const meResponse = await api.get("/api/users", { withCredentials: true });
-      const user = meResponse?.data?.user;
+      // 4️⃣ Ambil user yang sedang login
+      const userResponse = await api.get("/api/users");
+      const user = userResponse?.data?.user;
       const role = user?.role;
 
-      if (!role) {
-        throw new Error("Role tidak ditemukan dalam response API.");
+      if (!user || !role) {
+        throw new Error("Gagal mendapatkan data user dari server.");
       }
 
-      // 4️⃣ Simpan ke AuthContext (karena Sanctum pakai cookie, tidak perlu token)
+      // 5️⃣ Simpan ke Auth Context
       setAuthData({ isAuthenticated: true, role, user });
 
-      // 5️⃣ Redirect berdasarkan role
-      if (role === "admin") navigate("/admin-dashboard");
-      else if (role === "mentor") navigate("/mentor-dashboard");
-      else if (role === "mentee") navigate("/mentee-dashboard");
-      else setErrorMessage("Role tidak dikenali!");
+      // 6️⃣ Redirect berdasarkan role
+      switch (role) {
+        case "admin":
+          navigate("/admin-dashboard");
+          break;
+        case "mentor":
+          navigate("/mentor-dashboard");
+          break;
+        case "mentee":
+          navigate("/mentee-dashboard");
+          break;
+        default:
+          setErrorMessage("Role tidak dikenali!");
+      }
 
     } catch (error) {
-      console.error("Error login:", error);
+      console.error("Login Error:", error);
 
-      // Tangkap pesan error yang berguna
+      // Ambil pesan error dari response Laravel jika ada
       const msg =
         error?.response?.data?.message ||
-        error?.message ||
-        "Login gagal! Periksa email atau password Anda.";
+        (error?.response?.status === 419
+          ? "CSRF token mismatch. Coba refresh halaman dan login ulang."
+          : error?.message || "Terjadi kesalahan saat login.");
 
-      // Tampilkan pesan di layar
       setErrorMessage(msg);
     }
   };
@@ -81,10 +91,7 @@ const Login = () => {
             <form onSubmit={handleSubmit}>
               {/* Email */}
               <div className="mb-4">
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                   Email
                 </label>
                 <input
@@ -100,10 +107,7 @@ const Login = () => {
 
               {/* Password */}
               <div className="mb-4 relative">
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                   Password
                 </label>
                 <input

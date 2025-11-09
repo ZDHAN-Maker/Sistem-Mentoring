@@ -4,11 +4,10 @@
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('web')->group(function () {
-    // Register via session (auto-login) — letakkan di web agar session tersedia
-    Route::post('/register', [AuthController::class, 'register']);
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
-    // Login/Logout via session cookie
+Route::middleware(['web', EnsureFrontendRequestsAreStateful::class])->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth');
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/register', [AuthController::class, 'register']);
 });
