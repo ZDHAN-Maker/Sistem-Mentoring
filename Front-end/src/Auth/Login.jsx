@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "../axiosInstance"; // Pastikan api sudah diset withCredentials: true
+import { api } from "../axiosInstance"; // baseURL: http://127.0.0.1:8000, withCredentials: true
 import { useAuth } from "../context/useAuth";
 import Header from "../components/Header";
 
@@ -11,10 +11,11 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
-  const { setAuthData } = useAuth(); // ubah jadi penyimpan state auth global
+  const { setAuthData } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage("");
 
     if (!email || !password) {
       setErrorMessage("Email dan password wajib diisi!");
@@ -22,23 +23,29 @@ const Login = () => {
     }
 
     try {
-      // 🔹 Kirim request login (cookie disimpan otomatis oleh browser)
-      const response = await api.post(
+      // 1) Ambil CSRF cookie (WAJIB untuk Sanctum stateful)
+      await api.get("/sanctum/csrf-cookie");
+
+      // 2) Login ke route web (bukan /api/login)
+      await api.post(
         "/login",
-        { email, password },
-        { withCredentials: true } // wajib untuk cookie HttpOnly
+        { email, password, remember: rememberMe ? 1 : 0 },
+        { withCredentials: true }
       );
 
-      // Tidak perlu simpan token, cukup ambil role & user
-      const user = response.data.user;
+      // 3) Ambil user yang sudah terautentikasi (cookie otomatis terkirim)
+      const me = await api.get("/api/users", { withCredentials: true });
+      const user = me?.data?.user;
       const role = user?.role;
 
-      if (!role) throw new Error("Role tidak ditemukan dalam response API");
+      if (!role) {
+        throw new Error("Role tidak ditemukan dalam response API.");
+      }
 
-      // Simpan data user di context global (bukan token)
+      // 4) Simpan ke auth context (tanpa token)
       setAuthData({ isAuthenticated: true, role, user });
 
-      // 🔹 Redirect berdasarkan role
+      // 5) Redirect berdasarkan role
       if (role === "admin") navigate("/admin-dashboard");
       else if (role === "mentor") navigate("/mentor-dashboard");
       else if (role === "mentee") navigate("/mentee-dashboard");
@@ -46,10 +53,11 @@ const Login = () => {
 
     } catch (error) {
       console.error("Error login:", error);
-      setErrorMessage(
-        error.response?.data?.message ||
-          "Login gagal! Periksa email atau password Anda."
-      );
+      const msg =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Login gagal! Periksa email atau password Anda.";
+      setErrorMessage(msg);
     }
   };
 

@@ -17,7 +17,6 @@ class AuthController extends Controller
 
     /**
      * REGISTER (session-aware; auto login)
-     * Catatan: route ini harus di web.php (middleware web).
      */
     public function register(Request $request)
     {
@@ -52,7 +51,8 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        if (! Auth::attempt($credentials, true)) {
+        $remember = $request->boolean('remember', false);
+        if (! Auth::attempt($credentials, $remember)) {
             return response()->json(['message' => 'Email atau password salah'], 401);
         }
 
