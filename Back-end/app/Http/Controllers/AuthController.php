@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\AuthService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -16,7 +17,7 @@ class AuthController extends Controller
     }
 
     /**
-     * REGISTER (session-aware; auto login)
+     * REGISTER (session-based)
      */
     public function register(Request $request)
     {
@@ -27,22 +28,28 @@ class AuthController extends Controller
             'role'     => 'required|in:admin,mentor,mentee'
         ]);
 
-        // Service hanya membuat user (tanpa token)
-        $user = $this->authService->register($validated);
+        try {
+            // Service membuat user
+            $user = $this->authService->register($validated);
 
-        // Auto-login session
-        Auth::login($user);
-        $request->session()->regenerate();
+            // Auto-login session
+            Auth::login($user);
+            $request->session()->regenerate();
 
-        return response()->json([
-            'message' => 'Registrasi berhasil',
-            'user'    => $user,
-        ], 201);
+            return response()->json([
+                'message' => 'Registrasi berhasil',
+                'user'    => $user,
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Registrasi gagal',
+                'error' => $e->getMessage()
+            ], 422);
+        }
     }
 
     /**
-     * LOGIN (stateful cookie session)
-     * Route: web.php
+     * LOGIN (session-based)
      */
     public function login(Request $request)
     {
@@ -52,22 +59,29 @@ class AuthController extends Controller
         ]);
 
         $remember = $request->boolean('remember', false);
-        if (! Auth::attempt($credentials, $remember)) {
-            return response()->json(['message' => 'Email atau password salah'], 401);
+
+        // Cek credentials
+        $user = \App\Models\User::where('email', $credentials['email'])->first();
+
+        if (!$user || !Hash::check($credentials['password'], $user->password)) {
+            return response()->json([
+                'message' => 'Email atau password salah'
+            ], 401);
         }
 
-        // Mencegah session fixation
+        // Login manual - untuk session
+        Auth::login($user, $remember);
         $request->session()->regenerate();
 
         return response()->json([
             'message' => 'Login berhasil',
-            'user'    => Auth::user(),
+            'user'    => $user,
+            'role'    => $user->role,
         ], 200);
     }
 
     /**
-     * LOGOUT (stateful)
-     * Route: web.php
+     * LOGOUT (session-based)
      */
     public function logout(Request $request)
     {
@@ -75,19 +89,30 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return response()->json(['message' => 'Logout berhasil'], 200);
+        return response()->json([
+            'message' => 'Logout berhasil'
+        ], 200);
     }
 
     /**
-     * GET CURRENT USER (protected by auth:sanctum)
-     * Route: api.php
+     * GET CURRENT USER (session-based untuk SPA)
+     * Gunakan web middleware, bukan sanctum
      */
     public function getUser(Request $request)
     {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'auth' => false,
+                'message' => 'Not authenticated'
+            ], 401);
+        }
+
         return response()->json([
             'auth' => true,
-            'role' => $request->user()->role ?? null,
-            'user' => $request->user(),
+            'role' => $user->role,
+            'user' => $user,
         ], 200);
     }
 }

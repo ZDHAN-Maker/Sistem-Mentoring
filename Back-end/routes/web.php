@@ -1,13 +1,17 @@
 <?php
 
-
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 
-use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+// Session-based routes (web middleware)
+Route::middleware('web')->group(function () {
+    Route::get('/sanctum/csrf-cookie', function () {
+        return response()->json(['message' => 'CSRF cookie set']);
+    });
 
-Route::middleware(['web', EnsureFrontendRequestsAreStateful::class])->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/user', [AuthController::class, 'getUser']);
 });

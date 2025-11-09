@@ -7,14 +7,25 @@ use App\Http\Controllers\MenteeController;
 use App\Http\Controllers\MentorController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TaskController;
+use Illuminate\Http\Request;
 
-// Login, Register, Logout
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+// Public routes - TANPA middleware auth:sanctum
+Route::get('/sanctum/csrf-cookie', function () {
+    return response()->json(['message' => 'CSRF cookie set']);
 });
-// Dashboard
-Route::middleware('auth:sanctum')->get('/dashboard', [DashboardController::class, 'index']);
 
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
+
+// Protected routes - DENGAN middleware auth:sanctum
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user', [AuthController::class, 'getUser']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+
+    // Routes lainnya...
+    Route::get('/dashboard', [DashboardController::class, 'index']);
+    // ... sisanya
+});
 // Mentee Management
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/mentees', [MenteeController::class, 'index']);

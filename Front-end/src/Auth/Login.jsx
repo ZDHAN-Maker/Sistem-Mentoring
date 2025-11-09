@@ -14,18 +14,6 @@ const Login = () => {
   const navigate = useNavigate();
   const { setAuthData } = useAuth();
 
-  // Fungsi untuk mendapatkan CSRF cookie
-  const getCsrfCookie = async () => {
-    try {
-      const response = await api.get("/sanctum/csrf-cookie");
-      console.log("CSRF Cookie obtained:", response);
-      return response;
-    } catch (error) {
-      console.error("Failed to get CSRF cookie:", error);
-      throw error;
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage("");
@@ -38,37 +26,49 @@ const Login = () => {
     }
 
     try {
-      // 1️⃣ Dapatkan CSRF cookie dengan error handling
+      // 1️⃣ Dapatkan CSRF cookie dengan retry mechanism
       console.log("Getting CSRF cookie...");
-      await getCsrfCookie();
-
-      // Tunggu sebentar untuk memastikan cookie tersimpan
-      await new Promise(resolve => setTimeout(resolve, 100));
+      try {
+        await api.get("/sanctum/csrf-cookie", {
+          withCredentials: true,
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
+      } catch (csrfError) {
+        console.warn("CSRF cookie request warning:", csrfError);
+        // Continue anyway, sometimes this gives CORS warnings but still works
+      }
 
       // 2️⃣ Kirim request login
       console.log("Sending login request...");
-      const loginResponse = await api.post(
-        "/login",
-        {
-          email,
-          password,
-          remember: rememberMe,
+      const loginResponse = await api.post("/login", {
+        email,
+        password,
+        remember: rememberMe,
+      }, {
+        withCredentials: true,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
         }
-      );
+      });
 
-      console.log("Login response:", loginResponse);
+      console.log("Login successful:", loginResponse.data);
 
       // 3️⃣ Ambil data user
-      const userResponse = await api.get("/api/user");
-      const user = userResponse?.data;
-      const role = user?.role;
+      const userResponse = await api.get("/user", {
+        withCredentials: true
+      });
 
-      if (!user || !role) {
-        throw new Error("Gagal mendapatkan data user dari server.");
-      }
+      const userData = userResponse.data;
 
       // 4️⃣ Simpan ke context
-      setAuthData({ isAuthenticated: true, role, user });
+      setAuthData({
+        isAuthenticated: true,
+        role: userData.role || userData.user?.role,
+        user: userData.user || userData
+      });
 
       // 5️⃣ Redirect berdasarkan role
       const redirectPaths = {
@@ -77,35 +77,28 @@ const Login = () => {
         'mentee': '/mentee-dashboard'
       };
 
+      const role = userData.role || userData.user?.role;
       const path = redirectPaths[role] || '/';
       navigate(path);
 
     } catch (error) {
-      console.error("Login Error Details:", error);
+      console.error("Login Error:", error);
 
+      // Handle error seperti sebelumnya
       let errorMessage = "Terjadi kesalahan saat login.";
 
-      if (error.response) {
-        switch (error.response.status) {
-          case 419:
-            errorMessage = "Session expired. Silakan refresh halaman dan coba lagi.";
-            break;
-          case 401:
-            errorMessage = "Email atau password salah.";
-            break;
-          case 422:
-            errorMessage = error.response.data.message || "Data yang dimasukkan tidak valid.";
-            break;
-          case 429:
-            errorMessage = "Terlalu banyak percobaan login. Coba lagi nanti.";
-            break;
-          default:
-            errorMessage = error.response.data?.message || `Error ${error.response.status}`;
-        }
+      if (error.response?.status === 419) {
+        errorMessage = "Session expired. Silakan refresh halaman dan coba lagi.";
+        // Force refresh CSRF token
+        window.location.reload();
+      } else if (error.response?.status === 401) {
+        errorMessage = "Email atau password salah.";
+      } else if (error.response?.status === 422) {
+        errorMessage = error.response.data.message || "Data yang dimasukkan tidak valid.";
       } else if (error.request) {
         errorMessage = "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.";
       } else {
-        errorMessage = error.message || "Terjadi kesalahan tidak terduga.";
+        errorMessage = error.message;
       }
 
       setErrorMessage(errorMessage);
@@ -193,8 +186,8 @@ const Login = () => {
                 type="submit"
                 disabled={isLoading}
                 className={`w-full py-3 mt-2 font-semibold rounded-lg transition ${isLoading
-                    ? 'bg-gray-400 cursor-not-allowed text-gray-200'
-                    : 'bg-[#b38867] hover:bg-[#a27355] text-white'
+                  ? 'bg-gray-400 cursor-not-allowed text-gray-200'
+                  : 'bg-[#b38867] hover:bg-[#a27355] text-white'
                   }`}
               >
                 {isLoading ? (
