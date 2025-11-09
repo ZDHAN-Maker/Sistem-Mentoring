@@ -23,7 +23,7 @@ const Register = () => {
     try {
       await getCsrfCookie();
 
-      // 🔹 Kirim request register
+      // 🔹 Kirim request register tanpa menyimpan respons
       await api.post(
         '/register',
         {
