@@ -51,24 +51,22 @@ class AuthService
     public function login(array $credentials)
     {
         if (!Auth::attempt($credentials)) {
-            throw ValidationException::withMessages([
-                'email' => ['Email atau password salah.'],
-            ]);
+            return response()->json([
+                'message' => 'Email atau password salah.'
+            ], 401);
         }
 
         $user = Auth::user();
 
-        // Buat token baru
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        // Setel token ke cookie HttpOnly
-        $cookie = cookie('token', $token, 60, null, null, false, true); // secure dan HttpOnly
+        // Jangan secure untuk lokal
+        $cookie = cookie('token', $token, 60, null, null, false, true);
 
-        return [
-            'user'  => $user,
-            'token' => $token,
-            'cookie' => $cookie, // Kirim cookie
-        ];
+        return response()->json([
+            'message' => 'Login berhasil.',
+            'user' => $user,
+        ])->withCookie($cookie);
     }
 
     /**
