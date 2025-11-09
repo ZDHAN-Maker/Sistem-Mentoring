@@ -21,23 +21,6 @@ use App\Http\Controllers\TaskController;
 Route::middleware(['web', EnsureFrontendRequestsAreStateful::class])->group(function () {
 
     /**
-     * 🟢 CSRF Cookie Endpoint
-     * WAJIB dipanggil oleh frontend sebelum login/register (axios.get('/sanctum/csrf-cookie'))
-     * Jangan diganti atau override oleh route manual lain.
-     */
-    Route::get('/sanctum/csrf-cookie', function () {
-        return response()->json(['message' => 'CSRF Cookie set']);
-    });
-
-    /**
-     * 🟢 Authentication (session-based)
-     */
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/user', [AuthController::class, 'getUser'])->middleware('auth:sanctum');
-
-    /**
      * 🟢 Dashboard
      */
     Route::get('/dashboard', [DashboardController::class, 'index'])->middleware('auth:sanctum');

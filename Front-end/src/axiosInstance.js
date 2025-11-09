@@ -1,8 +1,8 @@
 import axios from "axios";
 
-// Gunakan baseURL yang konsisten
+// Axios instance khusus untuk Laravel Sanctum (session-based)
 const api = axios.create({
-  baseURL: "http://localhost:8000/api", // ubah ke localhost
+  baseURL: "http://localhost:8000/api",
   withCredentials: true,
   headers: {
     Accept: "application/json",
@@ -11,15 +11,26 @@ const api = axios.create({
   },
 });
 
-// Fungsi untuk mendapatkan CSRF cookie dengan error handling
+// Fungsi helper untuk memastikan CSRF cookie aktif
 export const getCsrfCookie = async () => {
   try {
-    const response = await api.get("/sanctum/csrf-cookie");
-    console.log("CSRF Cookie obtained:", response);
+    const response = await api.get("http://localhost:8000/sanctum/csrf-cookie", {
+      withCredentials: true,
+    });
+    console.log("✅ CSRF cookie obtained:", response.status);
     return response;
   } catch (error) {
-    console.error("Failed to get CSRF cookie:", error);
+    console.error("❌ Failed to get CSRF cookie:", error);
     throw error;
+  }
+};
+
+// (Optional) Logout helper – panggil API logout backend
+export const sanctumLogout = async () => {
+  try {
+    await api.post("/logout");
+  } catch (error) {
+    console.error("Logout error:", error);
   }
 };
 

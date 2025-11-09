@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../axiosInstance'; // baseURL: http://127.0.0.1:8000, withCredentials: true
+import { api ,getCsrfCookie } from '../axiosInstance';
 import { useAuth } from '../context/useAuth';
 import Header from '../components/Header';
 
@@ -15,49 +15,47 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMessage('');
+    setErrorMessage("");
 
     if (password !== passwordConfirmation) {
-      setErrorMessage('Password dan konfirmasi password tidak cocok.');
+      setErrorMessage("Password dan konfirmasi password tidak cocok.");
       return;
     }
 
     try {
-      // 1) Wajib ambil CSRF cookie dulu (Sanctum stateful)
-      await api.get('/sanctum/csrf-cookie');
+      await getCsrfCookie();
 
-      // 2) Register via route web (BUKAN /api/register)
       await api.post(
-        '/register',
+        "/register",
         {
           name,
           email,
           password,
-          password_confirmation: passwordConfirmation,
-          role: 'mentee', // default role
+          role: "mentee", // default
         },
         { withCredentials: true }
       );
 
-      // 3) Ambil user yang sudah auto-login (session aktif)
-      const me = await api.get('/api/users', { withCredentials: true });
-      const user = me?.data?.user;
-      const role = user?.role || 'mentee';
+      // 3️⃣ Ambil user aktif setelah auto-login
+      const userResponse = await api.get("/user");
+      const user = userResponse.data.user || userResponse.data;
+      const role = user.role;
 
-      // 4) Simpan di global auth (tanpa token)
+      // 4️⃣ Simpan di global context
       setAuthData({ isAuthenticated: true, user, role });
 
-      // 5) Redirect berdasarkan role
-      if (role === 'admin') navigate('/admin-dashboard');
-      else if (role === 'mentor') navigate('/mentor-dashboard');
-      else navigate('/mentee-dashboard');
-
+      // 5️⃣ Redirect sesuai role
+      const redirectPaths = {
+        admin: "/admin-dashboard",
+        mentor: "/mentor-dashboard",
+        mentee: "/mentee-dashboard",
+      };
+      navigate(redirectPaths[role] || "/");
     } catch (error) {
-      console.error('Error register:', error);
+      console.error("Error register:", error);
       const msg =
         error?.response?.data?.message ||
-        error?.message ||
-        'Pendaftaran gagal! Silakan coba lagi.';
+        "Pendaftaran gagal! Silakan coba lagi.";
       setErrorMessage(msg);
     }
   };

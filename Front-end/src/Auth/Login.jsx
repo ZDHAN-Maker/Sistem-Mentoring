@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "../axiosInstance";
+import { api,getCsrfCookie } from "../axiosInstance";
 import { useAuth } from "../context/useAuth";
 import Header from "../components/Header";
 
@@ -26,82 +26,49 @@ const Login = () => {
     }
 
     try {
-      // 1️⃣ Dapatkan CSRF cookie dengan retry mechanism
-      console.log("Getting CSRF cookie...");
-      try {
-        await api.get("/sanctum/csrf-cookie", {
-          withCredentials: true,
-          headers: {
-            'Accept': 'application/json',
-          }
-        });
-      } catch (csrfError) {
-        console.warn("CSRF cookie request warning:", csrfError);
-        // Continue anyway, sometimes this gives CORS warnings but still works
-      }
+      await getCsrfCookie();
 
-      // 2️⃣ Kirim request login
-      console.log("Sending login request...");
-      const loginResponse = await api.post("/login", {
-        email,
-        password,
-        remember: rememberMe,
-      }, {
-        withCredentials: true,
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        }
-      });
+      // 2️⃣ Kirim login request
+      const loginResponse = await api.post(
+        "/login",
+        { email, password, rememberMe },
+        { withCredentials: true }
+      );
 
-      console.log("Login successful:", loginResponse.data);
+      console.log("Login sukses:", loginResponse.data);
 
-      // 3️⃣ Ambil data user
-      const userResponse = await api.get("/user", {
-        withCredentials: true
-      });
+      // 3️⃣ Ambil data user aktif
+      const userResponse = await api.get("/user");
+      const user = userResponse.data.user || userResponse.data;
+      const role = user.role;
 
-      const userData = userResponse.data;
-
-      // 4️⃣ Simpan ke context
+      // 4️⃣ Simpan ke context global
       setAuthData({
         isAuthenticated: true,
-        role: userData.role || userData.user?.role,
-        user: userData.user || userData
+        user,
+        role,
       });
 
-      // 5️⃣ Redirect berdasarkan role
+      // 5️⃣ Redirect sesuai role
       const redirectPaths = {
-        'admin': '/admin-dashboard',
-        'mentor': '/mentor-dashboard',
-        'mentee': '/mentee-dashboard'
+        admin: "/admin-dashboard",
+        mentor: "/mentor-dashboard",
+        mentee: "/mentee-dashboard",
       };
-
-      const role = userData.role || userData.user?.role;
-      const path = redirectPaths[role] || '/';
-      navigate(path);
-
+      navigate(redirectPaths[role] || "/");
     } catch (error) {
       console.error("Login Error:", error);
+      let msg = "Terjadi kesalahan saat login.";
 
-      // Handle error seperti sebelumnya
-      let errorMessage = "Terjadi kesalahan saat login.";
+      if (error.response?.status === 401) msg = "Email atau password salah.";
+      else if (error.response?.status === 419)
+        msg = "Session expired. Silakan refresh halaman.";
+      else if (error.response?.status === 422)
+        msg = error.response.data.message || "Data tidak valid.";
+      else if (error.request)
+        msg = "Tidak dapat terhubung ke server.";
 
-      if (error.response?.status === 419) {
-        errorMessage = "Session expired. Silakan refresh halaman dan coba lagi.";
-        // Force refresh CSRF token
-        window.location.reload();
-      } else if (error.response?.status === 401) {
-        errorMessage = "Email atau password salah.";
-      } else if (error.response?.status === 422) {
-        errorMessage = error.response.data.message || "Data yang dimasukkan tidak valid.";
-      } else if (error.request) {
-        errorMessage = "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.";
-      } else {
-        errorMessage = error.message;
-      }
-
-      setErrorMessage(errorMessage);
+      setErrorMessage(msg);
     } finally {
       setIsLoading(false);
     }

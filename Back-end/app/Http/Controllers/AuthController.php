@@ -58,9 +58,6 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        $remember = $request->boolean('remember', false);
-
-        // Cek credentials
         $user = \App\Models\User::where('email', $credentials['email'])->first();
 
         if (!$user || !Hash::check($credentials['password'], $user->password)) {
@@ -69,16 +66,17 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Login manual - untuk session
-        Auth::login($user, $remember);
+        // Login session-based
+        Auth::login($user, $request->boolean('remember', false));
         $request->session()->regenerate();
 
         return response()->json([
             'message' => 'Login berhasil',
             'user'    => $user,
             'role'    => $user->role,
-        ], 200);
+        ]);
     }
+
 
     /**
      * LOGOUT (session-based)
@@ -89,10 +87,9 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return response()->json([
-            'message' => 'Logout berhasil'
-        ], 200);
+        return response()->json(['message' => 'Logout berhasil']);
     }
+
 
     /**
      * GET CURRENT USER (session-based untuk SPA)
