@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api ,getCsrfCookie } from '../axiosInstance';
-import { useAuth } from '../context/useAuth';
+import { api, getCsrfCookie } from '../axiosInstance';
 import Header from '../components/Header';
 
 const Register = () => {
@@ -11,51 +10,39 @@ const Register = () => {
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
-  const { setAuthData } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMessage("");
+    setErrorMessage('');
 
     if (password !== passwordConfirmation) {
-      setErrorMessage("Password dan konfirmasi password tidak cocok.");
+      setErrorMessage('Password dan konfirmasi password tidak cocok.');
       return;
     }
 
     try {
       await getCsrfCookie();
 
+      // 🔹 Kirim request register
       await api.post(
-        "/register",
+        '/register',
         {
           name,
           email,
           password,
-          role: "mentee", // default
+          role: 'mentee', // default
         },
         { withCredentials: true }
       );
 
-      // 3️⃣ Ambil user aktif setelah auto-login
-      const userResponse = await api.get("/api/user");
-      const user = userResponse.data.user || userResponse.data;
-      const role = user.role;
-
-      // 4️⃣ Simpan di global context
-      setAuthData({ isAuthenticated: true, user, role });
-
-      // 5️⃣ Redirect sesuai role
-      const redirectPaths = {
-        admin: "/admin-dashboard",
-        mentor: "/mentor-dashboard",
-        mentee: "/mentee-dashboard",
-      };
-      navigate(redirectPaths[role] || "/");
+      // 🔹 Setelah sukses, arahkan ke halaman login
+      alert('Pendaftaran berhasil! Silakan login.');
+      navigate('/login');
     } catch (error) {
-      console.error("Error register:", error);
+      console.error('Error register:', error);
       const msg =
         error?.response?.data?.message ||
-        "Pendaftaran gagal! Silakan coba lagi.";
+        'Pendaftaran gagal! Silakan coba lagi.';
       setErrorMessage(msg);
     }
   };

@@ -6,6 +6,7 @@ use App\Services\AuthService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -21,18 +22,19 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
+        // 🔹 Validasi input
         $validated = $request->validate([
             'name'     => 'required|string|max:255',
-            'email'    => 'required|string|email|unique:users,email',
+            'email'    => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:6',
             'role'     => 'required|in:admin,mentor,mentee'
         ]);
 
         try {
-            // Service membuat user
+            // 🔹 Buat user baru via service
             $user = $this->authService->register($validated);
 
-            // Auto-login session
+            // 🔹 Login otomatis setelah berhasil register
             Auth::login($user);
             $request->session()->regenerate();
 
@@ -40,11 +42,18 @@ class AuthController extends Controller
                 'message' => 'Registrasi berhasil',
                 'user'    => $user,
             ], 201);
-        } catch (\Exception $e) {
+        } catch (ValidationException $e) {
+            // Error validasi dari AuthService
+            return response()->json([
+                'message' => 'Validasi gagal',
+                'errors'  => $e->errors(),
+            ], 422);
+        } catch (\Throwable $e) {
+            // Error umum lain
             return response()->json([
                 'message' => 'Registrasi gagal',
-                'error' => $e->getMessage()
-            ], 422);
+                'error'   => $e->getMessage(),
+            ], 500);
         }
     }
 

@@ -8,8 +8,6 @@ use App\Http\Controllers\MentorController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TaskController;
 
-// Login, Register, Logout
-Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'getUser']);
 // Dashboard
 Route::middleware('auth:sanctum')->get('/dashboard', [DashboardController::class, 'index']);
 
