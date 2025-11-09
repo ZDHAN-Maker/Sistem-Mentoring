@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../axiosInstance'; // sudah withCredentials: true
+import { api } from '../axiosInstance'; // baseURL: http://127.0.0.1:8000, withCredentials: true
 import { useAuth } from '../context/useAuth';
 import Header from '../components/Header';
 
@@ -11,10 +11,11 @@ const Register = () => {
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
-  const { setAuthData } = useAuth(); // ubah: pakai setter dari context auth
+  const { setAuthData } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
 
     if (password !== passwordConfirmation) {
       setErrorMessage('Password dan konfirmasi password tidak cocok.');
@@ -22,36 +23,42 @@ const Register = () => {
     }
 
     try {
-      // 🔹 Kirim request ke backend Laravel
-      const response = await api.post(
+      // 1) Wajib ambil CSRF cookie dulu (Sanctum stateful)
+      await api.get('/sanctum/csrf-cookie');
+
+      // 2) Register via route web (BUKAN /api/register)
+      await api.post(
         '/register',
         {
           name,
           email,
           password,
           password_confirmation: passwordConfirmation,
-          role: 'mentee', // role default
+          role: 'mentee', // default role
         },
-        { withCredentials: true } // penting agar cookie HttpOnly dikirim & disimpan
+        { withCredentials: true }
       );
 
-      // Ambil data user dari response
-      const user = response.data.user;
+      // 3) Ambil user yang sudah auto-login (session aktif)
+      const me = await api.get('/api/users', { withCredentials: true });
+      const user = me?.data?.user;
       const role = user?.role || 'mentee';
 
-      // Simpan di context agar state global tahu user sudah login
+      // 4) Simpan di global auth (tanpa token)
       setAuthData({ isAuthenticated: true, user, role });
 
-      // 🔹 Langsung arahkan ke dashboard (karena user sudah otomatis login setelah register)
+      // 5) Redirect berdasarkan role
       if (role === 'admin') navigate('/admin-dashboard');
       else if (role === 'mentor') navigate('/mentor-dashboard');
       else navigate('/mentee-dashboard');
 
     } catch (error) {
       console.error('Error register:', error);
-      setErrorMessage(
-        error.response?.data?.message || 'Pendaftaran gagal! Silakan coba lagi.'
-      );
+      const msg =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Pendaftaran gagal! Silakan coba lagi.';
+      setErrorMessage(msg);
     }
   };
 

@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await api.get('/users'); // API call to check authentication
+        const response = await api.get('/api/users'); // API call to check authentication
         if (response.data.auth) {
           setAuth(true);
           setRole(response.data.role);
