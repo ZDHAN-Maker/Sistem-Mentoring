@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Gunakan baseURL yang konsisten
 const api = axios.create({
-  baseURL: "http://localhost:8000", // ubah ke localhost
+  baseURL: "http://localhost:8000/api", // ubah ke localhost
   withCredentials: true,
   headers: {
     Accept: "application/json",
