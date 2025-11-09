@@ -1,24 +1,16 @@
-// src/axiosInstance.js
-import axios from 'axios';
-
-const API_URL = 'http://127.0.0.1:8000';
+import axios from "axios";
 
 const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: "http://127.0.0.1:8000",
   withCredentials: true,
+  headers: {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  },
 });
 
-api.interceptors.request.use(
-  (config) => {
-    // Tempat yang bagus untuk menambahkan token atau log
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+export const getCsrfCookie = async () => {
+  await api.get("/sanctum/csrf-cookie");
+};
 
 export { api };

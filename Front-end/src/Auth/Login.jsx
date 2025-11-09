@@ -26,31 +26,31 @@ const Login = () => {
       // 1️⃣ Ambil CSRF cookie agar Laravel mengenali sesi
       await api.get("/sanctum/csrf-cookie");
 
-      // 2️⃣ Kirim request login
+      // 2️⃣ Kirim request login ke Laravel
       const loginResponse = await api.post(
         "/login",
         { email, password, remember: rememberMe },
-        { withCredentials: true }
+        { withCredentials: true } // penting
       );
 
-      // 3️⃣ Cek apakah berhasil login
+      // 3️⃣ Pastikan response sukses
       if (![200, 204].includes(loginResponse.status)) {
         throw new Error(`Login gagal (${loginResponse.status})`);
       }
 
-      // 4️⃣ Ambil user yang sedang login
-      const userResponse = await api.get("/api/users");
-      const user = userResponse?.data?.user;
+      // 4️⃣ Ambil user login yang sedang aktif (harus via route yang dilindungi Sanctum)
+      const userResponse = await api.get("/api/user", { withCredentials: true });
+      const user = userResponse?.data;
       const role = user?.role;
 
       if (!user || !role) {
         throw new Error("Gagal mendapatkan data user dari server.");
       }
 
-      // 5️⃣ Simpan ke Auth Context
+      // 5️⃣ Simpan user ke context
       setAuthData({ isAuthenticated: true, role, user });
 
-      // 6️⃣ Redirect berdasarkan role
+      // 6️⃣ Arahkan sesuai role
       switch (role) {
         case "admin":
           navigate("/admin-dashboard");
@@ -64,15 +64,13 @@ const Login = () => {
         default:
           setErrorMessage("Role tidak dikenali!");
       }
-
     } catch (error) {
       console.error("Login Error:", error);
 
-      // Ambil pesan error dari response Laravel jika ada
       const msg =
         error?.response?.data?.message ||
         (error?.response?.status === 419
-          ? "CSRF token mismatch. Coba refresh halaman dan login ulang."
+          ? "CSRF token mismatch. Silakan refresh halaman lalu login ulang."
           : error?.message || "Terjadi kesalahan saat login.");
 
       setErrorMessage(msg);
