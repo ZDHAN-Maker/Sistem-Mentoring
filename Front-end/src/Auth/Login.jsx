@@ -23,29 +23,33 @@ const Login = () => {
     }
 
     try {
-      // 1) Ambil CSRF cookie (WAJIB untuk Sanctum stateful)
-      await api.get("/sanctum/csrf-cookie");
+      // 1️⃣ Dapatkan CSRF cookie dulu (WAJIB sebelum login)
+      await api.get("/sanctum/csrf-cookie", { withCredentials: true });
 
-      // 2) Login ke route web (bukan /api/login)
-      await api.post(
+      // 2️⃣ Kirim request login (gunakan credentials untuk cookie)
+      const loginResponse = await api.post(
         "/login",
         { email, password, remember: rememberMe ? 1 : 0 },
         { withCredentials: true }
       );
 
-      // 3) Ambil user yang sudah terautentikasi (cookie otomatis terkirim)
-      const me = await api.get("/api/users", { withCredentials: true });
-      const user = me?.data?.user;
+      if (loginResponse.status !== 204 && loginResponse.status !== 200) {
+        throw new Error("Login gagal! Status tidak valid.");
+      }
+
+      // 3️⃣ Ambil user yang sedang login
+      const meResponse = await api.get("/api/users", { withCredentials: true });
+      const user = meResponse?.data?.user;
       const role = user?.role;
 
       if (!role) {
         throw new Error("Role tidak ditemukan dalam response API.");
       }
 
-      // 4) Simpan ke auth context (tanpa token)
+      // 4️⃣ Simpan ke AuthContext (karena Sanctum pakai cookie, tidak perlu token)
       setAuthData({ isAuthenticated: true, role, user });
 
-      // 5) Redirect berdasarkan role
+      // 5️⃣ Redirect berdasarkan role
       if (role === "admin") navigate("/admin-dashboard");
       else if (role === "mentor") navigate("/mentor-dashboard");
       else if (role === "mentee") navigate("/mentee-dashboard");
@@ -53,10 +57,14 @@ const Login = () => {
 
     } catch (error) {
       console.error("Error login:", error);
+
+      // Tangkap pesan error yang berguna
       const msg =
         error?.response?.data?.message ||
         error?.message ||
         "Login gagal! Periksa email atau password Anda.";
+
+      // Tampilkan pesan di layar
       setErrorMessage(msg);
     }
   };
@@ -73,7 +81,10 @@ const Login = () => {
             <form onSubmit={handleSubmit}>
               {/* Email */}
               <div className="mb-4">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Email
                 </label>
                 <input
@@ -89,7 +100,10 @@ const Login = () => {
 
               {/* Password */}
               <div className="mb-4 relative">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Password
                 </label>
                 <input
@@ -147,7 +161,11 @@ const Login = () => {
                 type="button"
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg flex items-center justify-center gap-3 font-medium text-gray-700 bg-white hover:bg-gray-50 transition"
               >
-                <img src="/assets/google.png" alt="Google Logo" className="w-7 h-7 object-contain" />
+                <img
+                  src="/assets/google.png"
+                  alt="Google Logo"
+                  className="w-7 h-7 object-contain"
+                />
                 <span className="text-base">Masuk Dengan Google</span>
               </button>
             </form>
