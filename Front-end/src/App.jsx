@@ -11,14 +11,17 @@ import ProtectedRoute from './components/PrivateRoute';
 import Header from './components/Header';
 import Langganan from './pages/Langganan';
 const App = () => {
-  const { auth, role } = useAuth();
-
+  const { auth, role, loading } = useAuth();
+  if (loading) {
+    return <div>Loading...</div>; // tampilkan spinner/loading dulu
+  }
   return (
     <Router>
-      <Header />
+      {!auth && <Header />}   {/* Header hanya muncul jika belum login */}
       <Routes>
-         <Route path='/langganan' element={<Langganan />} />
+        <Route path='/langganan' element={<Langganan />} />
         <Route path='/program' element={<Program />} />
+
         <Route
           path='/'
           element={

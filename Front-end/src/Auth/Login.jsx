@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, getCsrfCookie } from '../axiosInstance';
 import { useAuth } from '../context/useAuth';
-import Header from '../components/Header';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -34,7 +33,7 @@ const Login = () => {
         { withCredentials: true }
       );
 
-      const userResponse = await api.get('/user');
+      const userResponse = await api.get('/user',{ withCredentials: true });
       const user = userResponse.data.user || userResponse.data;
       const role = user.role;
 
