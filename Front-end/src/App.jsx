@@ -13,7 +13,7 @@ import Langganan from './pages/Langganan';
 const App = () => {
   const { auth, role, loading } = useAuth();
   if (loading) {
-    return <div>Loading...</div>; // tampilkan spinner/loading dulu
+    return <div>Loading...</div>;
   }
   return (
     <Router>

@@ -1,35 +1,31 @@
+// src/context/AuthContext.jsx
 import React, { createContext, useState, useEffect } from 'react';
-import { api } from '../axiosInstance';
+import { checkUserSession, sanctumLogout } from '../axiosInstance';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [auth, setAuth] = useState(false);
-  const [role, setRole] = useState(localStorage.getItem('role') || null);
-  const [token, setToken] = useState(localStorage.getItem('token') || null);
+  const [role, setRole] = useState(null);
   const [user, setUser] = useState(null);
-  const [errorMessage] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const login = (token, role) => {
+  const login = (role, userData) => {
     setAuth(true);
     setRole(role);
-    setToken(token);
-    localStorage.setItem('role', role);
-    if (token) localStorage.setItem('token', token);
-  };
-
-  const logout = () => {
-    setAuth(false);
-    setRole(null);
-    setToken(null);
-    setUser(null);
-    localStorage.clear();
-  };
-
-  const registerUser = (userData) => {
     setUser(userData);
-    setAuth(false);
-    setRole('mentee');
+  };
+
+  const logout = async () => {
+    try {
+      await sanctumLogout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setAuth(false);
+      setRole(null);
+      setUser(null);
+    }
   };
 
   const setAuthData = ({ isAuthenticated, user, role }) => {
@@ -39,28 +35,30 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const verifyUser = async () => {
       try {
-        await api.get('/sanctum/csrf-cookie');
-        const response = await api.get('/api/user'); // ✅ fix disini
-        if (response.data) {
+        const userData = await checkUserSession();
+        if (userData) {
           setAuth(true);
-          setRole(response.data.role);
-          setUser(response.data);
+          setUser(userData.user || userData);
+          setRole(userData.role);
         } else {
           setAuth(false);
         }
       } catch (error) {
-        console.error('Auth check failed:', error);
+        console.error('Gagal cek session:', error);
+        setAuth(false);
+      } finally {
+        setLoading(false);
       }
     };
 
-    if (token) checkAuth();
-  }, [token]);
+    verifyUser();
+  }, []);
 
   return (
     <AuthContext.Provider
-      value={{ auth, role, token, user, login, logout, registerUser, errorMessage, setAuthData }}
+      value={{ auth, role, user, login, logout, setAuthData, loading }}
     >
       {children}
     </AuthContext.Provider>
