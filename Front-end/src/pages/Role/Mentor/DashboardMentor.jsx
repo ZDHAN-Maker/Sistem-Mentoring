@@ -10,8 +10,6 @@ const DashboardMentor = ({ role }) => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Navbar */}
-        <Navbar />
 
         {/* Konten Dashboard */}
         <main className="flex-1 p-8">

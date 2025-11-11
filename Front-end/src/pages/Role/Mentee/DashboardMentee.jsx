@@ -10,9 +10,6 @@ const DashboardMentee = ({ role }) => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Navbar */}
-        <Navbar />
-
         {/* Konten Dashboard */}
         <main className="flex-1 p-8">
           <h1 className="text-3xl font-semibold">Dashboard Mentee</h1>
