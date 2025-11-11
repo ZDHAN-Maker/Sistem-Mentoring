@@ -1,69 +1,83 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { checkUserSession, sanctumLogout } from '../axiosInstance';
+import { api, getCsrfCookie, checkUserSession, sanctumLogout } from '../axiosInstance';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [auth, setAuth] = useState(false);
-  const [role, setRole] = useState(null);
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // untuk menunggu verifyUser
+  const [authData, setAuthData] = useState({
+    isAuthenticated: false,
+    user: null,
+    role: null,
+  });
+  const [loading, setLoading] = useState(true);
 
-  // Login manual (setelah berhasil dari form)
-  const login = (role, userData) => {
-    setAuth(true);
-    setRole(role);
-    setUser(userData);
+  // 🧠 Auto login jika cookie masih aktif
+  useEffect(() => {
+    const verifyUser = async () => {
+      try {
+        const userResponse = await checkUserSession();
+        if (userResponse) {
+          const user = userResponse.user || userResponse;
+          setAuthData({
+            isAuthenticated: true,
+            user,
+            role: user.role || 'guest',
+          });
+        } else {
+          setAuthData({ isAuthenticated: false, user: null, role: null });
+        }
+      } catch (error) {
+        console.error('Gagal verifikasi session:', error);
+        setAuthData({ isAuthenticated: false, user: null, role: null });
+      } finally {
+        setLoading(false);
+      }
+    };
+    verifyUser();
+  }, []);
+
+  // 🧩 Fungsi login (bisa dipakai di Login.jsx)
+  const login = async (email, password, rememberMe = false) => {
+    await getCsrfCookie();
+    await api.post(
+      '/login',
+      { email, password, remember: rememberMe },
+      { withCredentials: true }
+    );
+
+    const userResponse = await api.get('/api/user', { withCredentials: true });
+    const user = userResponse.data.user || userResponse.data;
+    const role = user.role;
+
+    setAuthData({
+      isAuthenticated: true,
+      user,
+      role,
+    });
+
+    return { user, role };
   };
 
-  // Logout
+  // 🚪 Fungsi logout
   const logout = async () => {
     try {
       await sanctumLogout();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      setAuth(false);
-      setRole(null);
-      setUser(null);
+      setAuthData({ isAuthenticated: false, user: null, role: null });
       localStorage.clear();
     }
   };
 
-  // Cek session saat pertama kali load (auto-login setelah refresh)
-  useEffect(() => {
-    const verifyUser = async () => {
-      try {
-        const userData = await checkUserSession();
-        if (userData) {
-          setAuth(true);
-          setUser(userData.user || userData);
-          setRole(userData.role || userData.user?.role || 'guest');
-        } else {
-          setAuth(false);
-          setUser(null);
-          setRole(null);
-        }
-      } catch (error) {
-        console.error('Gagal cek session:', error);
-        setAuth(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    verifyUser();
-  }, []);
-
   return (
     <AuthContext.Provider
       value={{
-        auth,
-        role,
-        user,
-        loading,
+        authData,
+        setAuthData,
         login,
         logout,
+        loading,
       }}
     >
       {children}
