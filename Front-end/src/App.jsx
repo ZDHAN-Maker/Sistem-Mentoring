@@ -1,5 +1,5 @@
 // src/App.jsx
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/useAuth';
 import Program from './pages/Program';
 import Login from './Auth/Login';
@@ -10,14 +10,23 @@ import DashboardMentee from './pages/Role/Mentee/DashboardMentee';
 import ProtectedRoute from './components/PrivateRoute';
 import Header from './components/Header';
 import Langganan from './pages/Langganan';
-const App = () => {
+
+const AppContent = () => {
   const { auth, role, loading } = useAuth();
+  const location = useLocation();
+
   if (loading) {
     return <div>Loading...</div>;
   }
+
+  // Daftar halaman yang harus memiliki Header
+  const publicPaths = ['/login', '/register', '/program', '/langganan', '/elearning'];
+
+  const showHeader = publicPaths.includes(location.pathname) && !auth;
+
   return (
-    <Router>
-      {!auth && <Header />}   {/* Header hanya muncul jika belum login */}
+    <>
+      {showHeader && <Header />}
       <Routes>
         <Route path='/langganan' element={<Langganan />} />
         <Route path='/program' element={<Program />} />
@@ -65,8 +74,14 @@ const App = () => {
           }
         />
       </Routes>
-    </Router>
+    </>
   );
 };
+
+const App = () => (
+  <Router>
+    <AppContent />
+  </Router>
+);
 
 export default App;

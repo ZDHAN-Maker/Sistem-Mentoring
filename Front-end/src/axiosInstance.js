@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000', // ubah sesuai backend kamu
+  baseURL: 'http://localhost:8000', // ganti sesuai backend kamu
   withCredentials: true,
   headers: {
     Accept: 'application/json',
@@ -10,11 +10,10 @@ const api = axios.create({
   },
 });
 
-// Ambil token dari cookie dan tambahkan ke header
+// Ambil CSRF token dari cookie Sanctum
 export const getCsrfCookie = async () => {
   try {
     await api.get('/sanctum/csrf-cookie');
-
     const token = document.cookie
       .split('; ')
       .find((row) => row.startsWith('XSRF-TOKEN='))
@@ -28,43 +27,36 @@ export const getCsrfCookie = async () => {
   }
 };
 
-// Logout user dari Sanctum
+// Logout user (hapus session Sanctum)
 export const sanctumLogout = async () => {
   try {
     await api.post('/logout');
+    console.info('Berhasil logout dari Sanctum');
   } catch (error) {
     console.error('Gagal logout dari Sanctum:', error);
   }
 };
 
-// ✅ Tambahan: interceptor untuk cek session otomatis
-// Jika backend merespon 401 (unauthenticated), bisa otomatis logout atau refresh session
+// Cek session user aktif
+export const checkUserSession = async () => {
+  try {
+    const response = await api.get('/api/user');
+    return response.data;
+  } catch {
+    return null;
+  }
+};
+
+// Interceptor: jika 401 (unauthenticated), langsung logout
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response && error.response.status === 401) {
-      console.warn('Session kadaluarsa. Mencoba refresh session...');
-      try {
-        // Coba ambil CSRF baru dan cek ulang user
-        await getCsrfCookie();
-        await api.get('/user'); // kalau sukses berarti session masih valid
-        return Promise.resolve(); // biar tidak logout
-      } catch  {
-        console.error('Session benar-benar berakhir, harus login ulang.');
-      }
+      console.warn('⚠️ Session habis, user akan logout otomatis.');
+      localStorage.clear(); // hapus data lokal
     }
     return Promise.reject(error);
   }
 );
-
-// ✅ Tambahan: fungsi untuk cek apakah user masih login setelah refresh
-export const checkUserSession = async () => {
-  try {
-    const response = await api.get('/user');
-    return response.data; // kembalikan data user jika masih login
-  } catch {
-    return null; // tidak login
-  }
-};
 
 export { api };

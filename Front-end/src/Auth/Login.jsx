@@ -33,15 +33,15 @@ const Login = () => {
         { withCredentials: true }
       );
 
-      const userResponse = await api.get('/user',{ withCredentials: true });
+      const userResponse = await api.get('/api/user',{ withCredentials: true });
       const user = userResponse.data.user || userResponse.data;
       const role = user.role;
 
       setAuthData({
         isAuthenticated: true,
         user,
-        role,
-      });
+        role: user.role,
+      }); 
 
       const redirectPaths = {
         admin: '/admin-dashboard',

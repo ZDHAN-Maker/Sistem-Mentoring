@@ -1,4 +1,3 @@
-// src/context/AuthContext.jsx
 import React, { createContext, useState, useEffect } from 'react';
 import { checkUserSession, sanctumLogout } from '../axiosInstance';
 
@@ -8,14 +7,16 @@ export const AuthProvider = ({ children }) => {
   const [auth, setAuth] = useState(false);
   const [role, setRole] = useState(null);
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // untuk menunggu verifyUser
 
+  // Login manual (setelah berhasil dari form)
   const login = (role, userData) => {
     setAuth(true);
     setRole(role);
     setUser(userData);
   };
 
+  // Logout
   const logout = async () => {
     try {
       await sanctumLogout();
@@ -25,15 +26,11 @@ export const AuthProvider = ({ children }) => {
       setAuth(false);
       setRole(null);
       setUser(null);
+      localStorage.clear();
     }
   };
 
-  const setAuthData = ({ isAuthenticated, user, role }) => {
-    setAuth(isAuthenticated);
-    setUser(user);
-    setRole(role);
-  };
-
+  // Cek session saat pertama kali load (auto-login setelah refresh)
   useEffect(() => {
     const verifyUser = async () => {
       try {
@@ -41,9 +38,11 @@ export const AuthProvider = ({ children }) => {
         if (userData) {
           setAuth(true);
           setUser(userData.user || userData);
-          setRole(userData.role);
+          setRole(userData.role || userData.user?.role || 'guest');
         } else {
           setAuth(false);
+          setUser(null);
+          setRole(null);
         }
       } catch (error) {
         console.error('Gagal cek session:', error);
@@ -58,7 +57,14 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ auth, role, user, login, logout, setAuthData, loading }}
+      value={{
+        auth,
+        role,
+        user,
+        loading,
+        login,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>
