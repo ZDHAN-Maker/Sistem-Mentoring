@@ -1,20 +1,22 @@
 // src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/useAuth';
-
+import Program from './pages/Program';
 import Login from './Auth/Login';
 import Register from './Auth/Register';
 import DashboardAdmin from './pages/Role/Admin/DashboardAdmin';
 import DashboardMentor from './pages/Role/Mentor/DashboardMentor';
 import DashboardMentee from './pages/Role/Mentee/DashboardMentee';
 import ProtectedRoute from './components/PrivateRoute';
-
+import Header from './components/Header';
 const App = () => {
   const { auth, role } = useAuth();
 
   return (
     <Router>
+      <Header />
       <Routes>
+        <Route path='/program' element={<Program />} />
         <Route
           path='/'
           element={

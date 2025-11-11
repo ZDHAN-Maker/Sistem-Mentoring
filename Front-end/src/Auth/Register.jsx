@@ -49,8 +49,6 @@ const Register = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <Header />
-
       <main className="grow flex items-center justify-center py-14 bg-gray-50">
         <div className="w-full max-w-lg px-4">
           <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_6px_24px_rgba(0,0,0,0.06)] p-8 md:p-10">

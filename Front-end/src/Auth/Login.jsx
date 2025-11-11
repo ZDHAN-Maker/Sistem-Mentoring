@@ -69,8 +69,6 @@ const Login = () => {
 
   return (
     <div className='min-h-screen flex flex-col bg-white'>
-      <Header />
-
       <main className='grow flex items-center justify-center py-14 bg-gray-50'>
         <div className='w-full max-w-lg px-4'>
           <div className='bg-white rounded-2xl border border-gray-200 shadow-[0_6px_24px_rgba(0,0,0,0.06)] p-8 md:p-10'>
@@ -146,8 +144,8 @@ const Login = () => {
                 type='submit'
                 disabled={isLoading}
                 className={`w-full py-3 mt-2 font-semibold rounded-lg transition ${isLoading
-                    ? 'bg-gray-400 cursor-not-allowed text-gray-200'
-                    : 'bg-[#b38867] hover:bg-[#a27355] text-white'
+                  ? 'bg-gray-400 cursor-not-allowed text-gray-200'
+                  : 'bg-[#b38867] hover:bg-[#a27355] text-white'
                   }`}
               >
                 {isLoading ? (
