@@ -11,7 +11,7 @@ export const AuthProvider = ({ children }) => {
   });
   const [loading, setLoading] = useState(true);
 
-  // 🧠 Auto login jika cookie masih aktif
+  // Auto login jika cookie masih aktif
   useEffect(() => {
     const verifyUser = async () => {
       try {
@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }) => {
     verifyUser();
   }, []);
 
-  // 🧩 Fungsi login (bisa dipakai di Login.jsx)
+  // Fungsi login
   const login = async (email, password, rememberMe = false) => {
     await getCsrfCookie();
     await api.post(
@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }) => {
     return { user, role };
   };
 
-  // 🚪 Fungsi logout
+  // Fungsi logout
   const logout = async () => {
     try {
       await sanctumLogout();
