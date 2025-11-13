@@ -27,6 +27,8 @@ const Sidebar = () => {
       { name: "Tutoring Schedule", path: "/mentee/schedule" },
       { name: "My Mentor", path: "/mentee/mentor" },
       { name: "Announcements", path: "/announcements" },
+      {name:"Student Portal", path:"/student-portal"},
+      {name:"LearningActivities", path:"/learning-activities"}
     ],
   };
 

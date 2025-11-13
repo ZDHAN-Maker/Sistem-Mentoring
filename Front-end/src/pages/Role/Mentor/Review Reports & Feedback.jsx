@@ -3,7 +3,7 @@ import Sidebar from "../../../components/Sidebar";
 import Navbar from "../../../components/Navbar";
 import { useAuth } from "../../../context/useAuth";
 
-const GiveTask = () => {
+const ReviewReports = () => {
   const { role } = useAuth(); // Ambil langsung dari context
 
   return (
@@ -18,7 +18,7 @@ const GiveTask = () => {
 
         {/* Konten Dashboard */}
         <main className="flex-1 p-8">
-          <h1 className="text-3xl font-semibold">Dashboard Mentor</h1>
+          <h1 className="text-3xl font-semibold">Give task Mentor</h1>
           <div className="mt-6">
             <p>Selamat datang di Dashboard Mentor</p>
           </div>
@@ -28,4 +28,4 @@ const GiveTask = () => {
   );
 };
 
-export default GiveTask;
+export default ReviewReports;
