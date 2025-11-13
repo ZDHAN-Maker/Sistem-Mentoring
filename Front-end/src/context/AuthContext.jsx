@@ -11,11 +11,13 @@ export const AuthProvider = ({ children }) => {
   });
   const [loading, setLoading] = useState(true);
 
-  // Auto login jika cookie masih aktif
   useEffect(() => {
     const verifyUser = async () => {
       try {
-        const userResponse = await checkUserSession(); // hanya /user
+        // 🔹 Pastikan cookie CSRF diambil dulu sebelum /user
+        await getCsrfCookie();
+        const userResponse = await checkUserSession();
+
         if (userResponse && (userResponse.id || userResponse.user)) {
           const user = userResponse.user || userResponse;
           setAuthData({
@@ -26,8 +28,7 @@ export const AuthProvider = ({ children }) => {
         } else {
           setAuthData({ isAuthenticated: false, user: null, role: null });
         }
-      } catch (error) {
-        console.error('Gagal verifikasi session (unexpected):', error);
+      } catch {
         setAuthData({ isAuthenticated: false, user: null, role: null });
       } finally {
         setLoading(false);
@@ -36,6 +37,7 @@ export const AuthProvider = ({ children }) => {
 
     verifyUser();
   }, []);
+
 
   // Fungsi login
   const login = async (email, password, rememberMe = false) => {

@@ -31,7 +31,6 @@ export const getCsrfCookie = async () => {
 export const sanctumLogout = async () => {
   try {
     await api.post("/logout", {}, { withCredentials: true });
-    console.info("Berhasil logout dari Sanctum");
   } catch (error) {
     console.error(
       "Gagal logout dari Sanctum:",
@@ -61,7 +60,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      console.warn('⚠️ Server mengembalikan 401 (unauthenticated).');
+      console.warn('Server mengembalikan 401 (unauthenticated).');
     }
     return Promise.reject(error);
   }
