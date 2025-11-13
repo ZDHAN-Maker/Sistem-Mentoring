@@ -7,8 +7,13 @@ const Logout = () => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await logout();
-    navigate("/login");
+    try {
+      await logout();
+      alert("Logout berhasil!");
+      navigate("/login", { replace: true });
+    } catch (err) {
+      console.error("Logout gagal:", err);
+    }
   };
 
   return (

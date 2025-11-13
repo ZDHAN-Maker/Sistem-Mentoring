@@ -15,8 +15,8 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const verifyUser = async () => {
       try {
-        const userResponse = await checkUserSession();
-        if (userResponse) {
+        const userResponse = await checkUserSession(); // hanya /user
+        if (userResponse && (userResponse.id || userResponse.user)) {
           const user = userResponse.user || userResponse;
           setAuthData({
             isAuthenticated: true,
@@ -27,18 +27,19 @@ export const AuthProvider = ({ children }) => {
           setAuthData({ isAuthenticated: false, user: null, role: null });
         }
       } catch (error) {
-        console.error('Gagal verifikasi session:', error);
+        console.error('Gagal verifikasi session (unexpected):', error);
         setAuthData({ isAuthenticated: false, user: null, role: null });
       } finally {
         setLoading(false);
       }
     };
+
     verifyUser();
   }, []);
 
   // Fungsi login
   const login = async (email, password, rememberMe = false) => {
-    await getCsrfCookie();
+    await getCsrfCookie(); // wajib sebelum POST /login
     await api.post(
       '/login',
       { email, password, remember: rememberMe },
@@ -49,23 +50,29 @@ export const AuthProvider = ({ children }) => {
     const user = userResponse.data.user || userResponse.data;
     const role = user.role;
 
-    setAuthData({
-      isAuthenticated: true,
-      user,
-      role,
-    });
-
+    setAuthData({ isAuthenticated: true, user, role });
     return { user, role };
   };
 
   // Fungsi logout
   const logout = async () => {
     try {
+      await getCsrfCookie();
       await sanctumLogout();
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
+
+      // Hapus state & storage
       setAuthData({ isAuthenticated: false, user: null, role: null });
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // Hapus header XSRF jika ada
+      delete api.defaults.headers.common['X-XSRF-TOKEN'];
+    } catch (error) {
+      console.error('Logout error:', error);
+      // tetap bersihkan state agar UI tidak menampilkan user
+      setAuthData({ isAuthenticated: false, user: null, role: null });
+      localStorage.clear();
+      sessionStorage.clear();
     }
   };
 
