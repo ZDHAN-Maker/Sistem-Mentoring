@@ -60,7 +60,7 @@ const AppContent = () => {
 
         {/* Mentor Dashboard */}
         <Route
-          path='/mentor-dashboard'
+          path='/mentor-dashboard/*'
           element={
             <ProtectedRoute allowedRole='mentor'>
               <DashboardMentor />
@@ -68,9 +68,10 @@ const AppContent = () => {
           }
         />
 
+
         {/* Mentee Dashboard */}
         <Route
-          path='/mentee-dashboard'
+          path='/mentee-dashboard/*'
           element={
             <ProtectedRoute allowedRole='mentee'>
               <DashboardMentee />

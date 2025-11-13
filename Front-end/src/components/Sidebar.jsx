@@ -27,8 +27,8 @@ const Sidebar = () => {
       { name: "Tutoring Schedule", path: "/mentee/schedule" },
       { name: "My Mentor", path: "/mentee/mentor" },
       { name: "Announcements", path: "/announcements" },
-      {name:"Student Portal", path:"/student-portal"},
-      {name:"LearningActivities", path:"/learning-activities"}
+      { name: "Student Portal", path: "/student-portal" },
+      { name: "Learning Activities", path: "/learning-activities" },
     ],
   };
 
@@ -56,11 +56,10 @@ const Sidebar = () => {
           {currentMenu.map((item, index) => (
             <li
               key={index}
-              className={`${
-                item.active
-                  ? "bg-[#b38867] text-white"
-                  : "text-gray-700 hover:bg-gray-100"
-              } rounded-md px-3 py-2 mb-2 cursor-pointer`}
+              className={`${item.active
+                ? "bg-[#b38867] text-white"
+                : "text-gray-700 hover:bg-gray-100"
+                } rounded-md px-3 py-2 mb-2 cursor-pointer`}
               onClick={() => handleNavigation(item.path)}
             >
               {item.name}
