@@ -34,11 +34,11 @@ const DashboardMentor = () => {
             {/* Menampilkan halaman berdasarkan menu yang dipilih */}
             <Routes>
               <Route path="/" element={<p>Pilih halaman dari menu</p>} />
-              <Route path="/list-of-mentees" element={<ListOfMentees />} />
-              <Route path="/give-task" element={<GiveTask />} />
-              <Route path="/mentoring-schedule" element={<MentoringSchedule />} />
-              <Route path="/review-reports" element={<ReviewReportsAndFeedback />} />
-              <Route path="/upload-materials" element={<UploadMaterials />} />
+              <Route path="/mentors" element={<ListOfMentees />} />
+              <Route path="/mentors/tasks" element={<GiveTask />} />
+              <Route path="/mentors/schedules" element={<MentoringSchedule />} />
+              <Route path="/mentors/reports" element={<ReviewReportsAndFeedback />} />
+              <Route path="/mentors/materials" element={<UploadMaterials />} />
               <Route path="/announcements" element={<AnnouncementsMentor />} />
             </Routes>
           </div>

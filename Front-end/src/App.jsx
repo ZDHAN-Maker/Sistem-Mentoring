@@ -60,9 +60,27 @@ const AppContent = () => {
 
         {/* Mentor Dashboard */}
         <Route
-          path='/mentor-dashboard/*'
+          path="/mentor-dashboard/*"
           element={
-            <ProtectedRoute allowedRole='mentor'>
+            <ProtectedRoute allowedRole="mentor">
+              <DashboardMentor />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/mentors/*"
+          element={
+            <ProtectedRoute allowedRole="mentor">
+              <DashboardMentor />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/announcements"
+          element={
+            <ProtectedRoute allowedRole="mentor">
               <DashboardMentor />
             </ProtectedRoute>
           }
@@ -71,9 +89,41 @@ const AppContent = () => {
 
         {/* Mentee Dashboard */}
         <Route
-          path='/mentee-dashboard/*'
+          path="/mentee-dashboard/*"
           element={
-            <ProtectedRoute allowedRole='mentee'>
+            <ProtectedRoute allowedRole="mentee">
+              <DashboardMentee />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/mentee/*"
+          element={
+            <ProtectedRoute allowedRole="mentee">
+              <DashboardMentee />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student-portal"
+          element={
+            <ProtectedRoute allowedRole="mentee">
+              <DashboardMentee />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/learning-activities"
+          element={
+            <ProtectedRoute allowedRole="mentee">
+              <DashboardMentee />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/announcements"
+          element={
+            <ProtectedRoute allowedRole="mentee">
               <DashboardMentee />
             </ProtectedRoute>
           }
