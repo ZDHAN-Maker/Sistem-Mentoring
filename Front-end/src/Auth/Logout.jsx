@@ -1,22 +1,14 @@
 import React from "react";
-import { sanctumLogout } from "../axiosInstance";
-import { useAuth } from "../context/useAuth";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/useAuth";
 
 const Logout = () => {
-  const { setAuthData } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    try {
-      await sanctumLogout(); // panggil API logout Laravel
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      // Reset state & redirect
-      setAuthData({ isAuthenticated: false, user: null, role: null });
-      navigate("/login");
-    }
+    await logout();
+    navigate("/login");
   };
 
   return (

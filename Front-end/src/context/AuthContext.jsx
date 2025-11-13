@@ -63,10 +63,9 @@ export const AuthProvider = ({ children }) => {
     try {
       await sanctumLogout();
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     } finally {
       setAuthData({ isAuthenticated: false, user: null, role: null });
-      localStorage.clear();
     }
   };
 
