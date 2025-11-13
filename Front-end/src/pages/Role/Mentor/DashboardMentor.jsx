@@ -1,8 +1,11 @@
 import React from "react";
-import Sidebar from "../../../components/Sidebar";   
-import Navbar from "../../../components/Navbar";     
+import Sidebar from "../../../components/Sidebar";
+import Navbar from "../../../components/Navbar";
+import { useAuth } from "../../../context/useAuth";
 
-const DashboardMentor = ({ role }) => {
+const DashboardMentor = () => {
+  const { role } = useAuth(); // Ambil langsung dari context
+
   return (
     <div className="flex min-h-screen bg-[#f8fafc]">
       {/* Sidebar */}
@@ -17,9 +20,7 @@ const DashboardMentor = ({ role }) => {
         <main className="flex-1 p-8">
           <h1 className="text-3xl font-semibold">Dashboard Mentor</h1>
           <div className="mt-6">
-            {/* Tempat konten utama */}
             <p>Selamat datang di Dashboard Mentor</p>
-            {/* Tambahkan lebih banyak konten sesuai kebutuhan */}
           </div>
         </main>
       </div>

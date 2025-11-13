@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000', // ganti sesuai backend kamu
+  baseURL: 'http://localhost:8000',
   withCredentials: true,
   headers: {
     Accept: 'application/json',
@@ -40,7 +40,7 @@ export const sanctumLogout = async () => {
 // Cek session user aktif
 export const checkUserSession = async () => {
   try {
-    const response = await api.get('/api/user');
+    const response = await api.get('/user');
     return response.data;
   } catch {
     return null;

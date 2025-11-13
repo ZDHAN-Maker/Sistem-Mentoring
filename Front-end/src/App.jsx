@@ -12,17 +12,18 @@ import Header from './components/Header';
 import Langganan from './pages/Langganan';
 
 const AppContent = () => {
-  const { auth, role, loading } = useAuth();
+  const { isAuthenticated, role, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
     return <div>Loading...</div>;
   }
 
-  // Daftar halaman yang harus memiliki Header
+  // Halaman publik (tidak perlu login)
   const publicPaths = ['/login', '/register', '/program', '/langganan', '/elearning'];
 
-  const showHeader = publicPaths.includes(location.pathname) && !auth;
+  // Hanya tampilkan Header di halaman publik
+  const showHeader = publicPaths.includes(location.pathname) && !isAuthenticated;
 
   return (
     <>
@@ -31,16 +32,19 @@ const AppContent = () => {
         <Route path='/langganan' element={<Langganan />} />
         <Route path='/program' element={<Program />} />
 
+        {/* Jika user sudah login, arahkan ke dashboard sesuai role */}
         <Route
           path='/'
           element={
-            auth ? (
+            isAuthenticated ? (
               <Navigate to={`/${role}-dashboard`} />
             ) : (
               <Navigate to='/login' />
             )
           }
         />
+
+        {/* Auth Routes */}
         <Route path='/login' element={<Login />} />
         <Route path='/register' element={<Register />} />
 
