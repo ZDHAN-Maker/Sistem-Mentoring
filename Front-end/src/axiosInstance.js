@@ -43,7 +43,7 @@ export const sanctumLogout = async () => {
 // Cek session user aktif
 export const checkUserSession = async () => {
   try {
-    const response = await api.get('/user', { withCredentials: true });
+    const response = await api.get('/api/user', { withCredentials: true });
     return response.data; // bisa null atau user object
   } catch (error) {
     // Jika 401 => tidak terautentikasi

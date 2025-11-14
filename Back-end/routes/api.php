@@ -9,11 +9,16 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TaskController;
 use Illuminate\Http\Request;
 
-// Dashboard
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return response()->json($request->user());
-});
 
+// 🔹 Cek user aktif
+    Route::get('/user', function (Request $request) {
+        return $request->user()
+            ? response()->json($request->user())
+            : response()->json(['message' => 'Unauthenticated'], 401);
+    })->middleware('auth:sanctum');
+
+
+// Dashboard
 Route::middleware('auth:sanctum')->get('/dashboard', [DashboardController::class, 'index']);
 
 // Mentee Management

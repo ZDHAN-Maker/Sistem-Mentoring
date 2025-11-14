@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }) => {
     const verifyUser = async () => {
       try {
         // 🔹 Pastikan cookie CSRF diambil dulu sebelum /user
-        await getCsrfCookie();
+        await getCsrfCookie()
         const userResponse = await checkUserSession();
 
         if (userResponse && (userResponse.id || userResponse.user)) {
@@ -25,7 +25,7 @@ export const AuthProvider = ({ children }) => {
             user,
             role: user.role || 'guest',
           });
-        } else {
+        } else {await getCsrfCookie();
           setAuthData({ isAuthenticated: false, user: null, role: null });
         }
       } catch {
@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
       { withCredentials: true }
     );
 
-    const userResponse = await api.get('/user', { withCredentials: true });
+    const userResponse = await api.get('/api/user', { withCredentials: true });
     const user = userResponse.data.user || userResponse.data;
     const role = user.role;
 
