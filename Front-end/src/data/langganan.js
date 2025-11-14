@@ -29,8 +29,8 @@ export const paketDataMinimalis = [
   },
   {
     title: "Paket Exclusive",
-    price: "Rp 199.000 / bulan", // Harga lebih tinggi untuk Exclusive
-    icon: "💎", // Ikon: Berlian/Permata
+    price: "Rp 199.000 / bulan", 
+    icon: "💎", 
     features: [
       { text: "Semua fitur Premium", available: true },
       { text: "Mentoring 1-on-1 Bulanan", available: true },
@@ -38,9 +38,7 @@ export const paketDataMinimalis = [
       { text: "Sertifikat Eksklusif", available: true },
     ],
     buttonText: "[Daftar Exclusive]",
-    // Warna yang lebih gelap/premium untuk tombol Exclusive
     buttonStyle: "bg-[#2C3E50] hover:bg-[#1A252F]", 
-    // Garis luar yang lebih menonjol (misalnya warna biru gelap)
     cardStyle: "bg-white border border-[#2C3E50]/50", 
   },
 ];

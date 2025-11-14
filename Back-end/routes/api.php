@@ -11,11 +11,9 @@ use Illuminate\Http\Request;
 
 
 // 🔹 Cek user aktif
-    Route::get('/user', function (Request $request) {
-        return $request->user()
-            ? response()->json($request->user())
-            : response()->json(['message' => 'Unauthenticated'], 401);
-    })->middleware('auth:sanctum');
+Route::get('/user', function (Request $request) {
+    return $request->user();
+})->middleware('auth:sanctum');
 
 
 // Dashboard

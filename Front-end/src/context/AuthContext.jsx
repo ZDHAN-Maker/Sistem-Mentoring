@@ -9,27 +9,23 @@ export const AuthProvider = ({ children }) => {
     user: null,
     role: null,
   });
+
   const [loading, setLoading] = useState(true);
 
+  // Cek user ketika pertama kali load
   useEffect(() => {
     const verifyUser = async () => {
       try {
-        // 🔹 Pastikan cookie CSRF diambil dulu sebelum /user
-        await getCsrfCookie()
-        const userResponse = await checkUserSession();
+        await getCsrfCookie();
+        const user = await checkUserSession();
 
-        if (userResponse && (userResponse.id || userResponse.user)) {
-          const user = userResponse.user || userResponse;
-          setAuthData({
-            isAuthenticated: true,
-            user,
-            role: user.role || 'guest',
-          });
-        } else {await getCsrfCookie();
-          setAuthData({ isAuthenticated: false, user: null, role: null });
-        }
-      } catch {
-        setAuthData({ isAuthenticated: false, user: null, role: null });
+        setAuthData({
+          isAuthenticated: !!user,
+          user: user,
+          role: user?.role ?? null,
+        });
+      } catch (err) {
+        console.error("Auth check failed:", err);
       } finally {
         setLoading(false);
       }
@@ -38,44 +34,45 @@ export const AuthProvider = ({ children }) => {
     verifyUser();
   }, []);
 
+  // ===================== LOGIN =====================
+  const login = async (email, password, remember = false) => {
+    try {
+      await getCsrfCookie();
 
-  // Fungsi login
-  const login = async (email, password, rememberMe = false) => {
-    await getCsrfCookie(); // wajib sebelum POST /login
-    await api.post(
-      '/login',
-      { email, password, remember: rememberMe },
-      { withCredentials: true }
-    );
+      // Login TANPA X-XSRF-TOKEN manual
+      await api.post('/login', { email, password, remember });
 
-    const userResponse = await api.get('/api/user', { withCredentials: true });
-    const user = userResponse.data.user || userResponse.data;
-    const role = user.role;
+      const user = await checkUserSession();
 
-    setAuthData({ isAuthenticated: true, user, role });
-    return { user, role };
+      if (user) {
+        setAuthData({
+          isAuthenticated: true,
+          user,
+          role: user.role,
+        });
+        return { user, role: user.role };
+      }
+
+      throw new Error('Login berhasil tetapi gagal mengambil data user');
+
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   };
 
-  // Fungsi logout
+  // ===================== LOGOUT =====================
   const logout = async () => {
     try {
       await getCsrfCookie();
       await sanctumLogout();
-
-      // Hapus state & storage
-      setAuthData({ isAuthenticated: false, user: null, role: null });
-      localStorage.clear();
-      sessionStorage.clear();
-
-      // Hapus header XSRF jika ada
-      delete api.defaults.headers.common['X-XSRF-TOKEN'];
-    } catch (error) {
-      console.error('Logout error:', error);
-      // tetap bersihkan state agar UI tidak menampilkan user
-      setAuthData({ isAuthenticated: false, user: null, role: null });
-      localStorage.clear();
-      sessionStorage.clear();
+    } catch (e) {
+      console.warn("Logout error ignored:", e);
     }
+
+    setAuthData({ isAuthenticated: false, user: null, role: null });
+    localStorage.clear();
+    sessionStorage.clear();
   };
 
   return (
@@ -92,6 +89,5 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
 
 export default AuthContext;

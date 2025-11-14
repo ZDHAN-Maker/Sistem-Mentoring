@@ -10,59 +10,50 @@ const api = axios.create({
   },
 });
 
-// Ambil CSRF token dari cookie Sanctum
+// Ambil CSRF cookie (TANPA parsing manual)
 export const getCsrfCookie = async () => {
   try {
     await api.get("/sanctum/csrf-cookie");
-    const token = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("XSRF-TOKEN="))
-      ?.split("=")[1];
-
-    if (token) {
-      api.defaults.headers.common["X-XSRF-TOKEN"] = decodeURIComponent(token);
-    }
+    console.log("CSRF cookie loaded");
   } catch (error) {
     console.error("Gagal mengambil CSRF cookie:", error);
   }
 };
 
-// Logout user (hapus session Sanctum)
-export const sanctumLogout = async () => {
-  try {
-    await api.post("/logout", {}, { withCredentials: true });
-  } catch (error) {
-    console.error(
-      "Gagal logout dari Sanctum:",
-      error.response?.data || error.message
-    );
-    throw error;
-  }
-};
-
-// Cek session user aktif
+// Cek session user
 export const checkUserSession = async () => {
   try {
-    const response = await api.get('/api/user', { withCredentials: true });
-    return response.data; // bisa null atau user object
+    const response = await api.get("/api/user");
+    return response.data;
   } catch (error) {
-    // Jika 401 => tidak terautentikasi
     if (error.response?.status === 401) {
+      console.log("User tidak terautentikasi");
       return null;
     }
-    // untuk error lain, lempar agar caller tahu
+    console.error("Error checking user session:", error);
     throw error;
   }
 };
 
-// Interceptor: jika 401 (unauthenticated), langsung logout
+// Logout
+export const sanctumLogout = async () => {
+  try {
+    await api.post("/logout");
+  } catch (error) {
+    console.error("Gagal logout:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+// Interceptor: 401
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      console.warn('Server mengembalikan 401 (unauthenticated).');
+    if (error.response?.status === 401) {
+      console.warn("Server mengembalikan 401 (unauthenticated).");
     }
     return Promise.reject(error);
   }
 );
+
 export { api };

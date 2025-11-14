@@ -14,12 +14,11 @@ return [
     | To learn more: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
     |
     */
-
-    'paths' => ['api/*', 'login', 'logout', 'register', 'sanctum/csrf-cookie', '/user'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'logout', 'register'],
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:5173'],
+    'allowed_origins' => ['http://localhost:5173', 'http://127.0.0.1:5173'], 
 
     'allowed_origins_patterns' => [],
 
