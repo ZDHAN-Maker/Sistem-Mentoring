@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Services\AuthService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,12 +18,8 @@ class AuthController extends Controller
         $this->authService = $authService;
     }
 
-    /**
-     * REGISTER (session-based)
-     */
     public function register(Request $request)
     {
-        // 🔹 Validasi input
         $validated = $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => 'required|string|email|max:255|unique:users,email',
@@ -30,36 +27,22 @@ class AuthController extends Controller
             'role'     => 'required|in:admin,mentor,mentee'
         ]);
 
-        try {
-            // 🔹 Buat user baru via service
-            $user = $this->authService->register($validated);
+        $user = User::create([
+            'name'     => $validated['name'],
+            'email'    => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role'     => $validated['role'],
+        ]);
 
-            // 🔹 Login otomatis setelah berhasil register
-            Auth::login($user);
-            $request->session()->regenerate();
+        // ✅ Login otomatis setelah register
+        Auth::login($user);
 
-            return response()->json([
-                'message' => 'Registrasi berhasil',
-                'user'    => $user,
-            ], 201);
-        } catch (ValidationException $e) {
-            // Error validasi dari AuthService
-            return response()->json([
-                'message' => 'Validasi gagal',
-                'errors'  => $e->errors(),
-            ], 422);
-        } catch (\Throwable $e) {
-            // Error umum lain
-            return response()->json([
-                'message' => 'Registrasi gagal',
-                'error'   => $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'message' => 'Registrasi berhasil',
+            'user'    => $user,
+        ], 201);
     }
 
-    /**
-     * LOGIN (session-based)
-     */
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -67,7 +50,7 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        $user = \App\Models\User::where('email', $credentials['email'])->first();
+        $user = User::where('email', $credentials['email'])->first();
 
         if (!$user || !Hash::check($credentials['password'], $user->password)) {
             return response()->json([
@@ -75,9 +58,18 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Login session-based
+        // Login dan regenerate session
         Auth::login($user, $request->boolean('remember', false));
         $request->session()->regenerate();
+
+        // PENTING: Save session explicitly
+        $request->session()->save();
+
+        \Log::info('Login successful', [
+            'user_id' => $user->id,
+            'session_id' => $request->session()->getId(),
+            'remember' => $request->boolean('remember', false)
+        ]);
 
         return response()->json([
             'message' => 'Login berhasil',
@@ -86,10 +78,6 @@ class AuthController extends Controller
         ]);
     }
 
-
-    /**
-     * LOGOUT (session-based)
-     */
     public function logout(Request $request)
     {
         Auth::guard('web')->logout();
@@ -100,26 +88,12 @@ class AuthController extends Controller
         return response()->json(['message' => 'Logout berhasil'], 200);
     }
 
-
-    /**
-     * GET CURRENT USER (session-based untuk SPA)
-     * Gunakan web middleware, bukan sanctum
-     */
     public function getUser(Request $request)
     {
-        $user = $request->user();
-
-        if (!$user) {
-            return response()->json([
-                'auth' => false,
-                'message' => 'Not authenticated'
-            ], 401);
-        }
-
         return response()->json([
             'auth' => true,
-            'role' => $user->role,
-            'user' => $user,
-        ], 200);
+            'user' => $request->user(),
+            'role' => $request->user()->role,
+        ]);
     }
 }

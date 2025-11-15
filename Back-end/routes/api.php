@@ -9,14 +9,16 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TaskController;
 use Illuminate\Http\Request;
 
+// ✅ Route tanpa middleware dulu (untuk login/register)
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
-Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
-// User current (uses session cookie)
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+// ✅ Route yang memerlukan autentikasi
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/user', [AuthController::class, 'getUser']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+});
+
 // Dashboard
 Route::middleware('auth:sanctum')->get('/dashboard', [DashboardController::class, 'index']);
 

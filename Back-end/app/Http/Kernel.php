@@ -29,7 +29,7 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
-            // JANGAN TARUH Sanctum di sini
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],

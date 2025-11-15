@@ -1,3 +1,5 @@
+// File: AuthContext.jsx
+
 import React, { createContext, useState, useEffect } from "react";
 import { api, getCsrfCookie, sanctumLogout } from "../axiosInstance";
 
@@ -12,21 +14,46 @@ export const AuthProvider = ({ children }) => {
 
   const [loading, setLoading] = useState(true);
 
-  // ⬇⬇ Tambahkan ini untuk cek login saat refresh
   useEffect(() => {
     const checkUser = async () => {
       try {
+        console.log("🔍 Checking authentication...");
+        console.log("🍪 All cookies on mount:", document.cookie);
+        
+        // ✅ Cek semua cookies yang ada
+        const cookies = document.cookie.split('; ');
+        const hasLaravelSession = cookies.some(cookie => 
+          cookie.startsWith('laravel_session=') || 
+          cookie.startsWith('system-mentoring-service_session=') // Sesuaikan dengan APP_NAME
+        );
+        
+        console.log("Has session cookie:", hasLaravelSession);
+        
+        if (!hasLaravelSession) {
+          console.log("⚠️ No session cookie found, skipping user check");
+          setLoading(false);
+          return;
+        }
+        
+        // ✅ Ada session, coba get user
         await getCsrfCookie();
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
         const res = await api.get("/user");
-        const user = res.data;
+        console.log("✅ User authenticated:", res.data);
+        
+        const userData = res.data.user || res.data;
 
         setAuthData({
           isAuthenticated: true,
-          user,
-          role: user.role,
+          user: userData,
+          role: userData.role,
         });
 
-      } catch {
+      } catch (error) {
+        console.log("❌ User not authenticated:", error.response?.status);
+        console.log("Error details:", error.response?.data);
+        
         setAuthData({
           isAuthenticated: false,
           user: null,
@@ -39,33 +66,60 @@ export const AuthProvider = ({ children }) => {
 
     checkUser();
   }, []);
+
   const login = async (email, password, remember = false) => {
-    await getCsrfCookie();
+    try {
+      console.log("🔐 Attempting login...");
+      
+      // ✅ Get CSRF cookie before login
+      await getCsrfCookie();
+      
+      const res = await api.post("/login", {
+        email,
+        password,
+        remember,
+      });
 
-    const res = await api.post("/login", {
-      email,
-      password,
-      remember,
-    });
+      console.log("✅ Login successful:", res.data);
+      
+      // ✅ Wait sedikit untuk memastikan cookie ter-set
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      console.log("🍪 Cookies after login wait:", document.cookie);
 
-    const user = res.data.user;
+      const user = res.data.user;
 
-    setAuthData({
-      isAuthenticated: true,
-      user,
-      role: user.role,
-    });
+      setAuthData({
+        isAuthenticated: true,
+        user,
+        role: user.role,
+      });
 
-    return user;
+      return user;
+    } catch (error) {
+      console.error("❌ Login failed:", error.response?.data);
+      throw error;
+    }
   };
 
   const logout = async () => {
-    await sanctumLogout();
-    setAuthData({
-      isAuthenticated: false,
-      user: null,
-      role: null,
-    });
+    try {
+      await sanctumLogout();
+      console.log("✅ Logout successful");
+      
+      setAuthData({
+        isAuthenticated: false,
+        user: null,
+        role: null,
+      });
+    } catch (error) {
+      console.error("❌ Logout error:", error);
+      setAuthData({
+        isAuthenticated: false,
+        user: null,
+        role: null,
+      });
+    }
   };
 
   return (
