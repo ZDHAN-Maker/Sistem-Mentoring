@@ -1,65 +1,49 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { api, getCsrfCookie } from '../axiosInstance';
-import { useAuth } from '../context/useAuth';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/useAuth";
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
   const navigate = useNavigate();
-  const { setAuthData } = useAuth();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMessage('');
+    setErrorMessage("");
     setIsLoading(true);
 
     if (!email || !password) {
-      setErrorMessage('Email dan password wajib diisi!');
+      setErrorMessage("Email dan password wajib diisi!");
       setIsLoading(false);
       return;
     }
 
     try {
-      await getCsrfCookie();
+      // Panggil login langsung dari AuthProvider
+      const user = await login(email, password, rememberMe);
 
-      await api.post(
-        '/login',
-        { email, password, remember: rememberMe },
-        { withCredentials: true }
-      );
-
-      const userResponse = await api.get('/api/user', { withCredentials: true });
-      const user = userResponse.data.user || userResponse.data;
-      const role = user.role;
-
-      setAuthData({
-        isAuthenticated: true,
-        user,
-        role: user.role,
-      });
-      
-      await Promise.resolve();
+      // Redirect sesuai role
       const redirectPaths = {
-        admin: '/admin-dashboard',
-        mentor: '/mentor-dashboard', 
-        mentee: '/mentee-dashboard',
+        admin: "/admin-dashboard",
+        mentor: "/mentor-dashboard",
+        mentee: "/mentee-dashboard",
       };
-      navigate(redirectPaths[role] || '/');
-    } catch (error) {
-      let msg = 'Terjadi kesalahan saat login.';
 
-      if (error.response?.status === 401) msg = 'Email atau password salah.';
-      else if (error.response?.status === 419)
-        msg = 'Session expired. Silakan refresh halaman.';
+      navigate(redirectPaths[user.role] || "/");
+    } catch (error) {
+      let msg = "Terjadi kesalahan saat login.";
+
+      if (error.response?.status === 401) msg = "Email atau password salah.";
+      else if (error.response?.status === 419) msg = "Session expired.";
       else if (error.response?.status === 422)
-        msg = error.response.data.message || 'Data tidak valid.';
-      else if (error.request)
-        msg = 'Tidak dapat terhubung ke server.';
+        msg = error.response.data.message || "Data tidak valid.";
+      else if (error.request) msg = "Tidak dapat terhubung ke server.";
 
       setErrorMessage(msg);
     } finally {
