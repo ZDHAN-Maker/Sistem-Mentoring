@@ -1,4 +1,4 @@
-import React, { createContext, useState } from "react";
+import React, { createContext, useState, useEffect } from "react";
 import { api, getCsrfCookie, sanctumLogout } from "../axiosInstance";
 
 const AuthContext = createContext();
@@ -10,6 +10,35 @@ export const AuthProvider = ({ children }) => {
     role: null,
   });
 
+  const [loading, setLoading] = useState(true);
+
+  // ⬇⬇ Tambahkan ini untuk cek login saat refresh
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        await getCsrfCookie();
+        const res = await api.get("/user");
+        const user = res.data;
+
+        setAuthData({
+          isAuthenticated: true,
+          user,
+          role: user.role,
+        });
+
+      } catch {
+        setAuthData({
+          isAuthenticated: false,
+          user: null,
+          role: null,
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkUser();
+  }, []);
   const login = async (email, password, remember = false) => {
     await getCsrfCookie();
 
@@ -40,7 +69,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ ...authData, login, logout }}>
+    <AuthContext.Provider value={{ ...authData, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
