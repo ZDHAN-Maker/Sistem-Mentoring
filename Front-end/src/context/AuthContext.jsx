@@ -5,6 +5,47 @@ import { api, getCsrfCookie, sanctumLogout } from "../axiosInstance";
 
 const AuthContext = createContext();
 
+// ✅ Security: Check if auth session is valid (not expired)
+const isAuthSessionValid = () => {
+  try {
+    const authFlag = localStorage.getItem('auth_session');
+    const timestamp = localStorage.getItem('auth_timestamp');
+    
+    if (!authFlag || authFlag !== 'true') {
+      return false;
+    }
+    
+    // ✅ Security: Session expires after 2 hours (7200000 ms)
+    const SESSION_LIFETIME = 2 * 60 * 60 * 1000; // 2 hours
+    const now = Date.now();
+    const sessionTime = parseInt(timestamp || '0');
+    
+    if (now - sessionTime > SESSION_LIFETIME) {
+      console.warn("⚠️ Auth session expired");
+      localStorage.removeItem('auth_session');
+      localStorage.removeItem('auth_timestamp');
+      return false;
+    }
+    
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+// ✅ Security: Clear auth session
+const clearAuthSession = () => {
+  localStorage.removeItem('auth_session');
+  localStorage.removeItem('auth_timestamp');
+};
+
+// ✅ Security: Refresh auth timestamp (untuk extend session)
+const refreshAuthSession = () => {
+  if (localStorage.getItem('auth_session') === 'true') {
+    localStorage.setItem('auth_timestamp', Date.now().toString());
+  }
+};
+
 export const AuthProvider = ({ children }) => {
   const [authData, setAuthData] = useState({
     isAuthenticated: false,
@@ -18,24 +59,17 @@ export const AuthProvider = ({ children }) => {
     const checkUser = async () => {
       try {
         console.log("🔍 Checking authentication...");
-        console.log("🍪 All cookies on mount:", document.cookie);
         
-        // ✅ Cek semua cookies yang ada
-        const cookies = document.cookie.split('; ');
-        const hasLaravelSession = cookies.some(cookie => 
-          cookie.startsWith('laravel_session=') || 
-          cookie.startsWith('system-mentoring-service_session=') // Sesuaikan dengan APP_NAME
-        );
-        
-        console.log("Has session cookie:", hasLaravelSession);
-        
-        if (!hasLaravelSession) {
-          console.log("⚠️ No session cookie found, skipping user check");
+        // ✅ Step 1: Check localStorage auth flag
+        if (!isAuthSessionValid()) {
+          console.log("⚠️ No valid auth session in localStorage");
           setLoading(false);
           return;
         }
         
-        // ✅ Ada session, coba get user
+        console.log("✅ Valid auth session found, verifying with server...");
+        
+        // ✅ Step 2: Verify dengan server (security check)
         await getCsrfCookie();
         await new Promise(resolve => setTimeout(resolve, 200));
         
@@ -44,6 +78,9 @@ export const AuthProvider = ({ children }) => {
         
         const userData = res.data.user || res.data;
 
+        // ✅ Step 3: Refresh timestamp jika valid
+        refreshAuthSession();
+
         setAuthData({
           isAuthenticated: true,
           user: userData,
@@ -51,8 +88,10 @@ export const AuthProvider = ({ children }) => {
         });
 
       } catch (error) {
-        console.log("❌ User not authenticated:", error.response?.status);
-        console.log("Error details:", error.response?.data);
+        console.log("❌ User verification failed:", error.response?.status);
+        
+        // ✅ Security: Clear invalid session
+        clearAuthSession();
         
         setAuthData({
           isAuthenticated: false,
@@ -71,9 +110,10 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log("🔐 Attempting login...");
       
-      // ✅ Get CSRF cookie before login
+      // ✅ Get CSRF cookie
       await getCsrfCookie();
       
+      // ✅ Login request
       const res = await api.post("/login", {
         email,
         password,
@@ -81,14 +121,10 @@ export const AuthProvider = ({ children }) => {
       });
 
       console.log("✅ Login successful:", res.data);
-      
-      // ✅ Wait sedikit untuk memastikan cookie ter-set
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      console.log("🍪 Cookies after login wait:", document.cookie);
 
       const user = res.data.user;
 
+      // ✅ Set auth session (interceptor sudah handle localStorage)
       setAuthData({
         isAuthenticated: true,
         user,
@@ -98,6 +134,7 @@ export const AuthProvider = ({ children }) => {
       return user;
     } catch (error) {
       console.error("❌ Login failed:", error.response?.data);
+      clearAuthSession();
       throw error;
     }
   };
@@ -106,14 +143,12 @@ export const AuthProvider = ({ children }) => {
     try {
       await sanctumLogout();
       console.log("✅ Logout successful");
-      
-      setAuthData({
-        isAuthenticated: false,
-        user: null,
-        role: null,
-      });
     } catch (error) {
       console.error("❌ Logout error:", error);
+    } finally {
+      // ✅ Always clear session
+      clearAuthSession();
+      
       setAuthData({
         isAuthenticated: false,
         user: null,

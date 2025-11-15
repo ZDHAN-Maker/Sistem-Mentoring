@@ -18,10 +18,6 @@ export const getCsrfCookie = async () => {
       baseURL: "http://localhost:8000",
     });
     console.log("✅ CSRF cookie obtained");
-    
-    // ✅ Debug: Log semua cookies setelah CSRF
-    console.log("🍪 All cookies:", document.cookie);
-    
   } catch (error) {
     console.error("❌ Failed to get CSRF cookie:", error);
     throw error;
@@ -30,9 +26,19 @@ export const getCsrfCookie = async () => {
 
 export const sanctumLogout = () => api.post("/logout");
 
+// ✅ Helper untuk get auth flag dari localStorage
+const GET_AUTH_FLAG = () => {
+  try {
+    return localStorage.getItem('auth_session') === 'true';
+  } catch {
+    return false;
+  }
+};
+
 // Request Interceptor
 api.interceptors.request.use(
   (config) => {
+    // Add CSRF token
     const cookies = document.cookie.split('; ');
     const xsrfCookie = cookies.find(row => row.startsWith('XSRF-TOKEN='));
     
@@ -55,9 +61,11 @@ api.interceptors.response.use(
   (response) => {
     console.log('✅ Response:', response.status, response.config.url);
     
-    // ✅ Debug: Log cookies setelah setiap response
-    if (response.config.url.includes('login')) {
-      console.log("🍪 Cookies after login:", document.cookie);
+    // ✅ Set auth flag setelah login berhasil
+    if (response.config.url.includes('login') && response.status === 200) {
+      localStorage.setItem('auth_session', 'true');
+      localStorage.setItem('auth_timestamp', Date.now().toString());
+      console.log("🔐 Auth session stored");
     }
     
     return response;
@@ -65,8 +73,11 @@ api.interceptors.response.use(
   async (error) => {
     const status = error.response?.status;
     
+    // ✅ Clear auth flag jika unauthorized
     if (status === 401) {
-      console.warn("⚠️ 401 Unauthorized");
+      console.warn("⚠️ 401 Unauthorized - clearing auth session");
+      localStorage.removeItem('auth_session');
+      localStorage.removeItem('auth_timestamp');
     }
     
     if (status === 419) {

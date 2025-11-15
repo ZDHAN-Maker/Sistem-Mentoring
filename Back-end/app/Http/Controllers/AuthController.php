@@ -18,6 +18,7 @@ class AuthController extends Controller
         $this->authService = $authService;
     }
 
+    // Register new user
     public function register(Request $request)
     {
         $validated = $request->validate([
@@ -34,8 +35,9 @@ class AuthController extends Controller
             'role'     => $validated['role'],
         ]);
 
-        // ✅ Login otomatis setelah register
         Auth::login($user);
+        $request->session()->regenerate();
+        $request->session()->save();
 
         return response()->json([
             'message' => 'Registrasi berhasil',
@@ -43,6 +45,7 @@ class AuthController extends Controller
         ], 201);
     }
 
+    // User login
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -58,38 +61,67 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Login dan regenerate session
+        // Login user
         Auth::login($user, $request->boolean('remember', false));
-        $request->session()->regenerate();
 
-        // PENTING: Save session explicitly
+        // Regenerate session
+        $request->session()->regenerate();
         $request->session()->save();
+
+        // Get session ID and create cookie manually
+        $sessionId = $request->session()->getId();
+        $sessionName = config('session.cookie');
 
         \Log::info('Login successful', [
             'user_id' => $user->id,
-            'session_id' => $request->session()->getId(),
-            'remember' => $request->boolean('remember', false)
+            'session_id' => $sessionId,
+            'session_name' => $sessionName,
+            'remember' => $request->boolean('remember', false),
         ]);
 
+        // CRITICAL: Return response with cookie
         return response()->json([
             'message' => 'Login berhasil',
             'user'    => $user,
             'role'    => $user->role,
-        ]);
+        ])->cookie(
+            $sessionName,
+            $sessionId,
+            config('session.lifetime'),
+            config('session.path'),
+            config('session.domain'),
+            config('session.secure'),
+            config('session.http_only'),
+            false,
+            config('session.same_site')
+        );
     }
 
+    // User logout
     public function logout(Request $request)
     {
         Auth::guard('web')->logout();
-
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
         return response()->json(['message' => 'Logout berhasil'], 200);
     }
 
+    // Get authenticated user
     public function getUser(Request $request)
     {
+        \Log::info('Get User Request', [
+            'has_user' => $request->user() !== null,
+            'session_id' => $request->session()->getId(),
+            'auth_check' => Auth::check(),
+        ]);
+
+        if (!$request->user()) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
         return response()->json([
             'auth' => true,
             'user' => $request->user(),
