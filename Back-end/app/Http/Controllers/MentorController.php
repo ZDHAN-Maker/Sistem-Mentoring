@@ -7,52 +7,37 @@ use Illuminate\Http\Request;
 
 class MentorController extends Controller
 {
-    protected $mentorService;
+    protected MentorService $mentorService;
 
     public function __construct(MentorService $mentorService)
     {
         $this->mentorService = $mentorService;
     }
 
-    /**
-     * Ambil semua mentor
-     */
     public function index()
     {
         $mentors = $this->mentorService->getAllMentors();
         return response()->json($mentors);
     }
 
-    /**
-     * Detail mentor
-     */
     public function show($id)
     {
         $mentor = $this->mentorService->getMentorById($id);
         return response()->json($mentor);
     }
 
-    /**
-     * Ambil semua mentee yang dimiliki mentor
-     */
     public function mentees($id)
     {
         $mentees = $this->mentorService->getMentorMentees($id);
         return response()->json($mentees);
     }
 
-    /**
-     * Ambil jadwal mentor
-     */
     public function schedules($id)
     {
         $schedules = $this->mentorService->getMentorSchedules($id);
         return response()->json($schedules);
     }
 
-    /**
-     * Beri tugas ke mentee
-     */
     public function giveTask(Request $request, $id)
     {
         $request->validate([
@@ -70,9 +55,6 @@ class MentorController extends Controller
         ], 201);
     }
 
-    /**
-     * Beri feedback ke report mentee
-     */
     public function giveFeedback(Request $request, $reportId)
     {
         $request->validate([
@@ -87,13 +69,10 @@ class MentorController extends Controller
         ]);
     }
 
-    /**
-     * Upload materi (misalnya video atau dokumen)
-     */
     public function uploadMaterial(Request $request, $id)
     {
         $request->validate([
-            'file_path' => 'required|string', // nanti bisa ganti jadi file upload
+            'file_path' => 'required|string',
         ]);
 
         $material = $this->mentorService->uploadMaterial($id, $request->all());

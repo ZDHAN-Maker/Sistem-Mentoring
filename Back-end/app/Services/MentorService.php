@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Schedule;
 use App\Models\Task;
 use App\Models\ProgressReport;
+use App\Models\Pairing;
 
 class MentorService
 {
@@ -26,11 +27,29 @@ class MentorService
     }
 
     /**
-     * Ambil semua mentee yang dimiliki mentor
+     * Ambil semua mentee yang dimiliki mentor (via tabel Pairing)
      */
     public function getMentorMentees($mentorId)
     {
-        return User::where('mentor_id', $mentorId)->get();
+        // pastikan mentor ada
+        $mentor = $this->getMentorById($mentorId);
+
+        // ambil semua pairing milik mentor beserta data mentee-nya
+        $pairings = $mentor->mentorPairings()
+            ->with('mentee')        
+            ->get();
+
+        return $pairings->map(function (Pairing $pairing) {
+            return [
+                'pairing_id' => $pairing->id,
+                'status'     => $pairing->status,
+                'mentee'     => [
+                    'id'    => optional($pairing->mentee)->id,
+                    'name'  => optional($pairing->mentee)->name,
+                    'email' => optional($pairing->mentee)->email,
+                ],
+            ];
+        });
     }
 
     /**
@@ -73,7 +92,7 @@ class MentorService
      */
     public function uploadMaterial($mentorId, array $data)
     {
-        return $mentorId . " upload materi ke: " . $data['file_path']; 
-        // nanti bisa disesuaikan dengan tabel khusus kalau mau dikelola lebih lanjut
+        // sementara masih dummy, nanti bisa diarahkan ke tabel materials
+        return $mentorId . " upload materi ke: " . $data['file_path'];
     }
 }
