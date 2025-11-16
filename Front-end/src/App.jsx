@@ -50,7 +50,7 @@ const AppContent = () => {
 
         {/* Admin Dashboard */}
         <Route
-          path='/admin-dashboard'
+          path='/admin-dashboard/*'
           element={
             <ProtectedRoute allowedRole='admin'>
               <DashboardAdmin />
@@ -58,7 +58,7 @@ const AppContent = () => {
           }
         />
 
-        {/* Mentor Dashboard */}
+        {/* Mentor Dashboard - SEMUA route mentor di-handle di sini */}
         <Route
           path="/mentor-dashboard/*"
           element={
@@ -68,60 +68,9 @@ const AppContent = () => {
           }
         />
 
-        <Route
-          path="/mentors/*"
-          element={
-            <ProtectedRoute allowedRole="mentor">
-              <DashboardMentor />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/announcements"
-          element={
-            <ProtectedRoute allowedRole="mentor">
-              <DashboardMentor />
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* Mentee Dashboard */}
+        {/* Mentee Dashboard - SEMUA route mentee di-handle di sini */}
         <Route
           path="/mentee-dashboard/*"
-          element={
-            <ProtectedRoute allowedRole="mentee">
-              <DashboardMentee />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/mentee/*"
-          element={
-            <ProtectedRoute allowedRole="mentee">
-              <DashboardMentee />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/student-portal"
-          element={
-            <ProtectedRoute allowedRole="mentee">
-              <DashboardMentee />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/learning-activities"
-          element={
-            <ProtectedRoute allowedRole="mentee">
-              <DashboardMentee />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/announcements"
           element={
             <ProtectedRoute allowedRole="mentee">
               <DashboardMentee />

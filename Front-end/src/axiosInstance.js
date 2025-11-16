@@ -4,7 +4,7 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: "http://localhost:8000/api",
-  withCredentials: true,
+  withCredentials: true, // ✅ PENTING: Ini mengirim cookies
   headers: {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
@@ -14,8 +14,8 @@ const api = axios.create({
 
 export const getCsrfCookie = async () => {
   try {
-    await api.get("/sanctum/csrf-cookie", {
-      baseURL: "http://localhost:8000",
+    await axios.get("http://localhost:8000/sanctum/csrf-cookie", {
+      withCredentials: true
     });
     console.log("✅ CSRF cookie obtained");
   } catch (error) {
@@ -45,13 +45,19 @@ api.interceptors.request.use(
     if (xsrfCookie) {
       const token = decodeURIComponent(xsrfCookie.split('=')[1]);
       config.headers['X-XSRF-TOKEN'] = token;
+      console.log('🔑 CSRF token attached');
+    } else {
+      console.warn('⚠️ No CSRF token found in cookies');
     }
     
+    // ✅ Log cookies untuk debugging
     console.log('📤 Request:', config.method?.toUpperCase(), config.url);
+    console.log('🍪 Cookies:', document.cookie);
     
     return config;
   },
   (error) => {
+    console.error('❌ Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -66,6 +72,7 @@ api.interceptors.response.use(
       localStorage.setItem('auth_session', 'true');
       localStorage.setItem('auth_timestamp', Date.now().toString());
       console.log("🔐 Auth session stored");
+      console.log('🍪 Session cookies:', document.cookie);
     }
     
     return response;
@@ -73,11 +80,19 @@ api.interceptors.response.use(
   async (error) => {
     const status = error.response?.status;
     
+    console.error('❌ Response error:', {
+      status,
+      url: error.config?.url,
+      data: error.response?.data
+    });
+    
     // ✅ Clear auth flag jika unauthorized
     if (status === 401) {
       console.warn("⚠️ 401 Unauthorized - clearing auth session");
       localStorage.removeItem('auth_session');
       localStorage.removeItem('auth_timestamp');
+      localStorage.removeItem('user');
+      localStorage.removeItem('role');
     }
     
     if (status === 419) {
@@ -95,3 +110,4 @@ api.interceptors.response.use(
 );
 
 export { api };
+export default api;

@@ -5,6 +5,7 @@ import Navbar from "../../../components/Navbar";
 import { useAuth } from "../../../context/useAuth";
 
 // Halaman yang ada di dashboard mentor
+import DashboardHome from "../../DashboardHome";
 import ListOfMentees from "./ListOfMentees";
 import GiveTask from "./GiveTask";
 import MentoringSchedule from "./MentoringSchedule";
@@ -108,15 +109,12 @@ const DashboardMentor = () => {
             {/* BAGIAN ROUTES (struktur & fungsi tetap sama) */}
             <section className="mt-4">
               <Routes>
-                <Route path="/" element={<p>Pilih halaman dari menu</p>} />
-                <Route path="/mentors" element={<ListOfMentees />} />
-                <Route path="/mentors/tasks" element={<GiveTask />} />
-                <Route path="/mentors/schedules" element={<MentoringSchedule />} />
-                <Route
-                  path="/mentors/reports"
-                  element={<ReviewReportsAndFeedback />}
-                />
-                <Route path="/mentors/materials" element={<UploadMaterials />} />
+                <Route path="/" element={<DashboardHome />} />
+                <Route path="/mentees" element={<ListOfMentees />} />
+                <Route path="/tasks" element={<GiveTask />} />
+                <Route path="/schedules" element={<MentoringSchedule />} />
+                <Route path="/reports" element={<ReviewReportsAndFeedback />} />
+                <Route path="/materials" element={<UploadMaterials />} />
                 <Route path="/announcements" element={<AnnouncementsMentor />} />
               </Routes>
             </section>

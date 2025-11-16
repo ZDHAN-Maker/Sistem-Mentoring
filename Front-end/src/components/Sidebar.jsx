@@ -1,10 +1,11 @@
 // src/components/Sidebar.jsx
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 
 const Sidebar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { role } = useAuth();
 
   const handleNavigation = (path) => navigate(path);
@@ -12,23 +13,23 @@ const Sidebar = () => {
   // ================= MENU CONFIG =================
   const menus = {
     mentor: [
-      { name: "Dashboard", path: "/mentor-dashboard", active: true },
-      { name: "List of Mentees", path: "/mentors" },
-      { name: "Mentoring Schedule", path: "/mentors/schedules" },
-      { name: "Give Task", path: "/mentors/tasks" },
-      { name: "Review Reports & Feedback", path: "/mentors/reports" },
-      { name: "Upload Materials", path: "/mentors/materials" },
-      { name: "Announcements", path: "/announcements" },
+      { name: "Dashboard", path: "/mentor-dashboard" },
+      { name: "List of Mentees", path: "/mentor-dashboard/mentees" },
+      { name: "Mentoring Schedule", path: "/mentor-dashboard/schedules" },
+      { name: "Give Task", path: "/mentor-dashboard/tasks" },
+      { name: "Review Reports & Feedback", path: "/mentor-dashboard/reports" },
+      { name: "Upload Materials", path: "/mentor-dashboard/materials" },
+      { name: "Announcements", path: "/mentor-dashboard/announcements" },
     ],
     mentee: [
-      { name: "Dashboard", path: "/mentee-dashboard", active: true },
-      { name: "My Tasks", path: "/mentee/tasks" },
-      { name: "My Reports", path: "/mentee/reports" },
-      { name: "Tutoring Schedule", path: "/mentee/schedule" },
-      { name: "My Mentor", path: "/mentee/mentor" },
-      { name: "Announcements", path: "/announcements" },
-      { name: "Student Portal", path: "/student-portal" },
-      { name: "Learning Activities", path: "/learning-activities" },
+      { name: "Dashboard", path: "/mentee-dashboard" },
+      { name: "My Tasks", path: "/mentee-dashboard/tasks" },
+      { name: "My Reports", path: "/mentee-dashboard/reports" },
+      { name: "Tutoring Schedule", path: "/mentee-dashboard/schedule" },
+      { name: "My Mentor", path: "/mentee-dashboard/mentor" },
+      { name: "Announcements", path: "/mentee-dashboard/announcements" },
+      { name: "Student Portal", path: "/mentee-dashboard/student-portal" },
+      { name: "Learning Activities", path: "/mentee-dashboard/learning-activities" },
     ],
   };
 
@@ -53,18 +54,22 @@ const Sidebar = () => {
         {/* ===== Learning Section ===== */}
         <div className="text-gray-500 text-xs uppercase mb-2">Learning</div>
         <ul>
-          {currentMenu.map((item, index) => (
-            <li
-              key={index}
-              className={`${item.active
-                ? "bg-[#b38867] text-white"
-                : "text-gray-700 hover:bg-gray-100"
-                } rounded-md px-3 py-2 mb-2 cursor-pointer`}
-              onClick={() => handleNavigation(item.path)}
-            >
-              {item.name}
-            </li>
-          ))}
+          {currentMenu.map((item, index) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <li
+                key={index}
+                className={`${
+                  isActive
+                    ? "bg-[#b38867] text-white"
+                    : "text-gray-700 hover:bg-gray-100"
+                } rounded-md px-3 py-2 mb-2 cursor-pointer transition-colors`}
+                onClick={() => handleNavigation(item.path)}
+              >
+                {item.name}
+              </li>
+            );
+          })}
         </ul>
 
         {/* ===== Account Section ===== */}
