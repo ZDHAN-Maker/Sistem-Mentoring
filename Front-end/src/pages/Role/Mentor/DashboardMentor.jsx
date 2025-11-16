@@ -5,7 +5,7 @@ import Navbar from "../../../components/Navbar";
 import { useAuth } from "../../../context/useAuth";
 
 // Halaman yang ada di dashboard mentor
-import DashboardHome from "../../DashboardHome";
+import DashboardHome from "./DashboardHome";
 import ListOfMentees from "./ListOfMentees";
 import GiveTask from "./GiveTask";
 import MentoringSchedule from "./MentoringSchedule";

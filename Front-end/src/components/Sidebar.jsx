@@ -59,11 +59,10 @@ const Sidebar = () => {
             return (
               <li
                 key={index}
-                className={`${
-                  isActive
+                className={`${isActive
                     ? "bg-[#b38867] text-white"
                     : "text-gray-700 hover:bg-gray-100"
-                } rounded-md px-3 py-2 mb-2 cursor-pointer transition-colors`}
+                  } rounded-md px-3 py-2 mb-2 cursor-pointer transition-colors`}
                 onClick={() => handleNavigation(item.path)}
               >
                 {item.name}

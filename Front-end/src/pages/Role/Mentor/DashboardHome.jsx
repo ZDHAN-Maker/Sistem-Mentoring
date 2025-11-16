@@ -1,6 +1,6 @@
 // src/pages/Role/Mentor/DashboardHome.jsx
 import React from "react";
-import { useAuth } from "../context/useAuth";
+import { useAuth } from "../../../context/useAuth";
 
 const DashboardHome = () => {
   const { user } = useAuth();
