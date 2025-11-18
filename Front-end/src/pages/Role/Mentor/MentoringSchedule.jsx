@@ -9,7 +9,15 @@ export default function MentoringSchedule() {
   const [showModal, setShowModal] = useState(false);
   const [eventTitle, setEventTitle] = useState("");
   const [eventTime, setEventTime] = useState("");
-  const [events, setEvents] = useState([]);
+  const [events, setEvents] = useState(() => {
+    const saved = localStorage.getItem("mentor-events");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Simpan otomatis ke localStorage setiap events berubah
+  React.useEffect(() => {
+    localStorage.setItem("mentor-events", JSON.stringify(events));
+  }, [events]);
 
   const handleCreateEvent = () => {
     const newEvent = {
@@ -27,7 +35,10 @@ export default function MentoringSchedule() {
 
   return (
     <div className="flex min-h-screen bg-[#f8fafc]">
+      <Sidebar />
       <div className="flex-1">
+        <Navbar />
+
         <main className="p-8">
           <h1 className="text-3xl font-semibold mb-6">Mentoring Schedule</h1>
 

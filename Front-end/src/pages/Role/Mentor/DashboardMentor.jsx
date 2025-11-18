@@ -16,15 +16,8 @@ import AnnouncementsMentor from "./AnnouncementsMentor";
 const DashboardMentor = () => {
   const { role } = useAuth();
 
-  // Dummy data
-  const upcomingSchedule = [
-    {
-      date: "5 Okt 2025",
-      time: "19:00 – 20:30",
-      title: "Frontend Dev",
-      mode: "Online (Zoom)",
-    },
-  ];
+  const upcomingSchedule = JSON.parse(localStorage.getItem("mentor-events")) || [];
+
 
   const mentees = ["Andi", "Andi", "Andi", "Andi", "Andi"];
 
@@ -58,19 +51,18 @@ const DashboardMentor = () => {
                         </div>
 
                         <div className="border rounded-xl overflow-hidden flex-1">
-                          {upcomingSchedule.map((item, index) => (
-                            <div
-                              key={index}
-                              className="px-4 py-3 text-sm border-b last:border-b-0"
-                            >
-                              <p className="font-medium">
-                                {item.date} | {item.time}
-                              </p>
-                              <p className="text-gray-700">
-                                {item.title} | {item.mode}
-                              </p>
-                            </div>
-                          ))}
+                          {upcomingSchedule.length > 0 ? (
+                            upcomingSchedule.map((item, index) => (
+                              <div key={index} className="px-4 py-3 text-sm border-b last:border-b-0">
+                                <p className="font-medium">
+                                  {item.date} | {item.time}
+                                </p>
+                                <p className="text-gray-700">{item.title}</p>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-gray-500 px-4 py-3">Belum ada acara</p>
+                          )}
                         </div>
 
                         <button className="mt-4 self-center text-xs md:text-sm text-gray-700 border border-gray-200 rounded-full px-4 py-2 hover:bg-gray-50 flex items-center gap-1">
