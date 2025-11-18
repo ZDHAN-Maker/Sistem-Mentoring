@@ -27,7 +27,7 @@ const Navbar = () => {
 
         <div className="flex items-center gap-2">
           <span className="text-gray-800 font-medium">
-            {user?.username || 'User'}
+            {user?.username || user?.name || 'User'}
           </span>
           <div className="w-10 h-10 bg-[#b38867] rounded-full"></div>
         </div>
