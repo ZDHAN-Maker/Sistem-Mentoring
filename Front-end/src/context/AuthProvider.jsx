@@ -66,11 +66,13 @@ export const AuthProvider = ({ children }) => {
 
       try {
         const res = await api.get("/user");
-        const userData = res.data;
+        const userData = res.data.user;
+        const userRole = res.data.role;
+
         setAuthData({
           isAuthenticated: true,
           user: userData,
-          role: userData.role,
+          role: userRole,
         });
       } catch {
         clearAuthSession();
