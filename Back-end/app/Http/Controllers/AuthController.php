@@ -12,6 +12,7 @@ use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
 {
     protected $authService;
+    protected $userService;
 
     public function __construct(AuthService $authService)
     {
@@ -127,5 +128,13 @@ class AuthController extends Controller
             'user' => $request->user(),
             'role' => $request->user()->role,
         ]);
+    }
+
+    // Get authenticated user 
+    public function me(Request $request)
+    {
+        return response()->json(
+            $this->userService->getAuthenticatedUser($request)
+        );
     }
 }

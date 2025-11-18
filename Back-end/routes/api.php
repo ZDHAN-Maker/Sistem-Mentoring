@@ -8,6 +8,7 @@ use App\Http\Controllers\MentorController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TaskController;
 use Illuminate\Http\Request;
+use App\Http\Controllers\UserController;
 
 // ✅ Route tanpa middleware dulu (untuk login/register)
 Route::post('/login', [AuthController::class, 'login']);
@@ -19,8 +20,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 });
 
+// User Profile
+Route::middleware('auth:sanctum')->get('/user/me', [UserController::class, 'me']);
+
 // Dashboard
 Route::middleware('auth:sanctum')->get('/dashboard', [DashboardController::class, 'index']);
+
 
 // Mentee Management
 Route::middleware('auth:sanctum')->group(function () {

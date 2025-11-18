@@ -71,4 +71,9 @@ class UserService
         $user = User::findOrFail($id);
         return $user->delete();
     }
+
+    public function getAuthenticatedUser($request)
+    {
+        return $request->user();
+    }
 }
