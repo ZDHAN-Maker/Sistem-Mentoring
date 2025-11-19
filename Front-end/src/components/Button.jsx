@@ -1,67 +1,38 @@
-import React, { useState } from 'react';
+import React from "react";
 
-const UploadForm = () => {
-  const [file, setFile] = useState(null);
-  const [description, setDescription] = useState('');
+export default function Button({
+  children,
+  onClick,
+  type = "button",
+  variant = "primary",
+  loading = false,
+  disabled = false,
+  className = "",
+  full = false,
+}) {
+  const base =
+    "px-4 py-2 rounded-md font-medium transition-all duration-200 flex items-center justify-center gap-2";
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-  };
-
-  const handleDescriptionChange = (e) => {
-    setDescription(e.target.value);
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    if (!file) {
-      alert('Please select a file to upload.');
-      return;
-    }
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('description', description);
-
-    // Mock file upload response
-    console.log('File uploaded:', file.name);
-    console.log('Description:', description);
-    
-    alert('Material uploaded successfully!');
+  const variants = {
+    primary: "bg-blue-600 text-white hover:bg-blue-700",
+    secondary: "bg-gray-200 text-gray-700 hover:bg-gray-300",
+    danger: "bg-red-600 text-white hover:bg-red-700",
+    outline: "border border-gray-400 text-gray-700 hover:bg-gray-100",
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-semibold mb-4">Upload Learning Material</h2>
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label htmlFor="file-upload" className="block text-gray-700 text-sm font-medium mb-2">Choose File</label>
-          <input
-            type="file"
-            id="file-upload"
-            accept=".pdf, .docx, .pptx, .zip"
-            onChange={handleFileChange}
-            className="w-full p-2 border border-gray-300 rounded-md"
-          />
-        </div>
-        <div className="mb-4">
-          <label htmlFor="description" className="block text-gray-700 text-sm font-medium mb-2">Material Description</label>
-          <textarea
-            id="description"
-            value={description}
-            onChange={handleDescriptionChange}
-            placeholder="Add a brief description of the material..."
-            rows="4"
-            required
-            className="w-full p-2 border border-gray-300 rounded-md"
-          />
-        </div>
-        <button type="submit" className="w-full bg-brown-600 text-white py-2 rounded-lg hover:bg-brown-700">
-          Upload Material
-        </button>
-      </form>
-    </div>
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={loading || disabled}
+      className={`${base} ${variants[variant]} ${
+        full ? "w-full" : ""
+      } ${loading ? "opacity-70 cursor-not-allowed" : ""} ${className}`}
+    >
+      {loading && (
+        <span className="animate-spin border-2 border-white border-t-transparent rounded-full w-4 h-4"></span>
+      )}
+      {children}
+    </button>
   );
-};
-
-export default UploadForm;
+}
