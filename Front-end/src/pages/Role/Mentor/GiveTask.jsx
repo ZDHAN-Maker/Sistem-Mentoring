@@ -2,8 +2,12 @@ import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import InputField from "../../../components/InputField";
 import Button from "../../../components/Button";
+import { useAuth } from "../../../context/useAuth";
 
-export default function MaterialManager({ token }) {
+export default function MaterialManager() {
+  const { user } = useAuth();
+  const token = user?.token; // ambil token dari user
+
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -19,28 +23,37 @@ export default function MaterialManager({ token }) {
     video: null,
   });
 
-  // ----------------------------------------
-  // FETCH MATERIALS (useCallback)
-  // ----------------------------------------
+  // --------------------------------------------------------
+  // FETCH MATERIALS AMAN
+  // --------------------------------------------------------
   const fetchMaterials = useCallback(async () => {
+    if (!token) return; // Jika token belum siap, jangan fetch dulu
+
     try {
       const res = await axios.get("/api/materials", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setMaterials(res.data.data);
+
+      // fallback struktur API
+      const result =
+        Array.isArray(res.data?.data) ? res.data.data :
+        Array.isArray(res.data) ? res.data :
+        [];
+
+      setMaterials(result);
     } catch (err) {
       console.error("Error fetching materials:", err);
+      setMaterials([]); // biar tidak undefined
     }
   }, [token]);
 
-  // FIRST LOAD
   useEffect(() => {
     fetchMaterials();
   }, [fetchMaterials]);
 
-  // ----------------------------------------
-  // HANDLE INPUT
-  // ----------------------------------------
+  // --------------------------------------------------------
+  // FORM HANDLER
+  // --------------------------------------------------------
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     setFormData((prev) => ({
@@ -49,9 +62,6 @@ export default function MaterialManager({ token }) {
     }));
   };
 
-  // ----------------------------------------
-  // OPEN MODAL
-  // ----------------------------------------
   const openCreateModal = () => {
     setEditMode(false);
     setSelectedMaterial(null);
@@ -71,7 +81,7 @@ export default function MaterialManager({ token }) {
       title: material.title,
       description: material.description,
       status: material.status,
-      video: null, // video tidak ditampilkan ulang
+      video: null,
     });
     setModalOpen(true);
   };
@@ -82,18 +92,18 @@ export default function MaterialManager({ token }) {
     setUploadProgress(0);
   };
 
-  // ----------------------------------------
-  // SUBMIT FORM
-  // ----------------------------------------
+  // --------------------------------------------------------
+  // SUBMIT MATERIAL
+  // --------------------------------------------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
 
-    // Validasi
     if (!formData.title.trim()) {
       setErrors({ title: "Judul harus diisi" });
       return;
     }
+
     if (!editMode && !formData.video) {
       setErrors({ video: "Video harus diupload" });
       return;
@@ -137,26 +147,29 @@ export default function MaterialManager({ token }) {
     }
   };
 
-  // ----------------------------------------
+  // --------------------------------------------------------
   // RENDER
-  // ----------------------------------------
+  // --------------------------------------------------------
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Manajemen Materials</h2>
 
       <Button onClick={openCreateModal}>+ Tambah Material</Button>
 
-      {/* List Materials */}
       <div className="mt-4">
-        {materials.map((item) => (
-          <div key={item.id} className="border p-3 rounded mb-2 flex justify-between">
-            <div>
-              <p className="font-semibold">{item.title}</p>
-              <p className="text-sm text-gray-600">{item.status}</p>
+        {Array.isArray(materials) && materials.length > 0 ? (
+          materials.map((item) => (
+            <div key={item.id} className="border p-3 rounded mb-2 flex justify-between">
+              <div>
+                <p className="font-semibold">{item.title}</p>
+                <p className="text-sm text-gray-600">{item.status}</p>
+              </div>
+              <Button onClick={() => openEditModal(item)}>Edit</Button>
             </div>
-            <Button onClick={() => openEditModal(item)}>Edit</Button>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p className="text-gray-500">Belum ada material.</p>
+        )}
       </div>
 
       {/* Modal */}
@@ -183,7 +196,6 @@ export default function MaterialManager({ token }) {
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
-                error={errors.description}
               />
 
               <InputField
@@ -193,7 +205,6 @@ export default function MaterialManager({ token }) {
                 onChange={handleChange}
               />
 
-              {/* Upload Video */}
               <div className="mt-2">
                 <label className="block mb-1">Upload Video</label>
                 <input type="file" name="video" onChange={handleChange} />
@@ -203,7 +214,6 @@ export default function MaterialManager({ token }) {
                 )}
               </div>
 
-              {/* Progress */}
               {loading && (
                 <div className="mt-3 w-full bg-gray-200 rounded h-3">
                   <div
@@ -213,7 +223,6 @@ export default function MaterialManager({ token }) {
                 </div>
               )}
 
-              {/* Buttons */}
               <div className="flex justify-end mt-4 gap-2">
                 <Button type="button" onClick={closeModal} variant="secondary">
                   Batal
