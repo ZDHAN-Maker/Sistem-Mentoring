@@ -9,6 +9,8 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TaskController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\MaterialController;
+
 
 // ✅ Route tanpa middleware dulu (untuk login/register)
 Route::post('/login', [AuthController::class, 'login']);
@@ -25,6 +27,20 @@ Route::middleware('auth:sanctum')->get('/user/me', [UserController::class, 'me']
 
 // Dashboard
 Route::middleware('auth:sanctum')->get('/dashboard', [DashboardController::class, 'index']);
+
+
+// Material Management
+Route::middleware(['auth:sanctum'])->group(function () {
+    // Material routes
+    Route::prefix('materials')->group(function () {
+        Route::get('/', [MaterialController::class, 'index']);
+        Route::post('/', [MaterialController::class, 'store']);
+        Route::get('/{material}', [MaterialController::class, 'show']);
+        Route::post('/{material}', [MaterialController::class, 'update']); 
+        Route::delete('/{material}', [MaterialController::class, 'destroy']);
+        Route::post('/reorder', [MaterialController::class, 'reorder']);
+    });
+});
 
 
 // Mentee Management
