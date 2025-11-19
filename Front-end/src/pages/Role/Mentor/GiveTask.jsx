@@ -6,7 +6,7 @@ import { useAuth } from "../../../context/useAuth";
 
 export default function MaterialManager() {
   const { user } = useAuth();
-  const token = user?.token; // ambil token dari user
+  const token = user?.token;
 
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -37,8 +37,8 @@ export default function MaterialManager() {
       // fallback struktur API
       const result =
         Array.isArray(res.data?.data) ? res.data.data :
-        Array.isArray(res.data) ? res.data :
-        [];
+          Array.isArray(res.data) ? res.data :
+            [];
 
       setMaterials(result);
     } catch (err) {
@@ -151,34 +151,56 @@ export default function MaterialManager() {
   // RENDER
   // --------------------------------------------------------
   return (
-    <div>
-      <h2 className="text-xl font-semibold mb-4">Manajemen Materials</h2>
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
 
-      <Button onClick={openCreateModal}>+ Tambah Material</Button>
+      {/* VIDEO PLAYER */}
+      <div className="col-span-3 w-full bg-black/5 rounded-xl border h-[400px] flex items-center justify-center">
+        <button className="w-20 h-20 rounded-full border flex items-center justify-center hover:bg-black/10 transition">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M18 15L30 24L18 33V15Z" />
+          </svg>
+        </button>
+      </div>
 
-      <div className="mt-4">
+      {/* SIDEBAR LIST LESSONS */}
+      <div className="bg-white border rounded-xl p-4 h-fit">
+        <h3 className="font-semibold text-sm mb-3">List Materials</h3>
+
+        <Button
+          onClick={openCreateModal}
+          className="w-full mb-3"
+        >
+          + Upload Material
+        </Button>
+
         {Array.isArray(materials) && materials.length > 0 ? (
-          materials.map((item) => (
-            <div key={item.id} className="border p-3 rounded mb-2 flex justify-between">
-              <div>
-                <p className="font-semibold">{item.title}</p>
-                <p className="text-sm text-gray-600">{item.status}</p>
+          <div className="flex flex-col gap-2">
+            {materials.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => openEditModal(item)}
+                className="flex items-center gap-2 bg-[#c8ad90] text-black px-3 py-2 rounded-lg cursor-pointer hover:bg-[#b89c82] transition"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" stroke="currentColor">
+                  <path d="M18 12L6 4V20L18 12Z" fill="none" strokeWidth="1.5" />
+                </svg>
+
+                <span className="text-sm">{item.title}</span>
               </div>
-              <Button onClick={() => openEditModal(item)}>Edit</Button>
-            </div>
-          ))
+            ))}
+          </div>
         ) : (
-          <p className="text-gray-500">Belum ada material.</p>
+          <p className="text-gray-500 text-sm">Belum ada material.</p>
         )}
       </div>
 
-      {/* Modal */}
+      {/* ---------------- Modal ---------------- */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white p-6 rounded w-96">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl w-96 shadow-lg">
 
-            <h3 className="text-lg mb-3">
-              {editMode ? "Edit Material" : "Tambah Material"}
+            <h3 className="text-lg mb-3 font-semibold">
+              {editMode ? "Edit Material" : "Upload Material Baru"}
             </h3>
 
             <form onSubmit={handleSubmit}>
@@ -207,8 +229,12 @@ export default function MaterialManager() {
 
               <div className="mt-2">
                 <label className="block mb-1">Upload Video</label>
-                <input type="file" name="video" onChange={handleChange} />
-
+                <input
+                  type="file"
+                  name="video"
+                  onChange={handleChange}
+                  className="text-sm"
+                />
                 {errors.video && (
                   <p className="text-red-500 text-sm mt-1">{errors.video}</p>
                 )}
@@ -224,18 +250,19 @@ export default function MaterialManager() {
               )}
 
               <div className="flex justify-end mt-4 gap-2">
-                <Button type="button" onClick={closeModal} variant="secondary">
+                <Button type="button" variant="secondary" onClick={closeModal}>
                   Batal
                 </Button>
                 <Button type="submit" loading={loading}>
                   Simpan
                 </Button>
               </div>
-
             </form>
           </div>
         </div>
       )}
+
     </div>
   );
+
 }
