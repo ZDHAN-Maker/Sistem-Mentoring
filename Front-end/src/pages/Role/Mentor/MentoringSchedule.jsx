@@ -9,12 +9,12 @@ export default function MentoringSchedule() {
   const [showModal, setShowModal] = useState(false);
   const [eventTitle, setEventTitle] = useState("");
   const [eventTime, setEventTime] = useState("");
+
   const [events, setEvents] = useState(() => {
     const saved = localStorage.getItem("mentor-events");
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Simpan otomatis ke localStorage setiap events berubah
   React.useEffect(() => {
     localStorage.setItem("mentor-events", JSON.stringify(events));
   }, [events]);
@@ -34,65 +34,68 @@ export default function MentoringSchedule() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc]">
-      <Sidebar />
-      <div className="flex-1">
-        <Navbar />
+    <div className="flex bg-[#f8fafc] min-h-screen">
+      {/* Main Content */}
+      <div className="flex-1 p-8">
+        <h1 className="text-3xl font-semibold mb-6">Mentoring Schedule</h1>
 
-        <main className="p-8">
-          <h1 className="text-3xl font-semibold mb-6">Mentoring Schedule</h1>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Calendar Section */}
-            <div className="lg:col-span-1 bg-white p-4 rounded-xl shadow">
-              <Calendar
-                onChange={(date) => {
-                  setSelectedDate(date);
-                  setShowModal(true);
-                }}
-                value={selectedDate}
-              />
-            </div>
-
-            {/* Event List */}
-            <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow">
-              <h2 className="text-xl font-semibold mb-4">Jadwal Mentor</h2>
-              {events.length === 0 ? (
-                <p className="text-gray-500">Belum ada acara</p>
-              ) : (
-                <ul className="space-y-3">
-                  {events.map((ev, idx) => (
-                    <li key={idx} className="p-4 border rounded-lg shadow-sm">
-                      <p className="font-semibold">{ev.title}</p>
-                      <p className="text-sm text-gray-600">{ev.date} - {ev.time}</p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Kalender diperbesar */}
+          <div className="bg-white p-6 rounded-2xl shadow-md border">
+            <Calendar
+              onChange={(date) => {
+                setSelectedDate(date);
+                setShowModal(true);
+              }}
+              value={selectedDate}
+              className="w-full text-lg custom-calendar"
+            />
           </div>
-        </main>
+
+          {/* Event List */}
+          <div className="bg-white p-6 rounded-2xl shadow-md border">
+            <h2 className="text-xl font-semibold mb-4">Jadwal Mentor</h2>
+
+            {events.length === 0 ? (
+              <p className="text-gray-500">Belum ada acara</p>
+            ) : (
+              <ul className="space-y-4">
+                {events.map((ev, idx) => (
+                  <li
+                    key={idx}
+                    className="p-4 border rounded-xl shadow-sm bg-gray-50 hover:bg-gray-100 transition"
+                  >
+                    <p className="font-semibold text-lg">{ev.title}</p>
+                    <p className="text-sm text-gray-600">
+                      {ev.date} — {ev.time}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Modal Create Event */}
+      {/* Modal — Background Blur */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-xl w-96">
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/20 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl w-96 border">
             <h3 className="text-xl font-semibold mb-4">Buat Acara</h3>
 
-            <label className="block mb-3 text-sm">Judul Acara:</label>
+            <label className="block text-sm mb-1">Judul Acara</label>
             <input
               type="text"
-              className="w-full p-2 border rounded-lg mb-4"
+              className="w-full p-3 border rounded-lg mb-4 focus:border-blue-500 focus:ring"
               value={eventTitle}
               onChange={(e) => setEventTitle(e.target.value)}
               placeholder="Contoh: Meeting, Review Progress"
             />
 
-            <label className="block mb-3 text-sm">Waktu:</label>
+            <label className="block text-sm mb-1">Waktu</label>
             <input
               type="time"
-              className="w-full p-2 border rounded-lg mb-4"
+              className="w-full p-3 border rounded-lg mb-4 focus:border-blue-500 focus:ring"
               value={eventTime}
               onChange={(e) => setEventTime(e.target.value)}
             />
@@ -100,13 +103,14 @@ export default function MentoringSchedule() {
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-gray-300 rounded-lg"
+                className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
               >
                 Batal
               </button>
+
               <button
                 onClick={handleCreateEvent}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
               >
                 Simpan
               </button>
@@ -114,6 +118,34 @@ export default function MentoringSchedule() {
           </div>
         </div>
       )}
+
+      {/* Extra CSS for calendar */}
+      <style>{`
+        .custom-calendar {
+          font-size: 1.1rem;
+        }
+        .react-calendar {
+          padding: 20px;
+          border-radius: 15px;
+          border: 1px solid #e5e7eb;
+        }
+        .react-calendar__tile {
+          padding: 18px !important;
+        }
+        .react-calendar__tile--active {
+          background: #2563eb !important;
+          color: white !important;
+          border-radius: 10px;
+        }
+        .react-calendar__tile:hover {
+          background: #eef2ff !important;
+          border-radius: 10px;
+        }
+        .react-calendar__navigation button {
+          font-size: 1.2rem;
+          padding: 10px;
+        }
+      `}</style>
     </div>
   );
 }
