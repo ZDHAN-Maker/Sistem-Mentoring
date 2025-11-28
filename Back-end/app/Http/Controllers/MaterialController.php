@@ -6,7 +6,6 @@ use App\Models\Material;
 use App\Services\MaterialService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Auth;
 
 class MaterialController extends Controller
 {

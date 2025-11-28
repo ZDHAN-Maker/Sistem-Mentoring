@@ -10,6 +10,7 @@ use App\Http\Controllers\TaskController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\LearningActivityController;
 
 
 // ✅ Route tanpa middleware dulu (untuk login/register)
@@ -36,12 +37,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [MaterialController::class, 'index']);
         Route::post('/', [MaterialController::class, 'store']);
         Route::get('/{material}', [MaterialController::class, 'show']);
-        Route::post('/{material}', [MaterialController::class, 'update']); 
+        Route::post('/{material}', [MaterialController::class, 'update']);
         Route::delete('/{material}', [MaterialController::class, 'destroy']);
         Route::post('/reorder', [MaterialController::class, 'reorder']);
     });
 });
-
 
 // Mentee Management
 Route::middleware('auth:sanctum')->group(function () {
@@ -83,4 +83,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/tasks', [TaskController::class, 'index']);
     Route::get('/tasks/{task}', [TaskController::class, 'show']);
     Route::post('/tasks/{task}/submit', [TaskController::class, 'submit']);
+});
+
+Route::middleware(['auth:sanctum'])->prefix('learning-activities')->group(function () {
+    Route::get('/', [LearningActivityController::class, 'index']); // Daftar semua learning activity
+    Route::post('/', [LearningActivityController::class, 'store']); // Membuat learning activity baru
+    Route::get('/{learningActivityId}/materials', [LearningActivityController::class, 'getMaterials']); // Mengambil materi berdasarkan learning activity
+    Route::post('/{learningActivityId}/assign-mentor', [LearningActivityController::class, 'assignMentor']); // Menugaskan mentor ke learning activity
 });

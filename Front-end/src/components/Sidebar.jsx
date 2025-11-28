@@ -23,13 +23,13 @@ const Sidebar = () => {
     ],
     mentee: [
       { name: "Dashboard", path: "/mentee-dashboard" },
+      { name: "Learning Activities", path: "/mentee-dashboard/learning-activities" },
       { name: "My Tasks", path: "/mentee-dashboard/tasks" },
       { name: "My Reports", path: "/mentee-dashboard/reports" },
       { name: "Tutoring Schedule", path: "/mentee-dashboard/schedule" },
       { name: "My Mentor", path: "/mentee-dashboard/mentor" },
       { name: "Announcements", path: "/mentee-dashboard/announcements" },
       { name: "Student Portal", path: "/mentee-dashboard/student-portal" },
-      { name: "Learning Activities", path: "/mentee-dashboard/learning-activities" },
     ],
   };
 

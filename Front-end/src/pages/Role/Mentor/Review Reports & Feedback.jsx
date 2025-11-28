@@ -22,7 +22,7 @@ export default function ReviewReports() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         <main className="flex-1 p-8">
-          <h1 className="text-3xl font-semibold mb-6">Give Task Mentor</h1>
+          <h1 className="text-3xl font-semibold mb-6">Review Mentee</h1>
 
           {/* === Container Card === */}
           <div className="grid grid-cols-1 gap-6">
