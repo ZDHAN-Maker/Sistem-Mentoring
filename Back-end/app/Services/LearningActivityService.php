@@ -26,13 +26,16 @@ class LearningActivityService
 
     public function assignMentorToActivity($learningActivityId, $mentorId)
     {
-        $learningActivity = LearningActivity::find($learningActivityId);
-        
-        if ($learningActivity) {
-            $learningActivity->mentors()->attach($mentorId);
+        $activity = LearningActivity::find($learningActivityId);
+
+        if (!$activity) return false;
+
+        if ($activity->mentors()->where('mentor_id', $mentorId)->exists()) {
             return true;
         }
 
-        return false;
+        $activity->mentors()->attach($mentorId);
+
+        return true;
     }
 }

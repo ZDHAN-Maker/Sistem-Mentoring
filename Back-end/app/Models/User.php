@@ -86,4 +86,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(ProgressReport::class, 'mentee_id');
     }
+
+    public function learningActivity()
+    {
+        return $this->belongsTo(LearningActivity::class);
+    }
+
+    public function assignedActivities()
+    {
+        return $this->belongsToMany(LearningActivity::class, 'mentor_learning_activity', 'mentor_id');
+    }
 }

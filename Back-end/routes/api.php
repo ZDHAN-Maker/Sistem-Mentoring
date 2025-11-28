@@ -31,17 +31,18 @@ Route::middleware('auth:sanctum')->get('/dashboard', [DashboardController::class
 
 
 // Material Management
+// Material Management
 Route::middleware(['auth:sanctum'])->group(function () {
-    // Material routes
     Route::prefix('materials')->group(function () {
         Route::get('/', [MaterialController::class, 'index']);
         Route::post('/', [MaterialController::class, 'store']);
         Route::get('/{material}', [MaterialController::class, 'show']);
-        Route::post('/{material}', [MaterialController::class, 'update']);
+        Route::put('/{material}', [MaterialController::class, 'update']);
         Route::delete('/{material}', [MaterialController::class, 'destroy']);
         Route::post('/reorder', [MaterialController::class, 'reorder']);
     });
 });
+
 
 // Mentee Management
 Route::middleware('auth:sanctum')->group(function () {
@@ -86,8 +87,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 });
 
 Route::middleware(['auth:sanctum'])->prefix('learning-activities')->group(function () {
-    Route::get('/', [LearningActivityController::class, 'index']); // Daftar semua learning activity
-    Route::post('/', [LearningActivityController::class, 'store']); // Membuat learning activity baru
-    Route::get('/{learningActivityId}/materials', [LearningActivityController::class, 'getMaterials']); // Mengambil materi berdasarkan learning activity
-    Route::post('/{learningActivityId}/assign-mentor', [LearningActivityController::class, 'assignMentor']); // Menugaskan mentor ke learning activity
+    Route::get('/activities', [LearningActivityController::class, 'index']);
+    Route::post('/activities', [LearningActivityController::class, 'store']);
+    Route::get('/activities/{id}/materials', [LearningActivityController::class, 'getMaterials']);
+    Route::post('/activities/{id}/assign-mentor', [LearningActivityController::class, 'assignMentor']);
 });

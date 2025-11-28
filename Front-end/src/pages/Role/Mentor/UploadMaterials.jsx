@@ -9,6 +9,7 @@ export default function MaterialManager() {
   const token = user?.token;
 
   const [materials, setMaterials] = useState([]);
+  const [activeVideo, setActiveVideo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errors, setErrors] = useState({});
@@ -23,24 +24,36 @@ export default function MaterialManager() {
     video: null,
   });
 
-  // --------------------------------------------------------
+  // Convert backend "video_path" menjadi URL publik
+  const getVideoUrl = (path) => {
+    if (!path) return null;
+    return `http://localhost:8000/storage/${path}`;
+  };
+
+  // ======================================================
   // FETCH MATERIALS
-  // --------------------------------------------------------
+  // ======================================================
   const fetchMaterials = useCallback(async () => {
     if (!token) return;
-
     try {
       const res = await api.get("/materials", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const result = Array.isArray(res.data?.data)
-        ? res.data.data
-        : Array.isArray(res.data)
-          ? res.data
-          : [];
+      const list = res.data?.data ?? [];
 
-      setMaterials(result);
+      // Tambahkan properti video_url agar mudah digunakan
+      const updated = list.map((m) => ({
+        ...m,
+        video_url: getVideoUrl(m.video_path),
+      }));
+
+      setMaterials(updated);
+
+      if (updated.length > 0) {
+        setActiveVideo(updated[0].video_url);
+      }
+
     } catch (err) {
       console.error("Error fetching materials:", err);
       setMaterials([]);
@@ -51,9 +64,9 @@ export default function MaterialManager() {
     fetchMaterials();
   }, [fetchMaterials]);
 
-  // --------------------------------------------------------
+  // ======================================================
   // FORM HANDLER
-  // --------------------------------------------------------
+  // ======================================================
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     setFormData((prev) => ({
@@ -65,24 +78,7 @@ export default function MaterialManager() {
   const openCreateModal = () => {
     setEditMode(false);
     setSelectedMaterial(null);
-    setFormData({
-      title: "",
-      description: "",
-      status: "draft",
-      video: null,
-    });
-    setModalOpen(true);
-  };
-
-  const openEditModal = (material) => {
-    setEditMode(true);
-    setSelectedMaterial(material);
-    setFormData({
-      title: material.title,
-      description: material.description,
-      status: material.status,
-      video: null,
-    });
+    setFormData({ title: "", description: "", status: "draft", video: null });
     setModalOpen(true);
   };
 
@@ -92,99 +88,107 @@ export default function MaterialManager() {
     setUploadProgress(0);
   };
 
-  // --------------------------------------------------------
+  // ======================================================
   // SUBMIT MATERIAL
-  // --------------------------------------------------------
+  // ======================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
-
-    if (!formData.title.trim()) {
-      setErrors({ title: "Judul harus diisi" });
-      return;
-    }
-
-    if (!editMode && !formData.video) {
-      setErrors({ video: "Video harus diupload" });
-      return;
-    }
-
     setLoading(true);
-    setUploadProgress(0);
 
-    const data = new FormData();
+    let data = new FormData();
     data.append("title", formData.title);
     data.append("description", formData.description);
     data.append("status", formData.status);
-    if (formData.video) data.append("video", formData.video);
+    if (formData.video instanceof File) {
+      data.append("video", formData.video);
+    }
 
     try {
-      const url = editMode
-        ? `/materials/${selectedMaterial.id}`
-        : "/materials";
+      let response;
 
-      await api.post(url, data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-        onUploadProgress: (evt) => {
-          const percent = Math.round((evt.loaded * 100) / evt.total);
-          setUploadProgress(percent);
-        },
-      });
+      if (editMode) {
+        response = await api.put(`/materials/${selectedMaterial.id}`, data, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+          onUploadProgress: (p) =>
+            setUploadProgress(Math.round((p.loaded * 100) / p.total)),
+        });
+      } else {
+        response = await api.post(`/materials`, data, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+          onUploadProgress: (p) =>
+            setUploadProgress(Math.round((p.loaded * 100) / p.total)),
+        });
+      }
 
-      alert(editMode ? "Material berhasil diperbarui!" : "Material berhasil ditambahkan!");
-      fetchMaterials();
+      const newMaterial = {
+        ...response.data.data,
+        video_url: getVideoUrl(response.data.data.video_path),
+      };
+
+      if (!editMode) {
+        setMaterials((prev) => [...prev, newMaterial]);
+        setActiveVideo(newMaterial.video_url);
+      } else {
+        setMaterials((prev) =>
+          prev.map((m) => (m.id === newMaterial.id ? newMaterial : m))
+        );
+      }
+
+      alert(editMode ? "Material diperbarui!" : "Material diupload!");
       closeModal();
+
     } catch (err) {
-      console.error("Error:", err);
+      console.error("422 ERROR:", err.response?.data);
       setErrors(err.response?.data?.errors || {});
       alert("Gagal menyimpan data");
     } finally {
       setLoading(false);
-      setUploadProgress(0);
     }
   };
 
-  // --------------------------------------------------------
-  // RENDER
-  // --------------------------------------------------------
+  // ======================================================
+  // UI
+  // ======================================================
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
 
       {/* VIDEO PLAYER */}
-      <div className="col-span-3 w-full bg-black/5 rounded-xl border h-[400px] flex items-center justify-center">
-        <button className="w-20 h-20 rounded-full border flex items-center justify-center hover:bg-black/10 transition">
-          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M18 15L30 24L18 33V15Z" />
-          </svg>
-        </button>
+      <div className="col-span-3 w-full bg-black rounded-xl border h-[400px] flex items-center justify-center">
+        {activeVideo ? (
+          <video
+            src={activeVideo}
+            controls
+            className="w-full h-full rounded-xl object-cover"
+          />
+        ) : (
+          <p className="text-gray-300 text-sm">Pilih materi untuk diputar...</p>
+        )}
       </div>
 
-      {/* SIDEBAR LIST LESSONS */}
+      {/* SIDEBAR LIST */}
       <div className="bg-white border rounded-xl p-4 h-fit">
         <h3 className="font-semibold text-sm mb-3">List Materials</h3>
 
-        <Button
-          onClick={openCreateModal}
-          className="w-full mb-3"
-        >
+        <Button onClick={openCreateModal} className="w-full mb-3">
           + Upload Material
         </Button>
 
-        {Array.isArray(materials) && materials.length > 0 ? (
+        {materials.length > 0 ? (
           <div className="flex flex-col gap-2">
             {materials.map((item) => (
               <div
                 key={item.id}
-                onClick={() => openEditModal(item)}
+                onClick={() => setActiveVideo(item.video_url)}
                 className="flex items-center gap-2 bg-[#c8ad90] text-black px-3 py-2 rounded-lg cursor-pointer hover:bg-[#b89c82] transition"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" stroke="currentColor">
-                  <path d="M18 12L6 4V20L18 12Z" fill="none" strokeWidth="1.5" />
-                </svg>
-
+                ▶
                 <span className="text-sm">{item.title}</span>
               </div>
             ))}
@@ -194,7 +198,7 @@ export default function MaterialManager() {
         )}
       </div>
 
-      {/* ---------------- Modal ---------------- */}
+      {/* MODAL */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl w-96 shadow-lg">
@@ -204,60 +208,25 @@ export default function MaterialManager() {
             </h3>
 
             <form onSubmit={handleSubmit}>
+              <InputField label="Judul" name="title" value={formData.title} onChange={handleChange} />
+              <InputField label="Deskripsi" name="description" value={formData.description} onChange={handleChange} />
+              <InputField label="Status" name="status" value={formData.status} onChange={handleChange} />
 
-              <InputField
-                label="Judul"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                error={errors.title}
-              />
-
-              <InputField
-                label="Deskripsi"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-              />
-
-              <InputField
-                label="Status"
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-              />
-
-              <div className="mt-2">
-                <label className="block mb-1">Upload Video</label>
-                <input
-                  type="file"
-                  name="video"
-                  onChange={handleChange}
-                  className="text-sm"
-                />
-                {errors.video && (
-                  <p className="text-red-500 text-sm mt-1">{errors.video}</p>
-                )}
-              </div>
+              <label className="block mt-3">Upload Video</label>
+              <input type="file" name="video" onChange={handleChange} />
 
               {loading && (
                 <div className="mt-3 w-full bg-gray-200 rounded h-3">
-                  <div
-                    className="bg-blue-500 h-3 rounded"
-                    style={{ width: `${uploadProgress}%` }}
-                  ></div>
+                  <div className="bg-blue-500 h-3 rounded" style={{ width: `${uploadProgress}%` }}></div>
                 </div>
               )}
 
               <div className="flex justify-end mt-4 gap-2">
-                <Button type="button" variant="secondary" onClick={closeModal}>
-                  Batal
-                </Button>
-                <Button type="submit" loading={loading}>
-                  Simpan
-                </Button>
+                <Button type="button" variant="secondary" onClick={closeModal}>Batal</Button>
+                <Button type="submit" loading={loading}>Simpan</Button>
               </div>
             </form>
+
           </div>
         </div>
       )}

@@ -4,14 +4,13 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateMentorLearningActivityTable extends Migration
-{
+return new class extends Migration {
     public function up()
     {
         Schema::create('mentor_learning_activity', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Mentor (User)
-            $table->foreignId('learning_activity_id')->constrained()->onDelete('cascade'); // Learning Activity
+            $table->foreignId('mentor_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('learning_activity_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });
     }
@@ -20,4 +19,4 @@ class CreateMentorLearningActivityTable extends Migration
     {
         Schema::dropIfExists('mentor_learning_activity');
     }
-}
+};
