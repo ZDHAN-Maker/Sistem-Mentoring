@@ -34,8 +34,8 @@ export default function Header() {
         {/* === Tengah: Menu Navigasi === */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-700">
           <a href="/program" className="hover:text-[#b38867]">Program</a>
-          <a href="/Langganan" className="hover:text-[#b38867]">Langganan</a>
-          <a href="/E-Learning" className="hover:text-[#b38867]">E-Learning</a>
+          <a href="/langganan" className="hover:text-[#b38867]">Langganan</a>
+          <a href="/e-learning" className="hover:text-[#b38867]">E-Learning</a>
         </nav>
 
         {/* === Kanan: Tombol Auth === */}

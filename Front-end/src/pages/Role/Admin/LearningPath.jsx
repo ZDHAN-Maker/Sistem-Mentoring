@@ -24,7 +24,7 @@ const LearningPath = () => {
       setCreating(true);
       await createLearningPath(form);
       setForm({ title: "", description: "" });
-    } catch (err) {
+    } catch  {
       alert("Gagal membuat learning path");
     } finally {
       setCreating(false);

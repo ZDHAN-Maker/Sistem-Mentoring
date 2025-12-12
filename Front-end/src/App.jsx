@@ -1,15 +1,25 @@
 // src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/useAuth';
+
 import Program from './pages/Program';
 import Login from './Auth/Login';
 import Register from './Auth/Register';
 import DashboardAdmin from './pages/Role/Admin/DashboardAdmin';
 import DashboardMentor from './pages/Role/Mentor/DashboardMentor';
 import DashboardMentee from './pages/Role/Mentee/DashboardMentee';
+
 import ProtectedRoute from './components/PrivateRoute';
 import Header from './components/Header';
 import Langganan from './pages/Langganan';
+
+const PUBLIC_PREFIX = [
+  '/login',
+  '/register',
+  '/program',
+  '/langganan',
+  '/elearning'
+];
 
 const AppContent = () => {
   const { isAuthenticated, role, loading } = useAuth();
@@ -19,37 +29,38 @@ const AppContent = () => {
     return <div>Loading...</div>;
   }
 
-  // Halaman publik (tidak perlu login)
-  const publicPaths = ['/login', '/register', '/program', '/langganan', '/elearning'];
+  const isPublicRoute = PUBLIC_PREFIX.some((path) =>
+    location.pathname.startsWith(path)
+  );
 
-  // Hanya tampilkan Header di halaman publik
-  const showHeader = publicPaths.includes(location.pathname) && !isAuthenticated;
+  const showHeader = isPublicRoute && !isAuthenticated;
 
   return (
     <>
       {showHeader && <Header />}
-      <Routes>
-        <Route path='/langganan' element={<Langganan />} />
-        <Route path='/program' element={<Program />} />
 
-        {/* Jika user sudah login, arahkan ke dashboard sesuai role */}
+      <Routes>
+
+        {/* PUBLIC ROUTES */}
+        <Route path="/program" element={<Program />} />
+        <Route path="/langganan" element={<Langganan />} />
+
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        {/* ROOT REDIRECT */}
         <Route
-          path='/'
+          path="/"
           element={
-            isAuthenticated ? (
-              <Navigate to={`/${role}-dashboard`} />
-            ) : (
-              <Navigate to='/login' />
-            )
+            isAuthenticated
+              ? <Navigate to={`/${role}-dashboard`} />
+              : <Navigate to="/login" />
           }
         />
 
-        {/* Auth Routes */}
-        <Route path='/login' element={<Login />} />
-        <Route path='/register' element={<Register />} />
+        {/* PROTECTED ROUTES */}
 
-        {/* Admin Dashboard */}
-         <Route
+        <Route
           path="/admin-dashboard/*"
           element={
             <ProtectedRoute allowedRole="admin">
@@ -58,7 +69,6 @@ const AppContent = () => {
           }
         />
 
-        {/* Mentor Dashboard - SEMUA route mentor di-handle di sini */}
         <Route
           path="/mentor-dashboard/*"
           element={
@@ -68,7 +78,6 @@ const AppContent = () => {
           }
         />
 
-        {/* Mentee Dashboard - SEMUA route mentee di-handle di sini */}
         <Route
           path="/mentee-dashboard/*"
           element={
@@ -77,6 +86,7 @@ const AppContent = () => {
             </ProtectedRoute>
           }
         />
+
       </Routes>
     </>
   );
