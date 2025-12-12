@@ -22,4 +22,9 @@ class LearningActivity extends Model
     {
         return $this->hasMany(User::class, 'learning_activity_id');
     }
+    
+    public function learningPath()
+    {
+        return $this->belongsTo(LearningPath::class);
+    }
 }
