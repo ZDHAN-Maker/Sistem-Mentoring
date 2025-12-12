@@ -10,13 +10,23 @@ export function useLearningPaths() {
     try {
       setLoading(true);
       const res = await api.get("/api/learning-paths");
-      setLearningPaths(res.data.data || []);
+      setLearningPaths(res.data.paths || []);
     } catch (err) {
       console.error("❌ Failed to fetch learning paths:", err);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const getLearningPathDetail = async (id) => {
+    try {
+      const res = await api.get(`/api/learning-paths/${id}`);
+      return res.data.data;
+    } catch (err) {
+      console.error("❌ Failed to get detail:", err);
+      throw err;
+    }
+  };
 
   const createLearningPath = async (payload) => {
     try {
@@ -62,6 +72,29 @@ export function useLearningPaths() {
     }
   };
 
+  const removeMentor = async (id, mentorId) => {
+    try {
+      const res = await api.delete(`/api/learning-paths/${id}/mentor/${mentorId}`);
+      return res.data;
+    } catch (err) {
+      console.error("❌ Failed to remove mentor:", err);
+      throw err;
+    }
+  };
+
+  const replaceMentor = async (id, oldId, newId) => {
+    try {
+      const res = await api.put(`/api/learning-paths/${id}/replace-mentor`, {
+        old_mentor_id: oldId,
+        new_mentor_id: newId,
+      });
+      return res.data;
+    } catch (err) {
+      console.error("❌ Failed to replace mentor:", err);
+      throw err;
+    }
+  };
+
   const assignMentee = async (id, menteeId) => {
     try {
       const res = await api.post(`/api/learning-paths/${id}/assign-mentee`, {
@@ -86,6 +119,9 @@ export function useLearningPaths() {
     deleteLearningPath,
     assignMentor,
     assignMentee,
+    removeMentor,
+    replaceMentor,
+    getLearningPathDetail,
     refresh: fetchLearningPaths,
   };
 }

@@ -111,13 +111,19 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::delete('/admin/users/{id}', [AdminUserController::class, 'destroy']);
 });
 
-// Learning Path 
+// Learning Path Management
 Route::middleware(['auth:sanctum', 'admin'])->prefix('learning-paths')->group(function () {
+
     Route::get('/', [LearningPathController::class, 'index']);
+    Route::get('/{id}', [LearningPathController::class, 'show']); // DETAIL
+
     Route::post('/', [LearningPathController::class, 'store']);
     Route::put('/{id}', [LearningPathController::class, 'update']);
     Route::delete('/{id}', [LearningPathController::class, 'destroy']);
 
     Route::post('/{id}/assign-mentor', [LearningPathController::class, 'assignMentor']);
+    Route::delete('/{id}/mentor/{mentorId}', [LearningPathController::class, 'removeMentor']);
+    Route::put('/{id}/replace-mentor', [LearningPathController::class, 'replaceMentor']);
+
     Route::post('/{id}/assign-mentee', [LearningPathController::class, 'assignMentee']);
 });

@@ -22,42 +22,41 @@ class LearningPathController extends Controller
         ]);
     }
 
+    public function show($id)
+    {
+        return response()->json([
+            'data' => $this->service->getPathDetail($id)
+        ]);
+    }
+
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'title' => 'required',
             'description' => 'nullable',
             'thumbnail' => 'nullable',
         ]);
 
-        $path = $this->service->createPath($request->only([
-            'title', 'description', 'thumbnail'
-        ]));
-
         return response()->json([
             'message' => 'Learning Path created',
-            'data' => $path
+            'data' => $this->service->createPath($validated)
         ]);
     }
 
     public function update(Request $request, $id)
     {
-        $path = LearningPath::findOrFail($id);
-
-        $request->validate([
+        $validated = $request->validate([
             'title' => 'required',
             'description' => 'nullable',
             'thumbnail' => 'nullable',
             'is_published' => 'nullable|boolean',
         ]);
 
-        $updated = $this->service->updatePath($path, $request->only([
-            'title', 'description', 'thumbnail', 'is_published'
-        ]));
+        $path = LearningPath::findOrFail($id);
 
         return response()->json([
             'message' => 'Learning Path updated',
-            'data' => $updated
+            'data' => $this->service->updatePath($path, $validated)
         ]);
     }
 
@@ -72,27 +71,58 @@ class LearningPathController extends Controller
 
     public function assignMentor($id, Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'mentor_id' => 'required|exists:users,id'
         ]);
 
         $path = LearningPath::findOrFail($id);
 
-        $this->service->assignMentor($path, $request->mentor_id);
+        return response()->json([
+            'message' => 'Mentor assigned',
+            'data' => $this->service->assignMentor($path, $validated['mentor_id'])
+        ]);
+    }
 
-        return response()->json(['message' => 'Mentor assigned']);
+    public function removeMentor($id, $mentorId)
+    {
+        $path = LearningPath::findOrFail($id);
+
+        return response()->json([
+            'message' => 'Mentor removed',
+            'data' => $this->service->removeMentor($path, $mentorId)
+        ]);
+    }
+
+    public function replaceMentor($id, Request $request)
+    {
+        $validated = $request->validate([
+            'old_mentor_id' => 'required|exists:users,id',
+            'new_mentor_id' => 'required|exists:users,id',
+        ]);
+
+        $path = LearningPath::findOrFail($id);
+
+        return response()->json([
+            'message' => 'Mentor replaced',
+            'data' => $this->service->replaceMentor(
+                $path,
+                $validated['old_mentor_id'],
+                $validated['new_mentor_id']
+            )
+        ]);
     }
 
     public function assignMentee($id, Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'mentee_id' => 'required|exists:users,id'
         ]);
 
         $path = LearningPath::findOrFail($id);
 
-        $this->service->assignMentee($path, $request->mentee_id);
-
-        return response()->json(['message' => 'Mentee assigned']);
+        return response()->json([
+            'message' => 'Mentee assigned',
+            'data' => $this->service->assignMentee($path, $validated['mentee_id'])
+        ]);
     }
 }

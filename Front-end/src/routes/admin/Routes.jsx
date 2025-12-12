@@ -6,6 +6,7 @@ import ProgressReportAdmin from "../../pages/Role/Admin/ProgressReportAdmin";
 import StudentPortalAdmin from "../../pages/Role/Admin/StudentPortalAdmin";
 import TutoringScheduleAdmin from "../../pages/Role/Admin/TutoringScheduleAdmin";
 import LearningPath from "../../pages/Role/Admin/LearningPath";
+import LearningPathDetail from "../../pages/Role/Admin/LearningPathDetail";
 
 const AdminRoutes = () => {
   return (
@@ -16,7 +17,8 @@ const AdminRoutes = () => {
       <Route path="progress-report" element={<ProgressReportAdmin />} />
       <Route path="student-portal" element={<StudentPortalAdmin />} />
       <Route path="tutoring-schedule" element={<TutoringScheduleAdmin />} />
-      <Route path="learning-path" element={<LearningPath/>} />
+      <Route path="learning-path" element={<LearningPath />} />
+      <Route path="learning-path/:id" element={<LearningPathDetail />} />
     </Routes>
   );
 };

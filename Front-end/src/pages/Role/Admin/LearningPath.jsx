@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { useLearningPaths } from "../../../hooks/useLearningPaths";
 
 const LearningPath = () => {
@@ -51,9 +52,7 @@ const LearningPath = () => {
           className="border p-2 rounded w-full mb-2"
           placeholder="Description"
           value={form.description}
-          onChange={(e) =>
-            setForm({ ...form, description: e.target.value })
-          }
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
         />
 
         <button
@@ -85,12 +84,22 @@ const LearningPath = () => {
                   <p className="text-gray-500 text-sm">{lp.description}</p>
                 </div>
 
-                <button
-                  onClick={() => deleteLearningPath(lp.id)}
-                  className="bg-red-500 text-white px-3 py-1 rounded-lg"
-                >
-                  Delete
-                </button>
+                <div className="flex gap-2">
+                  {/* 👉 BUTTON MENUJU DETAIL */}
+                  <Link
+                    to={`/admin/learning-path/${lp.id}`}
+                    className="bg-green-600 text-white px-3 py-1 rounded-lg"
+                  >
+                    Detail
+                  </Link>
+
+                  <button
+                    onClick={() => deleteLearningPath(lp.id)}
+                    className="bg-red-500 text-white px-3 py-1 rounded-lg"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             ))}
           </div>

@@ -14,7 +14,7 @@ export const getCsrfCookie = async () => {
   try {
     // GUNAKAN INSTANCE YANG SAMA untuk share cookies
     await api.get("/csrf-cookie", {
-      baseURL: "http://localhost:8000/sanctum", // Override baseURL
+      baseURL: "http://localhost:8000/sanctum",
     });
     console.log("✅ CSRF cookie obtained");
   } catch (error) {
