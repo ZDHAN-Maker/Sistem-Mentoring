@@ -12,7 +12,7 @@ use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\LearningActivityController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\ScheduleController;
-
+use App\Http\Controllers\LearningPathController;
 
 // User Profile
 Route::middleware('auth:sanctum')->get('/user/me', [UserController::class, 'me']);
@@ -109,4 +109,15 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/admin/users', [AdminUserController::class, 'index']);
     Route::put('/admin/users/{id}/role', [AdminUserController::class, 'updateRole']);
     Route::delete('/admin/users/{id}', [AdminUserController::class, 'destroy']);
+});
+
+// Learning Path 
+Route::middleware(['auth:sanctum', 'admin'])->prefix('learning-paths')->group(function () {
+    Route::get('/', [LearningPathController::class, 'index']);
+    Route::post('/', [LearningPathController::class, 'store']);
+    Route::put('/{id}', [LearningPathController::class, 'update']);
+    Route::delete('/{id}', [LearningPathController::class, 'destroy']);
+
+    Route::post('/{id}/assign-mentor', [LearningPathController::class, 'assignMentor']);
+    Route::post('/{id}/assign-mentee', [LearningPathController::class, 'assignMentee']);
 });

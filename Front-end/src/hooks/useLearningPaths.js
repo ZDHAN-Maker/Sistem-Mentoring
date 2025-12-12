@@ -1,0 +1,91 @@
+// hooks/useLearningPaths.js
+import { useState, useEffect, useCallback } from "react";
+import api from "../axiosInstance";
+
+export function useLearningPaths() {
+  const [learningPaths, setLearningPaths] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchLearningPaths = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("/api/learning-paths");
+      setLearningPaths(res.data.data || []);
+    } catch (err) {
+      console.error("❌ Failed to fetch learning paths:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const createLearningPath = async (payload) => {
+    try {
+      const res = await api.post("/api/learning-paths", payload);
+      await fetchLearningPaths();
+      return res.data;
+    } catch (err) {
+      console.error("❌ Failed to create:", err);
+      throw err;
+    }
+  };
+
+  const updateLearningPath = async (id, payload) => {
+    try {
+      const res = await api.put(`/api/learning-paths/${id}`, payload);
+      await fetchLearningPaths();
+      return res.data;
+    } catch (err) {
+      console.error("❌ Failed to update:", err);
+      throw err;
+    }
+  };
+
+  const deleteLearningPath = async (id) => {
+    try {
+      await api.delete(`/api/learning-paths/${id}`);
+      await fetchLearningPaths();
+    } catch (err) {
+      console.error("❌ Failed to delete:", err);
+      throw err;
+    }
+  };
+
+  const assignMentor = async (id, mentorId) => {
+    try {
+      const res = await api.post(`/api/learning-paths/${id}/assign-mentor`, {
+        mentor_id: mentorId,
+      });
+      return res.data;
+    } catch (err) {
+      console.error("❌ Failed to assign mentor:", err);
+      throw err;
+    }
+  };
+
+  const assignMentee = async (id, menteeId) => {
+    try {
+      const res = await api.post(`/api/learning-paths/${id}/assign-mentee`, {
+        mentee_id: menteeId,
+      });
+      return res.data;
+    } catch (err) {
+      console.error("❌ Failed to assign mentee:", err);
+      throw err;
+    }
+  };
+
+  useEffect(() => {
+    fetchLearningPaths();
+  }, [fetchLearningPaths]);
+
+  return {
+    learningPaths,
+    loading,
+    createLearningPath,
+    updateLearningPath,
+    deleteLearningPath,
+    assignMentor,
+    assignMentee,
+    refresh: fetchLearningPaths,
+  };
+}

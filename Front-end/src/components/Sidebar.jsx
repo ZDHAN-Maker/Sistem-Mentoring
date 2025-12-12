@@ -35,6 +35,7 @@ const Sidebar = () => {
       { name: "Dashboard", path: "/admin-dashboard" },
       { name: "User Management", path: "/admin-dashboard/user-management" },
       { name: "Learning Activities", path: "/admin-dashboard/learning-activities" },
+      { name: "Learning Path" , path: "/admin-dashboard/learning-path"},
       { name: "Progress Report", path: "/admin-dashboard/progress-report" },
       { name: "Student Portal", path: "/admin-dashboard/student-portal" },
       { name: "Tutoring Schedule", path: "/admin-dashboard/tutoring-schedule" },
