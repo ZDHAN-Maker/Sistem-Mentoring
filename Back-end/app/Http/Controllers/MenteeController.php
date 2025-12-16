@@ -83,12 +83,24 @@ class MenteeController extends Controller
                 'message' => 'Tugas berhasil diupload',
                 'data'    => $task
             ], 201);
-
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validasi gagal',
                 'errors'  => $e->errors()
             ], 422);
         }
+    }
+
+    public function schedules($id)
+    {
+        // 🔐 mentee hanya boleh lihat jadwalnya sendiri
+        if (auth()->id() !== (int) $id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        return response()->json(
+            $this->menteeService->getMenteeSchedules($id),
+            200
+        );
     }
 }

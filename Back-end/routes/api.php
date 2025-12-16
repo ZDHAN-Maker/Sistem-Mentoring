@@ -55,6 +55,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/mentees/{id}/reports', [MenteeController::class, 'reports']);
     Route::get('/mentees/{id}/tasks', [MenteeController::class, 'tasks']);
     Route::post('/mentees/{id}/tasks', [MenteeController::class, 'uploadTask']);
+    Route::get('/mentees/{id}/schedules', [MenteeController::class, 'schedules']);
+
 });
 
 // Mentor Management

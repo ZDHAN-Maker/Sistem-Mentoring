@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Models\ProgressReport;
 use App\Models\Task;
 use App\Models\Pairing;
+use App\Models\Schedule;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -89,5 +91,15 @@ class MenteeService
             'file_path'  => $filePath,
             'status'     => 'submitted',
         ]);
+    }
+
+    public function getMenteeSchedules($menteeId)
+    {
+        return Schedule::whereHas('pairing', function ($q) use ($menteeId) {
+            $q->where('mentee_id', $menteeId);
+        })
+            ->with(['pairing.mentor'])
+            ->orderBy('scheduled_at', 'asc')
+            ->get();
     }
 }

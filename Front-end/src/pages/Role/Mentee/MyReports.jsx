@@ -1,5 +1,5 @@
 import React from "react";
-import useMyReports from "../../../hooks/useMyReports";
+import useMyReports from "../../../hooks/mentee/useMyReports";
 
 const MyReports = () => {
   const { reports, loading, error } = useMyReports();

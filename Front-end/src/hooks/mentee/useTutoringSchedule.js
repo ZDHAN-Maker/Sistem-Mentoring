@@ -2,35 +2,35 @@ import { useEffect, useState } from "react";
 import api from "../../axiosInstance";
 import { useAuth } from "../../context/useAuth";
 
-export default function useMyReports() {
+export default function useTutoringSchedule() {
   const { user } = useAuth();
 
-  const [reports, setReports] = useState([]);
+  const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const fetchReports = async () => {
+  const fetchSchedules = async () => {
     if (!user || !user.id) {
-      setError("User data tidak tersedia.");
+      setError("User data tidak tersedia");
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      console.log("📡 Fetching reports for mentee ID:", user.id);
+      console.log("📡 Fetching schedules for mentee:", user.id);
 
-      const res = await api.get(`/mentees/${user.id}/reports`);
+      const res = await api.get(`/mentees/${user.id}/schedules`);
 
-      console.log("✅ Reports data:", res.data);
+      console.log("✅ Schedule data:", res.data);
 
-      setReports(res.data.data || res.data.reports || res.data || []);
+      setSchedules(res.data.data || res.data || []);
     } catch (err) {
-      console.error("❌ Error fetching reports:", err);
+      console.error("❌ Error fetching schedules:", err);
       setError(
         err.response?.data?.message ||
           err.message ||
-          "Terjadi kesalahan"
+          "Gagal mengambil jadwal mentoring"
       );
     } finally {
       setLoading(false);
@@ -38,13 +38,13 @@ export default function useMyReports() {
   };
 
   useEffect(() => {
-    fetchReports();
+    fetchSchedules();
   }, [user]);
 
   return {
-    reports,
+    schedules,
     loading,
     error,
-    refetch: fetchReports,
+    refetch: fetchSchedules,
   };
 }
