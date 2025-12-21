@@ -1,7 +1,7 @@
 import React from "react";
 import Sidebar from "../../../components/Sidebar";
 import Navbar from "../../../components/Navbar";
-import useAdminDashboard from "../../../hooks/useAdminDashboard";
+import useAdminDashboard from "../../../hooks/Admin/useAdminDashboard";
 
 const DashboardHome = () => {
   const { stats, loading } = useAdminDashboard();

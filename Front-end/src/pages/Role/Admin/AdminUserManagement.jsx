@@ -1,4 +1,4 @@
-import useAdminUsers from "../../../hooks/useAdminUsers";
+import useAdminUsers from "../../../hooks/Admin/useAdminUsers";
 import UserTable from "../../../components/admin/UserTable";
 
 export default function AdminUserManagement() {

@@ -96,4 +96,14 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(LearningActivity::class, 'mentor_learning_activity', 'mentor_id');
     }
+
+    public function learningPaths()
+    {
+        return $this->belongsToMany(
+            LearningPath::class,
+            'learning_path_mentees',
+            'mentee_id',
+            'path_id'
+        )->withTimestamps();
+    }
 }

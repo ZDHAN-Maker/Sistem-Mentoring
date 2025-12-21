@@ -23,7 +23,10 @@ const Sidebar = () => {
     ],
     mentee: [
       { name: "Dashboard", path: "/mentee-dashboard" },
-      { name: "Learning Activities", path: "/mentee-dashboard/learning-activities" },
+      {
+        name: "Learning Activities",
+        path: "/mentee-dashboard/learning-activities",
+      },
       { name: "My Tasks", path: "/mentee-dashboard/tasks" },
       { name: "My Reports", path: "/mentee-dashboard/reports" },
       { name: "Tutoring Schedule", path: "/mentee-dashboard/schedule" },
@@ -34,8 +37,9 @@ const Sidebar = () => {
     admin: [
       { name: "Dashboard", path: "/admin-dashboard" },
       { name: "User Management", path: "/admin-dashboard/user-management" },
-      { name: "Learning Activities", path: "/admin-dashboard/learning-activities" },
-      { name: "Learning Path" , path: "/admin-dashboard/learning-path"},
+      { name: "Learning Activities",path: "/admin-dashboard/learning-activities",},
+      { name: "Learning Path", path: "/admin-dashboard/learning-path" },
+      { name: "Mentor-Mentee Pairing", path: "/admin-dashboard/pairings" },
       { name: "Progress Report", path: "/admin-dashboard/progress-report" },
       { name: "Student Portal", path: "/admin-dashboard/student-portal" },
       { name: "Tutoring Schedule", path: "/admin-dashboard/tutoring-schedule" },

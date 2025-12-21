@@ -6,25 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 
 class LearningActivity extends Model
 {
-    protected $fillable = ['title', 'description'];
+    protected $fillable = [
+        'learning_path_id',
+        'title',
+        'description',
+        'order'
+    ];
 
-    public function mentors()
+    public function learningPath()
     {
-        return $this->belongsToMany(User::class, 'mentor_learning_activity', 'learning_activity_id', 'mentor_id');
+        return $this->belongsTo(LearningPath::class);
     }
 
     public function materials()
     {
         return $this->hasMany(Material::class);
-    }
-
-    public function mentees()
-    {
-        return $this->hasMany(User::class, 'learning_activity_id');
-    }
-    
-    public function learningPath()
-    {
-        return $this->belongsTo(LearningPath::class);
     }
 }

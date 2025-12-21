@@ -7,7 +7,6 @@ use App\Models\ProgressReport;
 use App\Models\Task;
 use App\Models\Pairing;
 use App\Models\Schedule;
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -101,5 +100,32 @@ class MenteeService
             ->with(['pairing.mentor'])
             ->orderBy('scheduled_at', 'asc')
             ->get();
+    }
+
+    public function getDashboardStats($menteeId)
+    {
+        $tasks = Task::where('mentee_id', $menteeId)->get();
+
+        $totalTasks = $tasks->count();
+        $completedTasks = $tasks->where('status', 'approved')->count();
+        $submittedTasks = $tasks->where('status', 'submitted')->count();
+        $pendingTasks = $tasks->where('status', 'pending')->count();
+
+        $progress = $totalTasks === 0
+            ? 0
+            : round(($completedTasks / $totalTasks) * 100);
+
+        return [
+            'tasks' => [
+                'total' => $totalTasks,
+                'completed' => $completedTasks,
+                'submitted' => $submittedTasks,
+                'pending' => $pendingTasks,
+                'progress_percentage' => $progress,
+                'status' => $progress === 100
+                    ? 'Completed'
+                    : ($progress === 0 ? 'Not Started' : 'On Going'),
+            ],
+        ];
     }
 }

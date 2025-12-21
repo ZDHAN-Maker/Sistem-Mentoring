@@ -1,73 +1,44 @@
-// src/pages/Role/Mentee/DashboardHome.jsx
 import React, { useMemo } from "react";
 import { useAuth } from "../../../context/useAuth";
 import useMenteeDashboard from "../../../hooks/mentee/useMenteeDashboard";
 
 const DashboardHome = () => {
   const { user } = useAuth();
-  const { tasks, loading } = useMenteeDashboard();
+  const { tasks = [], stats, loading } = useMenteeDashboard();
 
-  /**
-   * Transform task dari API → format UI
-   */
-  const assignments = useMemo(() => {
-    return tasks.map((task) => ({
-      id: task.id,
-      title: task.judul,
-      status: mapTaskStatus(task.status),
-      type: "Task",
-    }));
-  }, [tasks]);
+  const assignments = useMemo(
+    () =>
+      tasks.map((task) => ({
+        id: task.id,
+        title: task.judul,
+        status: mapTaskStatus(task.status),
+        type: "Task",
+      })),
+    [tasks]
+  );
 
-  /**
-   * Hitung progress
-   */
-  const { percentage, completedCount, totalCount } = useMemo(() => {
-    const total = assignments.length;
-    const completed = assignments.filter(
-      (item) => item.status === "Completed"
-    ).length;
-
-    const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
-
-    return {
-      percentage: percent,
-      completedCount: completed,
-      totalCount: total,
-    };
-  }, [assignments]);
-
-  // Helper warna badge
-  const getStatusClass = (status) => {
-    switch (status) {
-      case "Completed":
-        return "bg-emerald-100 text-emerald-700";
-      case "On Going":
-        return "bg-amber-100 text-amber-700";
-      case "Not Completed":
-      default:
-        return "bg-rose-100 text-rose-700";
-    }
+  const progress = stats?.tasks ?? {
+    total: 0,
+    completed: 0,
+    progress_percentage: 0,
+    status: "Not Started",
   };
-
-  if (loading) {
-    return <p className="text-slate-500">Loading dashboard...</p>;
-  }
 
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-semibold text-slate-800">
-            Dashboard Mentee
-          </h1>
-          <p className="text-slate-500 mt-1">
-            Selamat datang, {user?.name || "Mentee"}! Pantau progres belajarmu di
-            sini.
-          </p>
-        </div>
+      <div className="mb-8">
+        <h1 className="text-3xl font-semibold text-slate-800">
+          Dashboard Mentee
+        </h1>
+        <p className="text-slate-500 mt-1">
+          Selamat datang, {user?.name || "Mentee"}! Pantau progres belajarmu di sini.
+        </p>
       </div>
+
+      {loading && (
+        <p className="text-slate-500 mb-4">Memuat data dashboard...</p>
+      )}
 
       <div className="grid grid-cols-1 gap-6">
         {/* === PROGRESS SUMMARY === */}
@@ -79,35 +50,30 @@ const DashboardHome = () => {
 
             <span
               className={`px-3 py-1 rounded-full text-xs font-medium ${
-                percentage === 100
+                progress.status === "Completed"
                   ? "bg-emerald-100 text-emerald-700"
-                  : percentage === 0
+                  : progress.status === "Not Started"
                   ? "bg-rose-100 text-rose-700"
                   : "bg-amber-100 text-amber-700"
               }`}
             >
-              {percentage === 100
-                ? "Completed"
-                : percentage === 0
-                ? "Not Started"
-                : "On Going"}
+              {progress.status}
             </span>
           </div>
 
           <p className="text-xs text-slate-500 mb-2">
-            {completedCount} dari {totalCount} tugas sudah selesai
+            {progress.completed} dari {progress.total} tugas sudah selesai
           </p>
 
-          {/* Progress bar */}
           <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden mb-2">
             <div
               className="h-full bg-emerald-500 transition-all"
-              style={{ width: `${percentage}%` }}
+              style={{ width: `${progress.progress_percentage}%` }}
             />
           </div>
 
           <p className="text-sm font-semibold text-emerald-600">
-            {percentage}%
+            {progress.progress_percentage}%
           </p>
         </section>
 
@@ -146,7 +112,7 @@ const DashboardHome = () => {
               </div>
             ))}
 
-            {assignments.length === 0 && (
+            {assignments.length === 0 && !loading && (
               <p className="text-sm text-slate-500 italic">
                 Belum ada tugas.
               </p>
@@ -158,9 +124,7 @@ const DashboardHome = () => {
   );
 };
 
-/**
- * Mapper status backend → UI
- */
+/* Helpers */
 const mapTaskStatus = (status) => {
   switch (status) {
     case "approved":
@@ -169,6 +133,17 @@ const mapTaskStatus = (status) => {
       return "On Going";
     default:
       return "Not Completed";
+  }
+};
+
+const getStatusClass = (status) => {
+  switch (status) {
+    case "Completed":
+      return "bg-emerald-100 text-emerald-700";
+    case "On Going":
+      return "bg-amber-100 text-amber-700";
+    default:
+      return "bg-rose-100 text-rose-700";
   }
 };
 

@@ -1,6 +1,5 @@
-// src/pages/Role/Mentee/LearningActivities.jsx
 import React from "react";
-import useLearningActivities from "../../../hooks/useLearningActivities";
+import useLearningActivities from "../../../hooks/mentee/useLearningActivities";
 
 const LearningActivities = () => {
   const {
@@ -14,55 +13,53 @@ const LearningActivities = () => {
   } = useLearningActivities();
 
   return (
-    <div>
-      <h1>Aktivitas Pembelajaran</h1>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-semibold">Aktivitas Pembelajaran</h1>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p className="text-red-500">{error}</p>}
 
-      {/* LIST ACTIVITIES */}
-      {loadingActivities ? (
-        <p>Loading aktivitas...</p>
-      ) : (
-        <ul>
-          {activities.map((activity) => (
-            <li
+      {/* ACTIVITIES */}
+      <div className="grid gap-3">
+        {loadingActivities ? (
+          <p>Loading aktivitas...</p>
+        ) : activities.length === 0 ? (
+          <p className="text-slate-500">Belum ada aktivitas</p>
+        ) : (
+          activities.map((activity) => (
+            <button
               key={activity.id}
               onClick={() => fetchMaterials(activity.id)}
-              style={{
-                cursor: "pointer",
-                margin: "10px 0",
-                padding: "10px",
-                backgroundColor:
-                  selectedActivity === activity.id ? "#dbeafe" : "#f2f2f2",
-              }}
+              className={`p-3 rounded-lg text-left border transition
+                ${
+                  selectedActivity === activity.id
+                    ? "bg-blue-50 border-blue-400"
+                    : "bg-white hover:bg-slate-50"
+                }`}
             >
               {activity.title}
-            </li>
-          ))}
-
-          {activities.length === 0 && (
-            <p>Belum ada aktivitas pembelajaran</p>
-          )}
-        </ul>
-      )}
+            </button>
+          ))
+        )}
+      </div>
 
       {/* MATERIALS */}
       {selectedActivity && (
-        <div>
-          <h2>Materi Aktivitas</h2>
+        <div className="bg-white border rounded-lg p-4">
+          <h2 className="font-semibold mb-3">Materi</h2>
 
           {loadingMaterials ? (
             <p>Loading materi...</p>
           ) : materials.length === 0 ? (
-            <p>Belum ada materi untuk aktivitas ini</p>
+            <p className="text-slate-500">Belum ada materi</p>
           ) : (
-            <ul>
+            <ul className="space-y-2">
               {materials.map((material) => (
                 <li key={material.id}>
                   <a
-                    href={`/storage/${material.file_path}`}
+                    href={material.video_url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
                   >
                     {material.title}
                   </a>

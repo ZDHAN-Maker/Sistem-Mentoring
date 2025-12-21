@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminPairingController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MenteeController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\LearningActivityController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\LearningPathController;
+use Google\Service\MyBusinessAccountManagement\Admin;
 
 // User Profile
 Route::middleware('auth:sanctum')->get('/user/me', [UserController::class, 'me']);
@@ -56,7 +58,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/mentees/{id}/tasks', [MenteeController::class, 'tasks']);
     Route::post('/mentees/{id}/tasks', [MenteeController::class, 'uploadTask']);
     Route::get('/mentees/{id}/schedules', [MenteeController::class, 'schedules']);
-
+    Route::get('/mentees/{id}/dashboard', [MenteeController::class, 'dashboard']);
+    Route::get('/mentee/learning-activities', [MenteeController::class, 'learningActivities']);
+    Route::get('/mentee/learning-activities/{activityId}/materials', [MenteeController::class, 'learningMaterials']);
 });
 
 // Mentor Management
@@ -67,7 +71,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/mentors/{id}/schedules', [MentorController::class, 'schedules']);
     Route::post('/mentors/{id}/tasks', [MentorController::class, 'giveTask']);
     Route::post('/mentors/report/{reportId}/feedback', [MentorController::class, 'giveFeedback']);
-    Route::post('/mentors/{id}/materials', [MentorController::class, 'uploadMaterial']);
+    Route::post(
+        '/mentors/{mentorId}/materials',
+        [MentorController::class, 'uploadMaterial']
+    );
     Route::post('/mentors/pairing', [MentorController::class, 'createPairing']);
     Route::post('/mentors/schedule', [MentorController::class, 'scheduleMentoring']);
     Route::get('/mentors/{id}/dashboard', [MentorController::class, 'getDashboard']);
@@ -111,13 +118,16 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/admin/users', [AdminUserController::class, 'index']);
     Route::put('/admin/users/{id}/role', [AdminUserController::class, 'updateRole']);
     Route::delete('/admin/users/{id}', [AdminUserController::class, 'destroy']);
+    Route::post('/pairings', [AdminPairingController::class, 'store']);
+    Route::get('/pairings', [AdminPairingController::class, 'index']);
+    Route::delete('/pairings/{id}', [AdminPairingController::class, 'destroy']);
 });
 
-// Learning Path Management
+// Learning Path     Management
 Route::middleware(['auth:sanctum', 'admin'])->prefix('learning-paths')->group(function () {
 
     Route::get('/', [LearningPathController::class, 'index']);
-    Route::get('/{id}', [LearningPathController::class, 'show']); // DETAIL
+    Route::get('/{id}', [LearningPathController::class, 'show']);
 
     Route::post('/', [LearningPathController::class, 'store']);
     Route::put('/{id}', [LearningPathController::class, 'update']);
@@ -128,4 +138,10 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('learning-paths')->group(fu
     Route::put('/{id}/replace-mentor', [LearningPathController::class, 'replaceMentor']);
 
     Route::post('/{id}/assign-mentee', [LearningPathController::class, 'assignMentee']);
+});
+
+
+// Mentee Path Management 
+Route::middleware(['auth:sanctum', 'mentee'])->group(function () {
+    Route::get('/my-learning-paths', [LearningPathController::class, 'myLearningPaths']);
 });

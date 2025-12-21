@@ -8,39 +8,26 @@ export default function useMenteeDashboard() {
   const menteeId = user?.id;
 
   const [tasks, setTasks] = useState([]);
-  const [reports, setReports] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!menteeId) return;
 
-    const fetchDashboard = async () => {
-      try {
-        setLoading(true);
+    setLoading(true);
 
-        const [tasksRes, reportsRes] = await Promise.all([
-          api.get(`/mentees/${menteeId}/tasks`),
-          api.get(`/mentees/${menteeId}/reports`)
-        ]);
-
-        setTasks(tasksRes.data);
-        setReports(reportsRes.data);
-      } catch (err) {
-        console.error("Dashboard mentee error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboard();
+    api
+      .get(`/mentees/${menteeId}/dashboard`)
+      .then((res) => {
+        setTasks(res.data.tasks);
+        setStats(res.data.stats);
+      })
+      .finally(() => setLoading(false));
   }, [menteeId]);
 
   return {
     tasks,
-    reports,
+    stats,
     loading,
-    totalTasks: tasks.length,
-    totalReports: reports.length,
-    completedTasks: tasks.filter(t => t.status === "approved").length
   };
 }

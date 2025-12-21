@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\User;
 use App\Models\LearningPath;
+use Illuminate\Validation\ValidationException;
 
 class LearningPathService
 {
@@ -36,48 +38,98 @@ class LearningPathService
         return $path->delete();
     }
 
-    public function assignMentor(LearningPath $path, $mentorId)
+    /* ===================== MENTOR ===================== */
+
+    public function assignMentor(LearningPath $path, int $mentorId)
     {
-        if ($path->mentors()->where('user_id', $mentorId)->exists()) {
+        $mentor = User::where('id', $mentorId)
+            ->where('role', 'mentor')
+            ->first();
+
+        if (!$mentor) {
+            throw ValidationException::withMessages([
+                'mentor_id' => 'User is not a mentor'
+            ]);
+        }
+
+        if ($path->mentors()->whereKey($mentorId)->exists()) {
             return ['message' => 'Mentor already assigned'];
         }
 
         $path->mentors()->attach($mentorId);
-        return $path->mentors;
+
+        return $path->load('mentors')->mentors;
     }
 
-    public function removeMentor(LearningPath $path, $mentorId)
+    public function removeMentor(LearningPath $path, int $mentorId)
     {
-        if (!$path->mentors()->where('user_id', $mentorId)->exists()) {
+        if (!$path->mentors()->whereKey($mentorId)->exists()) {
             return ['message' => 'Mentor not found in this path'];
         }
 
         $path->mentors()->detach($mentorId);
-        return $path->mentors;
+
+        return $path->load('mentors')->mentors;
     }
 
-    public function replaceMentor(LearningPath $path, $oldId, $newId)
+    public function replaceMentor(LearningPath $path, int $oldId, int $newId)
     {
-        if (!$path->mentors()->where('user_id', $oldId)->exists()) {
-            return ['message' => 'Old mentor is not part of this path'];
+        if (!$path->mentors()->whereKey($oldId)->exists()) {
+            throw ValidationException::withMessages([
+                'old_mentor_id' => 'Old mentor not found in this path'
+            ]);
         }
 
+        $newMentor = User::where('id', $newId)
+            ->where('role', 'mentor')
+            ->first();
+
+        if (!$newMentor) {
+            throw ValidationException::withMessages([
+                'new_mentor_id' => 'User is not a mentor'
+            ]);
+        }
+
+        $path->mentors()->syncWithoutDetaching([$newId]);
         $path->mentors()->detach($oldId);
 
-        if (!$path->mentors()->where('user_id', $newId)->exists()) {
-            $path->mentors()->attach($newId);
-        }
-
-        return $path->mentors;
+        return $path->load('mentors')->mentors;
     }
 
-    public function assignMentee(LearningPath $path, $menteeId)
+    /* ===================== MENTEE ===================== */
+
+    public function assignMentee(LearningPath $path, int $menteeId)
     {
-        if ($path->mentees()->where('user_id', $menteeId)->exists()) {
+        $mentee = User::where('id', $menteeId)
+            ->where('role', 'mentee')
+            ->first();
+
+        if (!$mentee) {
+            throw ValidationException::withMessages([
+                'mentee_id' => 'User is not a mentee'
+            ]);
+        }
+
+        if ($path->mentees()->whereKey($menteeId)->exists()) {
             return ['message' => 'Mentee already assigned'];
         }
 
         $path->mentees()->attach($menteeId);
-        return $path->mentees;
+
+        return $path->load('mentees')->mentees;
+    }
+
+    public function getMyLearningPaths()
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'mentee') {
+            abort(403, 'Unauthorized');
+        }
+
+        return $user->learningPaths()
+            ->with(['mentors'])
+            ->withCount(['mentors', 'mentees'])
+            ->get();
     }
 }

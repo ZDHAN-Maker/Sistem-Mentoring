@@ -125,4 +125,13 @@ class LearningPathController extends Controller
             'data' => $this->service->assignMentee($path, $validated['mentee_id'])
         ]);
     }
+
+    // Mentee
+
+    public function myLearningPaths()
+    {
+        return response()->json([
+            'data' => $this->service->getMyLearningPaths()
+        ]);
+    }
 }

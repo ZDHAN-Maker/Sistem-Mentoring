@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import api, { getCsrfCookie } from "../axiosInstance";
+import api, { getCsrfCookie } from "../../axiosInstance";
 
 export default function useAdminDashboard() {
   const [stats, setStats] = useState(null);

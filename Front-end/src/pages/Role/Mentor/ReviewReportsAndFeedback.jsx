@@ -1,6 +1,6 @@
 import React from "react";
 import MentorCard from "../../../components/Card";
-import { useMentorDashboard } from "../../../hooks/useReviewReportMentor";
+import { useMentorDashboard } from "../../../hooks/Mentor/useReviewReportMentor";
 
 export default function ReviewReports() {
   const mentorId = 1; // nanti bisa diganti dari auth context

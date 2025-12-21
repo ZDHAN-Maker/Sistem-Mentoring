@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { useLearningPaths } from "../../../hooks/useLearningPaths";
+import { useLearningPaths } from "../../../hooks/Admin/useLearningPaths";
 
 const LearningPathDetail = () => {
   const { id } = useParams();

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 
 class Material extends Model
 {
@@ -42,9 +43,13 @@ class Material extends Model
         return $this->belongsTo(LearningActivity::class);
     }
 
-    public function scopeByMentor($query, $mentorId)
+    public function scopeByMentor(Builder $query, $mentorId = null)
     {
-        return $query->where('mentor_id', $mentorId);
+        if ($mentorId) {
+            return $query->where('mentor_id', $mentorId);
+        }
+
+        return $query;
     }
 
     public function scopeOrdered($query)

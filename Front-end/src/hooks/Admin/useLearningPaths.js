@@ -1,18 +1,20 @@
-// hooks/useLearningPaths.js
 import { useState, useEffect, useCallback } from "react";
-import api from "../axiosInstance";
+import api from "../../axiosInstance";
 
 export function useLearningPaths() {
   const [learningPaths, setLearningPaths] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const fetchLearningPaths = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await api.get("/api/learning-paths");
       setLearningPaths(res.data.paths || []);
     } catch (err) {
       console.error("❌ Failed to fetch learning paths:", err);
+      setError("Gagal mengambil data learning path");
     } finally {
       setLoading(false);
     }
@@ -60,11 +62,15 @@ export function useLearningPaths() {
     }
   };
 
+  /* ===================== MENTOR ===================== */
+
   const assignMentor = async (id, mentorId) => {
     try {
-      const res = await api.post(`/api/learning-paths/${id}/assign-mentor`, {
-        mentor_id: mentorId,
-      });
+      const res = await api.post(
+        `/api/learning-paths/${id}/assign-mentor`,
+        { mentor_id: mentorId }
+      );
+      await fetchLearningPaths();
       return res.data;
     } catch (err) {
       console.error("❌ Failed to assign mentor:", err);
@@ -74,7 +80,10 @@ export function useLearningPaths() {
 
   const removeMentor = async (id, mentorId) => {
     try {
-      const res = await api.delete(`/api/learning-paths/${id}/mentor/${mentorId}`);
+      const res = await api.delete(
+        `/api/learning-paths/${id}/mentor/${mentorId}`
+      );
+      await fetchLearningPaths();
       return res.data;
     } catch (err) {
       console.error("❌ Failed to remove mentor:", err);
@@ -84,10 +93,14 @@ export function useLearningPaths() {
 
   const replaceMentor = async (id, oldId, newId) => {
     try {
-      const res = await api.put(`/api/learning-paths/${id}/replace-mentor`, {
-        old_mentor_id: oldId,
-        new_mentor_id: newId,
-      });
+      const res = await api.put(
+        `/api/learning-paths/${id}/replace-mentor`,
+        {
+          old_mentor_id: oldId,
+          new_mentor_id: newId,
+        }
+      );
+      await fetchLearningPaths();
       return res.data;
     } catch (err) {
       console.error("❌ Failed to replace mentor:", err);
@@ -95,11 +108,15 @@ export function useLearningPaths() {
     }
   };
 
+  /* ===================== MENTEE ===================== */
+
   const assignMentee = async (id, menteeId) => {
     try {
-      const res = await api.post(`/api/learning-paths/${id}/assign-mentee`, {
-        mentee_id: menteeId,
-      });
+      const res = await api.post(
+        `/api/learning-paths/${id}/assign-mentee`,
+        { mentee_id: menteeId }
+      );
+      await fetchLearningPaths();
       return res.data;
     } catch (err) {
       console.error("❌ Failed to assign mentee:", err);
@@ -114,6 +131,7 @@ export function useLearningPaths() {
   return {
     learningPaths,
     loading,
+    error,
     createLearningPath,
     updateLearningPath,
     deleteLearningPath,

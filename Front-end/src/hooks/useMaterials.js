@@ -9,36 +9,20 @@ export default function useMaterials() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errors, setErrors] = useState({});
 
-  // ======================================================
-  // FETCH MATERIALS
-  // ======================================================
   const fetchMaterials = useCallback(async () => {
     try {
-      const res = await api.get("/api/materials"); // ❌ NO TOKEN NEEDED
+      const res = await api.get("/api/materials");
 
       const list = res.data?.data ?? [];
-
-      const normalized = list.map((m) => ({
-        ...m,
-        video_url: m.video_url,
-      }));
-
-      setMaterials(normalized);
+      setMaterials(list);
 
       const savedId = localStorage.getItem("active_material_id");
+      const active =
+        list.find((m) => m.id === Number(savedId)) || list[0] || null;
 
-      if (savedId) {
-        const match = normalized.find((m) => m.id === Number(savedId));
-        if (match) {
-          setActiveMaterialId(match.id);
-          setActiveVideo(match.video_url);
-          return;
-        }
-      }
-
-      if (normalized.length > 0) {
-        setActiveMaterialId(normalized[0].id);
-        setActiveVideo(normalized[0].video_url);
+      if (active) {
+        setActiveMaterialId(active.id);
+        setActiveVideo(active.video_url);
       }
     } catch (err) {
       console.error("❌ Fetch error:", err.response?.data ?? err.message);
@@ -47,7 +31,7 @@ export default function useMaterials() {
 
   useEffect(() => {
     (async () => {
-      await getCsrfCookie(); // penting!
+      await getCsrfCookie();
       fetchMaterials();
     })();
   }, [fetchMaterials]);
@@ -58,30 +42,35 @@ export default function useMaterials() {
     }
   }, [activeMaterialId]);
 
-  // ======================================================
-  // SELECT MATERIAL
-  // ======================================================
   const selectMaterial = (material) => {
     setActiveMaterialId(material.id);
     setActiveVideo(material.video_url);
     localStorage.setItem("active_material_id", material.id);
   };
 
-  // ======================================================
-  // CREATE / UPDATE MATERIAL
-  // ======================================================
-  const saveMaterial = async (formData, editMode = false, materialId = null) => {
+  const saveMaterial = async (
+    formData,
+    editMode = false,
+    materialId = null
+  ) => {
     setLoading(true);
     setErrors({});
     setUploadProgress(0);
 
     const data = new FormData();
+
     Object.entries(formData).forEach(([key, val]) => {
-      if (val !== null && val !== undefined) data.append(key, val);
+      if (val === null || val === undefined) return;
+
+      // 🔥 FIX PENTING
+      if (key === "video_file" || key === "video_path") {
+        data.append("video", val); // HARUS "video"
+      } else {
+        data.append(key, val);
+      }
     });
 
     try {
-      let res;
       const config = {
         withCredentials: true,
         onUploadProgress: (p) => {
@@ -91,15 +80,13 @@ export default function useMaterials() {
         },
       };
 
-      if (editMode) {
-        res = await api.post(
-          `/api/materials/${materialId}?_method=PUT`,
-          data,
-          config
-        );
-      } else {
-        res = await api.post(`/api/materials`, data, config);
-      }
+      const res = editMode
+        ? await api.post(
+            `/api/materials/${materialId}?_method=PUT`,
+            data,
+            config
+          )
+        : await api.post(`/api/materials`, data, config);
 
       await fetchMaterials();
       setLoading(false);
@@ -120,9 +107,6 @@ export default function useMaterials() {
     }
   };
 
-  // ======================================================
-  // DELETE MATERIAL
-  // ======================================================
   const deleteMaterial = async (materialId) => {
     try {
       await api.delete(`/api/materials/${materialId}`, {
