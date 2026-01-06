@@ -2,21 +2,38 @@ import React, { useMemo } from "react";
 import { useAuth } from "../../../context/useAuth";
 import useMenteeDashboard from "../../../hooks/mentee/useMenteeDashboard";
 
+// Import Icons
+import {
+  ChartBarIcon,
+  ClipboardDocumentListIcon,
+  CalendarDaysIcon,
+  MapPinIcon,
+} from "@heroicons/react/24/outline";
+
 const DashboardHome = () => {
   const { user } = useAuth();
-  const { tasks = [], stats, loading } = useMenteeDashboard();
 
+  const { stats, upcomingSchedules, loading } = useMenteeDashboard();
+
+  const tasks =
+    stats?.task_list ||
+    stats?.tasks?.list ||
+    stats?.tasks?.items ||
+    [];
+
+  /* ===== MAP TASKS → ASSIGNMENTS ===== */
   const assignments = useMemo(
     () =>
       tasks.map((task) => ({
         id: task.id,
-        title: task.judul,
+        title: task.judul || task.title || "Untitled Task",
         status: mapTaskStatus(task.status),
         type: "Task",
       })),
     [tasks]
   );
 
+  /* ===== PROGRESS ===== */
   const progress = stats?.tasks ?? {
     total: 0,
     completed: 0,
@@ -26,27 +43,29 @@ const DashboardHome = () => {
 
   return (
     <div>
-      {/* Header */}
+      {/* ===== HEADER ===== */}
       <div className="mb-8">
-        <h1 className="text-3xl font-semibold text-slate-800">
-          Dashboard Mentee
-        </h1>
         <p className="text-slate-500 mt-1">
           Selamat datang, {user?.name || "Mentee"}! Pantau progres belajarmu di sini.
         </p>
       </div>
 
       {loading && (
-        <p className="text-slate-500 mb-4">Memuat data dashboard...</p>
+        <p className="text-slate-500 mb-4">
+          Memuat data dashboard...
+        </p>
       )}
 
       <div className="grid grid-cols-1 gap-6">
-        {/* === PROGRESS SUMMARY === */}
+        {/* ===== PROGRESS SUMMARY ===== */}
         <section className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-slate-800">
-              Progress Summary
-            </h2>
+            <div className="flex items-center gap-2">
+              <ChartBarIcon className="w-6 h-6 text-slate-700" />
+              <h2 className="text-xl font-semibold text-slate-800">
+                Progress Summary
+              </h2>
+            </div>
 
             <span
               className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -77,12 +96,16 @@ const DashboardHome = () => {
           </p>
         </section>
 
-        {/* === ASSIGNMENTS === */}
+        {/* ===== ASSIGNMENTS ===== */}
         <section className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-slate-800">
-              Assignments
-            </h2>
+            <div className="flex items-center gap-2">
+              <ClipboardDocumentListIcon className="w-6 h-6 text-slate-700" />
+              <h2 className="text-xl font-semibold text-slate-800">
+                Assignments
+              </h2>
+            </div>
+
             <span className="text-xs text-slate-500">
               {assignments.length} tugas
             </span>
@@ -102,6 +125,7 @@ const DashboardHome = () => {
                     {item.type} • ID: {item.id}
                   </p>
                 </div>
+
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusClass(
                     item.status
@@ -119,12 +143,68 @@ const DashboardHome = () => {
             )}
           </div>
         </section>
+
+        {/* ===== UPCOMING SCHEDULE ===== */}
+        <section className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <CalendarDaysIcon className="w-6 h-6 text-slate-700" />
+              <h2 className="text-xl font-semibold text-slate-800">
+                Upcoming Schedule
+              </h2>
+            </div>
+
+            <span className="text-xs text-slate-500">
+              {upcomingSchedules.length} jadwal
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {upcomingSchedules.map((schedule) => (
+              <div
+                key={schedule.id}
+                className="flex items-center justify-between rounded-lg border px-4 py-3"
+              >
+                <div>
+                  <p className="text-sm font-medium text-slate-800">
+                    {schedule.title || "Mentoring Session"}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Dengan {schedule.pairing?.mentor?.name}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {formatDateTime(schedule.start_time)} –{" "}
+                    {formatTime(schedule.end_time)}
+                  </p>
+
+                  {schedule.location && (
+                    <p className="text-xs text-slate-400 flex items-center gap-1">
+                      <MapPinIcon className="w-4 h-4" />
+                      {schedule.location}
+                    </p>
+                  )}
+                </div>
+
+                <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                  Upcoming
+                </span>
+              </div>
+            ))}
+
+            {upcomingSchedules.length === 0 && !loading && (
+              <p className="text-sm text-slate-500 italic">
+                Tidak ada jadwal mentoring terdekat.
+              </p>
+            )}
+          </div>
+        </section>
       </div>
     </div>
   );
 };
 
-/* Helpers */
+/* ===== HELPERS ===== */
+
 const mapTaskStatus = (status) => {
   switch (status) {
     case "approved":
@@ -146,5 +226,21 @@ const getStatusClass = (status) => {
       return "bg-rose-100 text-rose-700";
   }
 };
+
+const formatDateTime = (dateTime) =>
+  new Date(dateTime).toLocaleString("id-ID", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+const formatTime = (dateTime) =>
+  new Date(dateTime).toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
 export default DashboardHome;

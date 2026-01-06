@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 
 class LearningActivityController extends Controller
 {
-    protected $learningActivityService;
+    protected LearningActivityService $learningActivityService;
 
     public function __construct(LearningActivityService $learningActivityService)
     {
@@ -17,8 +17,10 @@ class LearningActivityController extends Controller
 
     public function index()
     {
-        $learningActivities = LearningActivity::all();
-        return response()->json(['success' => true, 'data' => $learningActivities]);
+        // ADMIN / MENTOR
+        return response()->json([
+            'data' => LearningActivity::ordered()->get()
+        ]);
     }
 
     public function store(Request $request)
@@ -27,37 +29,48 @@ class LearningActivityController extends Controller
             'title' => 'required|string|max:255',
         ]);
 
-        $learningActivity = $this->learningActivityService->createLearningActivity($validated);
-
-        return response()->json(['success' => true, 'data' => $learningActivity]);
+        return response()->json([
+            'data' => LearningActivity::create($validated)
+        ], 201);
     }
 
-    public function getMaterials($learningActivityId)
-    {
-        $materials = $this->learningActivityService->getMaterialsByLearningActivity($learningActivityId);
-
-        if ($materials === null) {
-            return response()->json(['success' => false, 'message' => 'Learning Activity not found'], 404);
-        }
-
-        return response()->json(['success' => true, 'data' => $materials]);
-    }
-
-    public function assignMentor(Request $request, $learningActivityId)
+    public function assignMentor(Request $request, $id)
     {
         $validated = $request->validate([
-            'mentor_id' => 'required|exists:users,id,role,mentor',
+            'mentor_id' => 'required|exists:users,id',
         ]);
 
-        $result = $this->learningActivityService->assignMentorToActivity(
-            $learningActivityId,
-            $validated['mentor_id']
-        );
+        $activity = LearningActivity::findOrFail($id);
 
-        if ($result) {
-            return response()->json(['success' => true, 'message' => 'Mentor assigned successfully']);
-        }
+        $activity->mentors()->syncWithoutDetaching([$validated['mentor_id']]);
 
-        return response()->json(['success' => false, 'message' => 'Failed to assign mentor'], 400);
+        return response()->json(['message' => 'Mentor assigned']);
+    }
+
+    public function indexForMentee()
+    {
+        $menteeId = auth()->id();
+
+        $activities = LearningActivity::whereHas('materials', function ($q) use ($menteeId) {
+            $q->where('status', 'published')
+                ->whereHas('mentor.mentorPairings', function ($p) use ($menteeId) {
+                    $p->where('mentee_id', $menteeId)
+                        ->where('status', 'active');
+                });
+        })
+            ->with(['materials' => function ($q) use ($menteeId) {
+                $q->where('status', 'published')
+                    ->whereHas('mentor.mentorPairings', function ($p) use ($menteeId) {
+                        $p->where('mentee_id', $menteeId)
+                            ->where('status', 'active');
+                    });
+            }])
+            ->ordered()
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $activities
+        ]);
     }
 }

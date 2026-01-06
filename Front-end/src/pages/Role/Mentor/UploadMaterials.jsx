@@ -1,10 +1,10 @@
+// pages/mentor/material/MaterialManager.jsx
 import { useState } from "react";
 import useMaterials from "../../../hooks/useMaterials";
 
 import MaterialList from "../../../components/MaterialComponent/MaterialList";
 import MaterialModal from "../../../components/MaterialComponent/MaterialModal";
 import MaterialVideoPlayer from "../../../components/MaterialComponent/MaterialVideoPlayer";
-import Button from "../../../components/Button";
 
 export default function MaterialManager() {
   const {
@@ -27,6 +27,8 @@ export default function MaterialManager() {
     title: "",
     description: "",
     video: null,
+    schedule_id: "",
+    learning_activity_id: "",
   });
 
   const openCreate = () => {
@@ -39,42 +41,37 @@ export default function MaterialManager() {
     setEditMode(true);
     setSelectedId(m.id);
     setFormData({
-      title: m.title,
-      description: m.description || "",
+      title: "",
+      description: "",
       video: null,
+      schedule_id: "",
+      learning_activity_id: "",
     });
+
     setModalOpen(true);
   };
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    await saveMaterial(formData, editMode, selectedId);
-    setModalOpen(false);
+    const res = await saveMaterial(formData, editMode, selectedId);
+    if (!res?.error) {
+      setModalOpen(false);
+    }
   };
 
   return (
     <div className="flex flex-col gap-6">
+      <MaterialVideoPlayer videoUrl={activeVideo} />
 
-      {/* Video Player lebih besar */}
-      <div className="w-full">
-        <div className="w-full max-w-7xl mx-aut ">
-          <MaterialVideoPlayer videoUrl={activeVideo} />
-        </div>
-      </div>
+      <MaterialList
+        materials={materials}
+        activeMaterialId={activeMaterialId}
+        onSelect={selectMaterial}
+        onEdit={openEdit}
+        onDelete={deleteMaterial}
+        onCreate={openCreate}
+      />
 
-      {/* Daftar materi di bawah video */}
-      <div className="w-full max-w-5xl mx-auto">
-        <MaterialList
-          materials={materials}
-          activeMaterialId={activeMaterialId}
-          onSelect={selectMaterial}
-          onEdit={openEdit}
-          onDelete={deleteMaterial}
-          onCreate={openCreate}
-        />
-      </div>
-
-      {/* Modal */}
       <MaterialModal
         open={modalOpen}
         close={() => setModalOpen(false)}

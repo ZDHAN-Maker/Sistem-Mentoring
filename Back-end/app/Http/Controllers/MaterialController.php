@@ -32,7 +32,6 @@ class MaterialController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'video' => 'required|file|mimes:mp4,avi,mov,wmv|max:512000',
-            'schedule_id' => 'nullable|exists:schedules,id',
             'status' => 'nullable|in:draft,published',
         ]);
 
@@ -74,7 +73,7 @@ class MaterialController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $material->load(['schedule'])
+            'data' => $material
         ]);
     }
 
@@ -92,7 +91,6 @@ class MaterialController extends Controller
             'title' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
             'video' => 'nullable|file|mimes:mp4,avi,mov,wmv|max:512000',
-            'schedule_id' => 'nullable|exists:schedules,id',
             'status' => 'nullable|in:draft,published',
         ]);
 
@@ -108,7 +106,6 @@ class MaterialController extends Controller
             $cleanData = $request->only([
                 'title',
                 'description',
-                'schedule_id',
                 'status'
             ]);
 
@@ -130,7 +127,7 @@ class MaterialController extends Controller
             ], 500);
         }
     }
-    
+
     public function destroy(Material $material)
     {
         if ($material->mentor_id !== auth()->id()) {

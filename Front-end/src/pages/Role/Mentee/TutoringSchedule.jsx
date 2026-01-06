@@ -37,7 +37,7 @@ const TutoringSchedule = () => {
                 </h3>
 
                 <p className="text-sm text-gray-500 mt-1">
-                  Topik: {item.topic || "Tidak ada topik"}
+                  Topik: {item.topic || "Mentoring Schedule"}
                 </p>
 
                 <p className="text-xs text-gray-400 mt-2">

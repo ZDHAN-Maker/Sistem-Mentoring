@@ -1,14 +1,10 @@
-import React, { useState, useEffect } from "react";
-import axios from "../../../axiosInstance";
+import React, { useState } from "react";
+import { useGiveTask } from "../../../hooks/Mentor/useGivetask";
 
 const GiveTask = () => {
-  const mentorId = localStorage.getItem("id");
-
-  const [mentees, setMentees] = useState([]);
-  const [pairings, setPairings] = useState([]);
+  const { pairings, giveTask, loading, error } = useGiveTask();
 
   const [form, setForm] = useState({
-    mentee_id: "",
     pairing_id: "",
     judul: "",
     deskripsi: "",
@@ -17,51 +13,24 @@ const GiveTask = () => {
     link_url: "",
   });
 
-  // AMBIL MENTEE & PAIRING
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const menteeRes = await axios.get(`/mentors/${mentorId}/mentees`);
-        const pairingRes = await axios.get(`/mentors/${mentorId}/schedules`);
-
-        setMentees(menteeRes.data);
-        setPairings(pairingRes.data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    fetchData();
-  }, [mentorId]);
-
-  // SUBMIT TUGAS
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const data = new FormData();
-    data.append("mentee_id", form.mentee_id);
-    data.append("pairing_id", form.pairing_id);
-    data.append("judul", form.judul);
-    data.append("deskripsi", form.deskripsi);
-    data.append("type", form.type);
-
-    if (form.type === "file" && form.file_path) {
-      data.append("file", form.file_path);
-    }
-
-    if (form.type === "link") {
-      data.append("file_path", form.link_url);
-    }
-
     try {
-      await axios.post(`/mentors/${mentorId}/tasks`, data, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
+      await giveTask(form);
       alert("Tugas berhasil diberikan!");
+
+      setForm({
+        pairing_id: "",
+        judul: "",
+        deskripsi: "",
+        type: "file",
+        file_path: null,
+        link_url: "",
+      });
     } catch (err) {
       console.error(err);
-      alert("Gagal memberikan tugas.");
+      alert("Gagal memberikan tugas");
     }
   };
 
@@ -71,35 +40,28 @@ const GiveTask = () => {
         Berikan Tugas Baru
       </h1>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      {loading && <p>Loading...</p>}
+      {error && <p className="text-red-500">{error}</p>}
 
-        {/* MENTEE */}
-        <div>
-          <label className="text-[#6B4F35] font-medium">Pilih Mentee</label>
-          <select
-            className="w-full border p-3 rounded-lg mt-1 bg-white"
-            onChange={(e) => setForm({ ...form, mentee_id: e.target.value })}
-          >
-            <option value="">-- Pilih Mentee --</option>
-            {mentees.map((m) => (
-              <option key={m.id} value={m.id}>{m.name}</option>
-            ))}
-          </select>
-        </div>
+      <form onSubmit={handleSubmit} className="space-y-5">
 
         {/* PAIRING */}
         <div>
           <label className="text-[#6B4F35] font-medium">
-            Pilih Pairing / Jadwal
+            Pilih Mentee (Pairing)
           </label>
           <select
             className="w-full border p-3 rounded-lg mt-1 bg-white"
-            onChange={(e) => setForm({ ...form, pairing_id: e.target.value })}
+            value={form.pairing_id}
+            onChange={(e) =>
+              setForm({ ...form, pairing_id: e.target.value })
+            }
+            required
           >
-            <option value="">-- Pilih Pairing --</option>
+            <option value="">-- Pilih Mentee --</option>
             {pairings.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.title} - {p.date}
+                {p.mentee?.name}
               </option>
             ))}
           </select>
@@ -111,8 +73,11 @@ const GiveTask = () => {
           <input
             type="text"
             className="w-full border p-3 rounded-lg mt-1"
-            placeholder="Contoh: Buat Laporan Mingguan"
-            onChange={(e) => setForm({ ...form, judul: e.target.value })}
+            value={form.judul}
+            onChange={(e) =>
+              setForm({ ...form, judul: e.target.value })
+            }
+            required
           />
         </div>
 
@@ -121,9 +86,11 @@ const GiveTask = () => {
           <label className="text-[#6B4F35] font-medium">Deskripsi</label>
           <textarea
             className="w-full border p-3 rounded-lg mt-1 h-28"
-            placeholder="Instruksi tugas..."
-            onChange={(e) => setForm({ ...form, deskripsi: e.target.value })}
-          ></textarea>
+            value={form.deskripsi}
+            onChange={(e) =>
+              setForm({ ...form, deskripsi: e.target.value })
+            }
+          />
         </div>
 
         {/* TYPE */}
@@ -131,15 +98,17 @@ const GiveTask = () => {
           <label className="text-[#6B4F35] font-medium">Jenis Tugas</label>
           <select
             className="w-full border p-3 rounded-lg mt-1 bg-white"
-            onChange={(e) => setForm({ ...form, type: e.target.value })}
+            value={form.type}
+            onChange={(e) =>
+              setForm({ ...form, type: e.target.value })
+            }
           >
             <option value="file">File Upload</option>
-            <option value="video">Video</option>
-            <option value="link">Link (URL)</option>
+            <option value="link">Link</option>
           </select>
         </div>
 
-        {/* INPUT FILE */}
+        {/* FILE */}
         {form.type === "file" && (
           <div>
             <label className="text-[#6B4F35] font-medium">Upload File</label>
@@ -160,13 +129,14 @@ const GiveTask = () => {
             <input
               type="text"
               className="w-full border p-3 rounded-lg mt-1"
-              placeholder="https://contoh-link.com"
-              onChange={(e) => setForm({ ...form, link_url: e.target.value })}
+              value={form.link_url}
+              onChange={(e) =>
+                setForm({ ...form, link_url: e.target.value })
+              }
             />
           </div>
         )}
 
-        {/* SUBMIT BUTTON */}
         <button
           type="submit"
           className="w-full bg-[#6B4F35] hover:bg-[#5A3F29] text-white py-3 rounded-lg font-bold"

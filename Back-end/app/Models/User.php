@@ -84,17 +84,30 @@ class User extends Authenticatable
      */
     public function progressReports()
     {
-        return $this->hasMany(ProgressReport::class, 'mentee_id');
+        return $this->hasManyThrough(
+            ProgressReport::class,
+            Pairing::class,
+            'mentee_id',
+            'pairing_id',
+            'id',
+            'id'
+        );
     }
 
-    public function learningActivity()
+    public function learningActivities()
     {
-        return $this->belongsTo(LearningActivity::class);
+        return $this->hasMany(MenteeLearningActivity::class, 'mentee_id');
     }
+
 
     public function assignedActivities()
     {
         return $this->belongsToMany(LearningActivity::class, 'mentor_learning_activity', 'mentor_id');
+    }
+
+    public function assignedTasks()
+    {
+        return $this->hasMany(Task::class, 'mentor_id');
     }
 
     public function learningPaths()
@@ -105,5 +118,15 @@ class User extends Authenticatable
             'mentee_id',
             'path_id'
         )->withTimestamps();
+    }
+
+    public function materialProgress()
+    {
+        return $this->hasMany(MaterialProgress::class, 'mentee_id');
+    }
+
+    public function uploadedMaterials()
+    {
+        return $this->hasMany(Material::class, 'mentor_id');
     }
 }

@@ -1,4 +1,4 @@
-<?
+<?php
 
 namespace App\Services;
 
@@ -21,7 +21,7 @@ class LearningActivityService
             return null;
         }
 
-        return $learningActivity->materials;  // Mengambil semua materi yang berhubungan dengan learning activity ini
+        return $learningActivity->materials;
     }
 
     public function assignMentorToActivity($learningActivityId, $mentorId)
@@ -37,5 +37,15 @@ class LearningActivityService
         $activity->mentors()->attach($mentorId);
 
         return true;
+    }
+
+    public function getLearningActivitiesForMentee(int $menteeId)
+    {
+        return LearningActivity::whereHas('materials', function ($q) use ($menteeId) {
+            $q->whereHas('mentor.pairings', function ($p) use ($menteeId) {
+                $p->where('mentee_id', $menteeId)
+                    ->where('status', 'active');
+            });
+        })->ordered()->get();
     }
 }

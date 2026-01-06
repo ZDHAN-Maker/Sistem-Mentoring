@@ -9,8 +9,8 @@ return new class extends Migration {
     {
         Schema::create('learning_activities', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('schedule_id')->constrained()->cascadeOnDelete();
             $table->string('title');
-            $table->text('description')->nullable();
             $table->timestamps();
         });
     }

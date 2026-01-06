@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\ProgressReport;
 
 class Pairing extends Model
 {
@@ -25,18 +26,23 @@ class Pairing extends Model
         return $this->belongsTo(User::class, 'mentee_id');
     }
 
-    public function tasks()
-    {
-        return $this->hasMany(Task::class);
-    }
-
     public function progressReports()
     {
         return $this->hasMany(ProgressReport::class);
     }
 
+    public function tasks()
+    {
+        return $this->hasMany(Task::class);
+    }
+
+    public function materials()
+    {
+        return $this->hasMany(Material::class);
+    }
+
     public function schedules()
     {
-        return $this->hasMany(Schedule::class);
+        return $this->hasMany(Schedule::class, 'pairing_id', 'id');
     }
 }

@@ -1,3 +1,4 @@
+// hooks/useMaterials.js
 import { useState, useEffect, useCallback } from "react";
 import api, { getCsrfCookie } from "../axiosInstance";
 
@@ -9,11 +10,13 @@ export default function useMaterials() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errors, setErrors] = useState({});
 
+  /* ================= FETCH ================= */
+
   const fetchMaterials = useCallback(async () => {
     try {
       const res = await api.get("/api/materials");
-
       const list = res.data?.data ?? [];
+
       setMaterials(list);
 
       const savedId = localStorage.getItem("active_material_id");
@@ -25,7 +28,10 @@ export default function useMaterials() {
         setActiveVideo(active.video_url);
       }
     } catch (err) {
-      console.error("❌ Fetch error:", err.response?.data ?? err.message);
+      console.error(
+        "❌ Fetch materials error:",
+        err.response?.data ?? err.message
+      );
     }
   }, []);
 
@@ -42,10 +48,11 @@ export default function useMaterials() {
     }
   }, [activeMaterialId]);
 
+  /* ================= ACTIONS ================= */
+
   const selectMaterial = (material) => {
     setActiveMaterialId(material.id);
     setActiveVideo(material.video_url);
-    localStorage.setItem("active_material_id", material.id);
   };
 
   const saveMaterial = async (
@@ -58,24 +65,38 @@ export default function useMaterials() {
     setUploadProgress(0);
 
     const data = new FormData();
+    data.append("title", formData.title);
+    data.append("type", "video");
 
-    Object.entries(formData).forEach(([key, val]) => {
-      if (val === null || val === undefined) return;
-
-      // 🔥 FIX PENTING
-      if (key === "video_file" || key === "video_path") {
-        data.append("video", val); // HARUS "video"
-      } else {
-        data.append(key, val);
+    // CREATE → video wajib
+    if (!editMode) {
+      if (!(formData.video instanceof File)) {
+        setLoading(false);
+        setErrors({ video: ["Video wajib diupload"] });
+        return { error: "validation" };
       }
-    });
+
+      data.append("type", "video");
+      data.append("video", formData.video);
+    }
+
+    // UPDATE → video optional
+    if (editMode && formData.video instanceof File) {
+      data.append("type", "video");
+      data.append("video", formData.video);
+    }
 
     try {
       const config = {
         withCredentials: true,
-        onUploadProgress: (p) => {
-          if (p.total) {
-            setUploadProgress(Math.round((p.loaded * 100) / p.total));
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            setUploadProgress(
+              Math.round((progressEvent.loaded * 100) / progressEvent.total)
+            );
           }
         },
       };
@@ -86,7 +107,7 @@ export default function useMaterials() {
             data,
             config
           )
-        : await api.post(`/api/materials`, data, config);
+        : await api.post("/api/materials", data, config);
 
       await fetchMaterials();
       setLoading(false);
@@ -102,7 +123,10 @@ export default function useMaterials() {
         return { error: "validation" };
       }
 
-      console.error("❌ Save error:", err.response?.data ?? err.message);
+      console.error(
+        "❌ Save material error:",
+        err.response?.data ?? err.message
+      );
       return { error: "server" };
     }
   };
@@ -112,11 +136,13 @@ export default function useMaterials() {
       await api.delete(`/api/materials/${materialId}`, {
         withCredentials: true,
       });
-
       await fetchMaterials();
       return true;
     } catch (err) {
-      console.error("❌ Delete error:", err.response?.data ?? err.message);
+      console.error(
+        "❌ Delete material error:",
+        err.response?.data ?? err.message
+      );
       return { error: "server" };
     }
   };
@@ -128,7 +154,6 @@ export default function useMaterials() {
     loading,
     uploadProgress,
     errors,
-    fetchMaterials,
     saveMaterial,
     selectMaterial,
     deleteMaterial,

@@ -10,7 +10,6 @@ class LearningActivity extends Model
         'learning_path_id',
         'title',
         'description',
-        'order'
     ];
 
     public function learningPath()
@@ -20,6 +19,13 @@ class LearningActivity extends Model
 
     public function materials()
     {
-        return $this->hasMany(Material::class);
+        return $this->hasMany(Material::class, 'learning_activity_id');
+    }
+
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('id', 'asc');
+        // bisa diganti:
+        // return $query->orderBy('created_at', 'asc');
     }
 }

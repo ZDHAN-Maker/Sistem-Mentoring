@@ -10,28 +10,9 @@ return new class extends Migration {
         Schema::create('materials', function (Blueprint $table) {
             $table->id();
             $table->string('title');
-            $table->text('description')->nullable();
-            $table->string('video_url')->nullable();
-            $table->string('module_url')->nullable();
-            // video
-            $table->string('video_path')->nullable();
-            $table->string('thumbnail_path')->nullable();
-            $table->integer('duration')->nullable();
-
-            // ordering & status
-            $table->integer('order')->default(0);
-            $table->enum('status', ['draft', 'published'])->default('draft');
-
-            // FK yang benar
+            $table->string('video_path');
             $table->foreignId('mentor_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('schedule_id')->nullable()->constrained('schedules')->onDelete('cascade');
-
-            // metadata
-            $table->string('video_size')->nullable();
-            $table->string('video_format')->nullable();
-
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 

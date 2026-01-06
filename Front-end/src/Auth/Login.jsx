@@ -143,7 +143,7 @@ const Login = () => {
                   Remember Me
                 </label>
                 <a
-                  href="#"
+                  href="/lupa-password"
                   className="text-sm text-[#b38867] hover:underline transition"
                 >
                   Lupa Password?

@@ -15,6 +15,7 @@ Route::get('/', function () {
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {

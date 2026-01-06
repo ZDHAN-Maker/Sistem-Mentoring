@@ -1,36 +1,38 @@
 import { useEffect, useState } from "react";
-import api from "../../axiosInstance";
+import api, { getCsrfCookie } from "../../axiosInstance";
 import { useAuth } from "../../context/useAuth";
 
 export default function useMyReports() {
-  const { user } = useAuth();
+  const { authData, loading: authLoading } = useAuth();
 
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
 
   const fetchReports = async () => {
-    if (!user || !user.id) {
-      setError("User data tidak tersedia.");
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
-      console.log("📡 Fetching reports for mentee ID:", user.id);
 
-      const res = await api.get(`/mentees/${user.id}/reports`);
+      await getCsrfCookie();
 
-      console.log("✅ Reports data:", res.data);
+      const menteeId = authData?.user?.id;
+      if (!menteeId) {
+        setReports([]);
+        return;
+      }
 
-      setReports(res.data.data || res.data.reports || res.data || []);
+      const res = await api.get(`/api/mentees/${menteeId}/reports`);
+
+      setReports(res.data ?? []);
     } catch (err) {
-      console.error("❌ Error fetching reports:", err);
+      console.error(
+        "My reports error:",
+        err.response?.status,
+        err.response?.data || err
+      );
+
       setError(
-        err.response?.data?.message ||
-          err.message ||
-          "Terjadi kesalahan"
+        err.response?.data?.message || "Gagal mengambil data laporan"
       );
     } finally {
       setLoading(false);
@@ -38,12 +40,14 @@ export default function useMyReports() {
   };
 
   useEffect(() => {
-    fetchReports();
-  }, [user]);
+    if (!authLoading && authData) {
+      fetchReports();
+    }
+  }, [authLoading, authData]);
 
   return {
     reports,
-    loading,
+    loading: loading || authLoading,
     error,
     refetch: fetchReports,
   };

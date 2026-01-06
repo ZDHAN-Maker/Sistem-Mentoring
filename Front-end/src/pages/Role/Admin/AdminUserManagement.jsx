@@ -7,14 +7,14 @@ export default function AdminUserManagement() {
   if (loading) return <p>Loading...</p>;
 
   return (
-    <div className="p-4">
-      <h1 className="text-xl font-bold mb-4">Kelola User</h1>
-
-      <UserTable
-        users={users}
-        onChangeRole={updateRole}
-        onDelete={deleteUser}
-      />
+    <div className="p-6 bg-[#F7F3EF] min-h-screen">
+      <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+        <UserTable 
+          users={users} 
+          onChangeRole={updateRole} 
+          onDelete={deleteUser} 
+        />
+      </div>
     </div>
   );
 }

@@ -1,36 +1,32 @@
 import { useEffect, useState } from "react";
-import api from "../../axiosInstance";
+import api, { getCsrfCookie } from "../../axiosInstance";
 import { useAuth } from "../../context/useAuth";
 
 export default function useMyTasks() {
-  const { user } = useAuth();
+  const { authData, loading: authLoading } = useAuth();
 
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
 
   const fetchTasks = async () => {
-    if (!user || !user.id) {
-      setError("User data tidak tersedia.");
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
-      console.log("📡 Fetching tasks for mentee ID:", user.id);
 
-      const res = await api.get(`/mentees/${user.id}/tasks`);
+      await getCsrfCookie();
 
-      console.log("✅ Tasks data:", res.data);
+      const res = await api.get("/api/mentee/tasks");
 
-      setTasks(res.data.data || res.data.tasks || res.data || []);
+      setTasks(res.data.data ?? []);
     } catch (err) {
-      console.error("❌ Error fetching tasks:", err);
+      console.error(
+        "My tasks error:",
+        err.response?.status,
+        err.response?.data || err
+      );
+
       setError(
-        err.response?.data?.message ||
-          err.message ||
-          "Terjadi kesalahan"
+        err.response?.data?.message || "Gagal mengambil data task"
       );
     } finally {
       setLoading(false);
@@ -38,12 +34,14 @@ export default function useMyTasks() {
   };
 
   useEffect(() => {
-    fetchTasks();
-  }, [user]);
+    if (!authLoading && authData) {
+      fetchTasks();
+    }
+  }, [authLoading, authData]);
 
   return {
     tasks,
-    loading,
+    loading: loading || authLoading,
     error,
     refetch: fetchTasks,
   };

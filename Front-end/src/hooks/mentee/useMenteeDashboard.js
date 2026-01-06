@@ -1,33 +1,41 @@
 // src/hooks/mentee/useMenteeDashboard.js
 import { useEffect, useState } from "react";
-import api from "../../axiosInstance";
-import { useAuth } from "../../context/useAuth";
+import api, { getCsrfCookie } from "../../axiosInstance";
 
 export default function useMenteeDashboard() {
-  const { user } = useAuth();
-  const menteeId = user?.id;
-
-  const [tasks, setTasks] = useState([]);
   const [stats, setStats] = useState(null);
+  const [pairings, setPairings] = useState([]);
+  const [upcomingSchedules, setUpcomingSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!menteeId) return;
+    const loadDashboard = async () => {
+      try {
+        await getCsrfCookie();
 
-    setLoading(true);
+        const res = await api.get("/api/mentee/dashboard");
 
-    api
-      .get(`/mentees/${menteeId}/dashboard`)
-      .then((res) => {
-        setTasks(res.data.tasks);
         setStats(res.data.stats);
-      })
-      .finally(() => setLoading(false));
-  }, [menteeId]);
+        setPairings(res.data.pairings);
+        setUpcomingSchedules(res.data.upcoming_schedules);
+      } catch (err) {
+        console.error(
+          "Mentee dashboard error:",
+          err.response?.status,
+          err.response?.data || err
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboard();
+  }, []);
 
   return {
-    tasks,
     stats,
+    pairings,
+    upcomingSchedules,
     loading,
   };
 }

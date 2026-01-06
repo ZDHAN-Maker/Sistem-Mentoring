@@ -5,6 +5,7 @@ import { useAuth } from './context/useAuth';
 import Program from './pages/Program';
 import Login from './Auth/Login';
 import Register from './Auth/Register';
+import LupaPassword from './pages/LupaPassword'; 
 import DashboardAdmin from './pages/Role/Admin/DashboardAdmin';
 import DashboardMentor from './pages/Role/Mentor/DashboardMentor';
 import DashboardMentee from './pages/Role/Mentee/DashboardMentee';
@@ -18,7 +19,8 @@ const PUBLIC_PREFIX = [
   '/register',
   '/program',
   '/langganan',
-  '/elearning'
+  '/elearning',
+  '/lupa-password', 
 ];
 
 const AppContent = () => {
@@ -40,13 +42,12 @@ const AppContent = () => {
       {showHeader && <Header />}
 
       <Routes>
-
         {/* PUBLIC ROUTES */}
         <Route path="/program" element={<Program />} />
         <Route path="/langganan" element={<Langganan />} />
-
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/lupa-password" element={<LupaPassword />} />
 
         {/* ROOT REDIRECT */}
         <Route
@@ -59,7 +60,6 @@ const AppContent = () => {
         />
 
         {/* PROTECTED ROUTES */}
-
         <Route
           path="/admin-dashboard/*"
           element={
@@ -68,7 +68,6 @@ const AppContent = () => {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/mentor-dashboard/*"
           element={
@@ -77,7 +76,6 @@ const AppContent = () => {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/mentee-dashboard/*"
           element={
@@ -86,7 +84,6 @@ const AppContent = () => {
             </ProtectedRoute>
           }
         />
-
       </Routes>
     </>
   );

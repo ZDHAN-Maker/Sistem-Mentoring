@@ -1,59 +1,43 @@
 import { useEffect, useState, useCallback } from "react";
-import api from "../../axiosInstance";
+import api, { getCsrfCookie } from "../../axiosInstance";
 
-export default function useLearningActivities() {
-  const [activities, setActivities] = useState([]);
+export default function useMenteeMaterials() {
   const [materials, setMaterials] = useState([]);
-  const [selectedActivity, setSelectedActivity] = useState(null);
-
-  const [loadingActivities, setLoadingActivities] = useState(true);
-  const [loadingMaterials, setLoadingMaterials] = useState(false);
+  const [progress, setProgress] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchActivities = useCallback(async () => {
+  const fetchMaterials = useCallback(async () => {
     try {
+      setLoading(true);
       setError(null);
-      const res = await api.get("/mentee/learning-activities");
-      setActivities(res.data.data || []);
-    } catch (e) {
-      console.error(e);
-      setError("Gagal mengambil aktivitas pembelajaran");
+
+      await getCsrfCookie();
+
+      const [materialsRes, progressRes] = await Promise.all([
+        api.get("/api/mentee/materials"),
+        api.get("/api/mentee/material-progress"),
+      ]);
+
+      setMaterials(materialsRes.data?.data || []);
+      setProgress(progressRes.data?.data || []);
+    } catch (err) {
+      console.error(err);
+      setError("Gagal memuat materi");
     } finally {
-      setLoadingActivities(false);
-    }
-  }, []);
-
-  const fetchMaterials = useCallback(async (activityId) => {
-    try {
-      setError(null);
-      setSelectedActivity(activityId);
-      setMaterials([]);
-      setLoadingMaterials(true);
-
-      const res = await api.get(
-        `/mentee/learning-activities/${activityId}/materials`
-      );
-
-      setMaterials(res.data.data || []);
-    } catch (e) {
-      console.error(e);
-      setError("Gagal mengambil materi");
-    } finally {
-      setLoadingMaterials(false);
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchActivities();
-  }, [fetchActivities]);
+    fetchMaterials();
+  }, [fetchMaterials]);
 
   return {
-    activities,
     materials,
-    selectedActivity,
-    loadingActivities,
-    loadingMaterials,
+    progress,
+    loading,
     error,
-    fetchMaterials,
+    refetch: fetchMaterials,
   };
 }

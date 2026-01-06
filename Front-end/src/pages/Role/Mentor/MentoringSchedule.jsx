@@ -1,46 +1,49 @@
 import React, { useState } from "react";
-import Sidebar from "../../../components/Sidebar";
-import Navbar from "../../../components/Navbar";
-import Button from "../../../components/Button"; // ⬅ IMPORT BUTTON KAMU
+import Button from "../../../components/Button";
+import useSchedule from "../../../hooks/Mentor/useSchedule";
+
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CalendarDaysIcon,
+  ClockIcon,
+  UserIcon,
+  PencilSquareIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 
 export default function MentoringSchedule() {
+  const {
+    pairings,
+    events,
+    loading,
+    createSchedule,
+    updateSchedule,
+    deleteSchedule,
+  } = useSchedule();
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showModal, setShowModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [eventTitle, setEventTitle] = useState("");
   const [eventTime, setEventTime] = useState("");
-  const [eventStatus, setEventStatus] = useState("Belum Dimulai");
-
-  const [selectedEvent, setSelectedEvent] = useState(null);
-
-  const [events, setEvents] = useState(() => {
-    const saved = localStorage.getItem("mentor-events");
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  React.useEffect(() => {
-    localStorage.setItem("mentor-events", JSON.stringify(events));
-  }, [events]);
+  const [selectedPairing, setSelectedPairing] = useState("");
+  const [editingEvent, setEditingEvent] = useState(null);
 
   const monthNames = [
     "January","February","March","April","May","June",
     "July","August","September","October","November","December",
   ];
-
-  const dayNames = ["SEN","SEL","RAB","KAM","JUM","SAB","MIN"];
+  const dayNames = ["SEN", "SEL", "RAB", "KAM", "JUM", "SAB", "MIN"];
 
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
 
     const days = [];
-
+    const prevMonthDays = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
     const prevMonthLastDay = new Date(year, month, 0).getDate();
-    const prevMonthDays = startingDayOfWeek === 0 ? 6 : startingDayOfWeek - 1;
 
     for (let i = prevMonthDays; i > 0; i--) {
       days.push({
@@ -50,7 +53,7 @@ export default function MentoringSchedule() {
       });
     }
 
-    for (let i = 1; i <= daysInMonth; i++) {
+    for (let i = 1; i <= lastDay.getDate(); i++) {
       days.push({
         day: i,
         isCurrentMonth: true,
@@ -58,238 +61,219 @@ export default function MentoringSchedule() {
       });
     }
 
-    const remainingDays = 42 - days.length;
-    for (let i = 1; i <= remainingDays; i++) {
+    while (days.length < 42) {
+      const d = days.length - lastDay.getDate() + 1;
       days.push({
-        day: i,
+        day: d,
         isCurrentMonth: false,
-        date: new Date(year, month + 1, i),
+        date: new Date(year, month + 1, d),
       });
     }
 
     return days;
   };
 
+  /* HANDLERS =============================== */
+
   const handleDateClick = (date) => {
-    setSelectedEvent(null);
     setSelectedDate(date);
-    setEventTitle("");
     setEventTime("");
-    setEventStatus("Belum Dimulai");
+    setSelectedPairing("");
+    setEditingEvent(null);
     setShowModal(true);
   };
 
-  const handleEditEvent = (ev, index) => {
-    setSelectedEvent({ ...ev, index });
-    setEventTitle(ev.title);
-    setEventTime(ev.time);
-    setEventStatus(ev.status);
-    setSelectedDate(new Date(ev.date));
+  const handleEdit = (event) => {
+    const date = new Date(event.startTime);
+    setEditingEvent(event);
+    setSelectedDate(date);
+    setEventTime(date.toISOString().slice(11, 16));
+    setSelectedPairing(event.pairingId);
     setShowModal(true);
   };
 
-  const handleDeleteEvent = (index) => {
-    const updated = events.filter((_, i) => i !== index);
-    setEvents(updated);
+  const handleDelete = async (id) => {
+    if (!window.confirm("Yakin ingin menghapus jadwal ini?")) return;
+    await deleteSchedule(id);
   };
 
-  const handleSaveEvent = () => {
-    if (!eventTitle || !eventTime) return;
+  const handleSave = async () => {
+    if (!selectedDate || !eventTime || !selectedPairing) return;
 
-    const eventData = {
-      date: selectedDate.toDateString(),
-      title: eventTitle,
-      time: eventTime,
-      status: eventStatus,
-    };
+    const year = selectedDate.getFullYear();
+    const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
+    const day = String(selectedDate.getDate()).padStart(2, "0");
+    const start_time = `${year}-${month}-${day} ${eventTime}:00`;
 
-    if (selectedEvent) {
-      const updated = [...events];
-      updated[selectedEvent.index] = eventData;
-      setEvents(updated);
+    if (editingEvent) {
+      await updateSchedule(editingEvent.id, { start_time });
     } else {
-      setEvents([...events, eventData]);
+      await createSchedule({
+        pairing_id: selectedPairing,
+        date: `${year}-${month}-${day}`,
+        time: eventTime,
+      });
     }
 
     setShowModal(false);
-  };
-
-  const statusColor = (status) => {
-    switch (status) {
-      case "Selesai":
-        return "bg-green-200 text-green-800";
-      case "Belum Dimulai":
-        return "bg-gray-200 text-gray-800";
-      case "Tidak Selesai":
-        return "bg-red-200 text-red-800";
-      default:
-        return "bg-gray-200 text-gray-800";
-    }
+    setEditingEvent(null);
   };
 
   const days = getDaysInMonth(currentDate);
 
   return (
-    <div className="flex bg-[#f8fafc] min-h-screen">
-      <div className="flex-1 flex flex-col">
-        <div className="p-8">
-          <h1 className="text-3xl font-semibold mb-6">Mentoring Schedule</h1>
+    <div className="p-8 bg-[#f7f9fc] min-h-screen">
+      {/* ================== CALENDAR ================== */}
+      <div className="bg-white p-8 rounded-3xl shadow-md border mb-8">
+        <div className="flex items-center justify-between mb-8">
+          <button
+            onClick={() =>
+              setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))
+            }
+            className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition"
+          >
+            <ChevronLeftIcon className="w-6 h-6" />
+          </button>
 
-          {/* Calendar */}
-          <div className="bg-white p-8 rounded-2xl shadow-md border mb-8">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-8">
+          <h2 className="text-3xl font-bold flex items-center gap-2">
+            <CalendarDaysIcon className="w-7 h-7 text-blue-500" />
+            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+          </h2>
 
-              {/* PREV YEAR */}
-              <Button onClick={() =>
-                setCurrentDate(
-                  new Date(currentDate.getFullYear() - 1, currentDate.getMonth())
-                )
-              }>
-                «
-              </Button>
+          <button
+            onClick={() =>
+              setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))
+            }
+            className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition"
+          >
+            <ChevronRightIcon className="w-6 h-6" />
+          </button>
+        </div>
 
-              {/* PREV MONTH */}
-              <Button onClick={() =>
-                setCurrentDate(
-                  new Date(currentDate.getFullYear(), currentDate.getMonth() - 1)
-                )
-              }>
-                ‹
-              </Button>
-
-              <h2 className="text-2xl font-bold">
-                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-              </h2>
-
-              {/* NEXT MONTH */}
-              <Button onClick={() =>
-                setCurrentDate(
-                  new Date(currentDate.getFullYear(), currentDate.getMonth() + 1)
-                )
-              }>
-                ›
-              </Button>
-
-              {/* NEXT YEAR */}
-              <Button onClick={() =>
-                setCurrentDate(
-                  new Date(currentDate.getFullYear() + 1, currentDate.getMonth())
-                )
-              }>
-                »
-              </Button>
+        <div className="grid grid-cols-7 mb-2">
+          {dayNames.map((day) => (
+            <div key={day} className="text-center font-bold py-3 border-b">
+              {day}
             </div>
+          ))}
+        </div>
 
-            {/* Day headers */}
-            <div className="grid grid-cols-7 mb-2">
-              {dayNames.map((day) => (
-                <div key={day} className="text-center font-bold py-4 border-b-2">
-                  {day}
-                </div>
-              ))}
+        <div className="grid grid-cols-7 gap-1">
+          {days.map((d, i) => (
+            <div
+              key={i}
+              onClick={() => d.isCurrentMonth && handleDateClick(d.date)}
+              className={`border p-5 rounded-xl cursor-pointer transition ${
+                d.isCurrentMonth
+                  ? "bg-white hover:bg-blue-50"
+                  : "bg-gray-50 text-gray-400"
+              }`}
+            >
+              <div className="text-lg font-semibold">{d.day}</div>
             </div>
-
-            {/* Grid */}
-            <div className="grid grid-cols-7">
-              {days.map((d, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => d.isCurrentMonth && handleDateClick(d.date)}
-                  className={`border p-6 cursor-pointer 
-                    ${!d.isCurrentMonth ? "bg-gray-50 text-gray-400" : ""}
-                  `}
-                >
-                  <div className="text-2xl font-semibold">{d.day}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Event List */}
-          <div className="bg-white p-6 rounded-2xl shadow-md border">
-            <h2 className="text-xl font-semibold mb-4">Jadwal Mentor</h2>
-
-            {events.length === 0 ? (
-              <p className="text-gray-500">Belum ada acara</p>
-            ) : (
-              <ul className="space-y-4">
-                {events.map((ev, idx) => (
-                  <li
-                    key={idx}
-                    className={`p-4 border rounded-xl shadow-sm ${statusColor(ev.status)}`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-bold text-lg">{ev.title}</p>
-                        <p className="text-sm">{ev.date} — {ev.time}</p>
-                        <p className="text-sm">Status: {ev.status}</p>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Button onClick={() => handleEditEvent(ev, idx)} className="!px-4 !py-1">
-                          Edit
-                        </Button>
-
-                        <Button
-                          onClick={() => handleDeleteEvent(idx)}
-                          className="!px-4 !py-1 bg-red-600 hover:bg-red-700 text-white"
-                        >
-                          Hapus
-                        </Button>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* MODAL */}
+      {/* ================== EVENT LIST ================== */}
+      <div className="bg-white p-6 rounded-2xl shadow-md border">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <ClockIcon className="w-6 h-6 text-indigo-500" />
+          Jadwal Mentor
+        </h2>
+
+        {loading ? (
+          <p>Loading...</p>
+        ) : events.length === 0 ? (
+          <p className="text-gray-500">Belum ada jadwal</p>
+        ) : (
+          <ul className="space-y-4">
+            {events.map((ev) => (
+              <li
+                key={ev.id}
+                className="p-5 border rounded-2xl bg-gray-50 shadow-sm hover:shadow-md transition"
+              >
+                <p className="font-bold flex items-center gap-2">
+                  <UserIcon className="w-5 h-5 text-green-600" />
+                  Mentoring dengan {ev.menteeName}
+                </p>
+
+                <p className="text-sm mt-1 mb-3 text-gray-600">
+                  {new Date(ev.startTime).toLocaleString("id-ID", {
+                    timeZone: "Asia/Jakarta",
+                  })}
+                </p>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleEdit(ev)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-100 text-blue-700 hover:bg-blue-200"
+                  >
+                    <PencilSquareIcon className="w-5 h-5" />
+                    Edit
+                  </button>
+
+                  <button
+                    onClick={() => handleDelete(ev.id)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-100 text-red-700 hover:bg-red-200"
+                  >
+                    <TrashIcon className="w-5 h-5" />
+                    Hapus
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* ================= MODAL ================= */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-2xl shadow-2xl w-96 border">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-2xl w-96 shadow-xl">
             <h3 className="text-xl font-semibold mb-4">
-              {selectedEvent ? "Edit Acara" : "Buat Acara"}
+              {editingEvent ? "Edit Jadwal" : "Buat Jadwal"}
             </h3>
 
-            <label className="block text-sm mb-1">Judul Acara</label>
-            <input
-              type="text"
+            <label className="text-sm font-medium">Mentee</label>
+            <select
               className="w-full p-3 border rounded-lg mb-4"
-              value={eventTitle}
-              onChange={(e) => setEventTitle(e.target.value)}
-            />
+              value={selectedPairing}
+              onChange={(e) => setSelectedPairing(e.target.value)}
+            >
+              <option value="">Pilih Mentee</option>
+              {pairings.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.mentee.name}
+                </option>
+              ))}
+            </select>
 
-            <label className="block text-sm mb-1">Waktu</label>
+            <label className="text-sm font-medium">Waktu</label>
             <input
               type="time"
-              className="w-full p-3 border rounded-lg mb-4"
+              className="w-full p-3 border rounded-lg mb-6"
               value={eventTime}
               onChange={(e) => setEventTime(e.target.value)}
             />
 
-            <label className="block text-sm mb-1">Status</label>
-            <select
-              className="w-full p-3 border rounded-lg mb-4"
-              value={eventStatus}
-              onChange={(e) => setEventStatus(e.target.value)}
-            >
-              <option value="Belum Dimulai">Belum Dimulai</option>
-              <option value="Selesai">Selesai</option>
-              <option value="Tidak Selesai">Tidak Selesai</option>
-            </select>
-
             <div className="flex justify-end gap-3">
-              <Button onClick={() => setShowModal(false)} className="!bg-gray-300 hover:!bg-gray-400">
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  setEditingEvent(null);
+                }}
+                className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+              >
                 Batal
-              </Button>
+              </button>
 
-              <Button onClick={handleSaveEvent}>
+              <button
+                onClick={handleSave}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
                 Simpan
-              </Button>
+              </button>
             </div>
           </div>
         </div>

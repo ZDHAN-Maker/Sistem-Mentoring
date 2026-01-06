@@ -18,17 +18,11 @@ class Submission extends Model
         'grade',
     ];
 
-    /**
-     * Relasi ke Task
-     */
     public function task()
     {
         return $this->belongsTo(Task::class);
     }
 
-    /**
-     * Relasi ke User (mentee)
-     */
     public function mentee()
     {
         return $this->belongsTo(User::class, 'mentee_id');

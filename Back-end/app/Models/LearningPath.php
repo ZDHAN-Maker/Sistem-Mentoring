@@ -32,4 +32,5 @@ class LearningPath extends Model
     {
         return $this->hasMany(LearningActivity::class);
     }
+
 }

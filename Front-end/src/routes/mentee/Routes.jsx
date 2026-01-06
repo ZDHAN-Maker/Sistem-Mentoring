@@ -22,7 +22,7 @@ const MenteeRoutes = () => {
       <Route path="mentor" element={<MyMentor />} />
       <Route path="announcements" element={<AnnouncementsMentee />} />
       <Route path="student-portal" element={<StudentPortal />} />
-      <Route path="activities" element={<LearningActivities />} />
+      <Route path="learning-activities" element={<LearningActivities />} />
     </Routes>
   );
 };

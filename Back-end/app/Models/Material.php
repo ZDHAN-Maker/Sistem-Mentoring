@@ -8,22 +8,9 @@ use Illuminate\Database\Eloquent\Builder;
 class Material extends Model
 {
     protected $fillable = [
-        'title',
-        'description',
-        'video_path',
         'mentor_id',
-        'schedule_id',
-        'video_size',
-        'video_format',
-        'duration',
-        'thumbnail_path',
-        'status',
-        'order'
-    ];
-
-    protected $casts = [
-        'order' => 'integer',
-        'schedule_id' => 'integer'
+        'title',
+        'video_path',
     ];
 
     protected $appends = ['video_url'];
@@ -33,35 +20,27 @@ class Material extends Model
         return $this->belongsTo(User::class, 'mentor_id');
     }
 
-    public function schedule()
+    public function progress()
     {
-        return $this->belongsTo(Schedule::class, 'schedule_id');
+        return $this->hasMany(MaterialProgress::class);
     }
 
-    public function learningActivity()
+    public function scopeByMentor(Builder $query, int $mentorId)
     {
-        return $this->belongsTo(LearningActivity::class);
+        return $query->where('mentor_id', $mentorId);
     }
-
-    public function scopeByMentor(Builder $query, $mentorId = null)
+    
+    public function scopeOrdered(Builder $query)
     {
-        if ($mentorId) {
-            return $query->where('mentor_id', $mentorId);
-        }
-
-        return $query;
-    }
-
-    public function scopeOrdered($query)
-    {
-        return $query->orderBy('order', 'asc');
+        return $query->orderBy('id', 'asc');
+        // atau:
+        // return $query->latest();
     }
 
     public function getVideoUrlAttribute()
     {
-        if (!$this->video_path) {
-            return null;
-        }
-        return asset('storage/' . $this->video_path);
+        return $this->video_path
+            ? asset('storage/' . $this->video_path)
+            : null;
     }
 }

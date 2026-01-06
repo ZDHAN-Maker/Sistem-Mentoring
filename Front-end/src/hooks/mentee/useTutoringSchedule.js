@@ -1,36 +1,41 @@
 import { useEffect, useState } from "react";
-import api from "../../axiosInstance";
+import api, { getCsrfCookie } from "../../axiosInstance";
 import { useAuth } from "../../context/useAuth";
 
 export default function useTutoringSchedule() {
-  const { user } = useAuth();
+  const { authData, loading: authLoading } = useAuth();
 
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
 
   const fetchSchedules = async () => {
-    if (!user || !user.id) {
-      setError("User data tidak tersedia");
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
-      console.log("📡 Fetching schedules for mentee:", user.id);
 
-      const res = await api.get(`/mentees/${user.id}/schedules`);
+      await getCsrfCookie();
+
+      const menteeId = authData?.user?.id;
+      if (!menteeId) {
+        setError("User tidak ditemukan.");
+        return;
+      }
+
+      console.log("📡 Fetching schedules for mentee:", menteeId);
+
+      const res = await api.get(`/api/mentees/${menteeId}/schedules`);
 
       console.log("✅ Schedule data:", res.data);
 
-      setSchedules(res.data.data || res.data || []);
+      // Bisa dari {data: []} atau langsung []
+      setSchedules(res.data?.data ?? res.data ?? []);
     } catch (err) {
       console.error("❌ Error fetching schedules:", err);
+
       setError(
         err.response?.data?.message ||
           err.message ||
-          "Gagal mengambil jadwal mentoring"
+          "Gagal mengambil data jadwal mentoring"
       );
     } finally {
       setLoading(false);
@@ -38,12 +43,14 @@ export default function useTutoringSchedule() {
   };
 
   useEffect(() => {
-    fetchSchedules();
-  }, [user]);
+    if (!authLoading && authData) {
+      fetchSchedules();
+    }
+  }, [authLoading, authData]);
 
   return {
     schedules,
-    loading,
+    loading: loading || authLoading,
     error,
     refetch: fetchSchedules,
   };

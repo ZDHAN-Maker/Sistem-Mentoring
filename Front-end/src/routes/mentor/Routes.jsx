@@ -1,4 +1,3 @@
-// src/routes/mentor/Routes.jsx
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 
@@ -10,25 +9,10 @@ import ReviewReportsAndFeedback from "../../pages/Role/Mentor/ReviewReportsAndFe
 import UploadMaterials from "../../pages/Role/Mentor/UploadMaterials";
 import AnnouncementsMentor from "../../pages/Role/Mentor/AnnouncementsMentor";
 
-const MentorRoutes = ({
-  upcomingSchedule = [],
-  mentees = []
-}) => {
-
+const MentorRoutes = () => {
   return (
     <Routes>
-      {/* Dashboard utama */}
-      <Route
-        index
-        element={
-          <DashboardHome
-            upcomingSchedule={upcomingSchedule}
-            mentees={mentees}
-          />
-        }
-      />
-
-      {/* Halaman lainnya */}
+      <Route index element={<DashboardHome />} />
       <Route path="mentees" element={<ListOfMentees />} />
       <Route path="tasks" element={<GiveTask />} />
       <Route path="schedules" element={<MentoringSchedule />} />

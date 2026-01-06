@@ -13,15 +13,11 @@ class ProgressReport extends Model
         'pairing_id',
         'catatan',
         'tanggal',
+        'feedback'
     ];
 
     public function pairing()
     {
-        return $this->belongsTo(Pairing::class);
-    }
-
-    public function mentee()
-    {
-        return $this->belongsTo(User::class, 'mentee_id');
+        return $this->belongsTo(Pairing::class, 'pairing_id');
     }
 }

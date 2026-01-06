@@ -11,6 +11,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('pairing_id')->constrained('pairings')->onDelete('cascade');
             $table->text('catatan')->nullable();
+            $table->text('feedback')->nullable();
             $table->date('tanggal')->nullable();
             $table->timestamps();
         });

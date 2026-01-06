@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useLearningPaths } from "../../../hooks/Admin/useLearningPaths";
+import { PlusCircleIcon, BookOpenIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 const LearningPath = () => {
   const {
@@ -52,52 +53,58 @@ const LearningPath = () => {
   if (loading) return <p>Loading...</p>;
 
   return (
-    <div>
-      <h1 className="text-2xl font-semibold mb-4">Learning Path</h1>
+    <div className="p-6 bg-[#F7F3EF] min-h-screen">
+
+      {/* Title */}
+      <h1 className="text-3xl font-bold text-[#8B6F47] mb-6 flex items-center gap-2">
+        <BookOpenIcon className="w-8 h-8 text-[#8B6F47]" />
+        Learning Path
+      </h1>
 
       {/* Error */}
       {error && (
-        <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
+        <div className="bg-red-100 text-red-700 p-3 rounded mb-4 border border-red-300">
           {error}
         </div>
       )}
 
-      {/* Form Create */}
-      <div className="bg-white rounded-2xl shadow p-6 mb-6">
-        <h2 className="text-lg font-medium mb-3">Create Learning Path</h2>
+      {/* Create Learning Path Form */}
+      <div className="bg-white rounded-2xl shadow-md p-6 mb-8 border border-gray-200">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-[#8B6F47]">
+          <PlusCircleIcon className="w-6 h-6" />
+          Create Learning Path
+        </h2>
 
         <input
-          className="border p-2 rounded w-full mb-2"
+          className="border rounded-lg w-full p-3 mb-3 focus:ring focus:ring-[#C2A68C] outline-none"
           placeholder="Title"
           value={form.title}
-          onChange={(e) =>
-            setForm({ ...form, title: e.target.value })
-          }
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
         />
 
         <textarea
-          className="border p-2 rounded w-full mb-3"
+          className="border rounded-lg w-full p-3 mb-4 focus:ring focus:ring-[#C2A68C] outline-none"
           placeholder="Description"
           value={form.description}
-          onChange={(e) =>
-            setForm({ ...form, description: e.target.value })
-          }
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
         />
 
         <button
           onClick={handleCreate}
           disabled={creating}
-          className={`px-4 py-2 rounded-lg text-white ${
-            creating ? "bg-gray-500" : "bg-blue-600"
+          className={`px-5 py-2 rounded-xl text-white font-medium transition ${
+            creating
+              ? "bg-gray-500 cursor-not-allowed"
+              : "bg-[#8B6F47] hover:bg-[#7a603d]"
           }`}
         >
           {creating ? "Saving..." : "Create"}
         </button>
       </div>
 
-      {/* List Learning Paths */}
-      <div className="bg-white rounded-2xl shadow p-6">
-        <h2 className="text-lg font-medium mb-4">
+      {/* Learning Path List */}
+      <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
+        <h2 className="text-xl font-semibold mb-4 text-[#8B6F47]">
           Learning Path List
         </h2>
 
@@ -108,37 +115,38 @@ const LearningPath = () => {
             {learningPaths.map((lp) => (
               <div
                 key={lp.id}
-                className="border rounded-xl p-4 flex justify-between items-center"
+                className="border rounded-xl p-5 flex justify-between items-center bg-[#FAF7F4]"
               >
                 <div>
-                  <p className="font-semibold">{lp.title}</p>
-                  <p className="text-gray-500 text-sm">
-                    {lp.description || "-"}
+                  <p className="font-semibold text-lg text-[#6B5638]">
+                    {lp.title}
                   </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Mentor: {lp.mentors_count} | Mentee:{" "}
-                    {lp.mentees_count}
+                  <p className="text-gray-600 text-sm">{lp.description || "-"}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Mentor: {lp.mentors_count} | Mentee: {lp.mentees_count}
                   </p>
                 </div>
 
                 <div className="flex gap-2">
-                  {/* ✅ FIXED ROUTE */}
+                  {/* Detail Button */}
                   <Link
                     to={`/admin-dashboard/learning-path/${lp.id}`}
-                    className="bg-green-600 text-white px-3 py-1 rounded-lg"
+                    className="px-4 py-2 rounded-lg text-white bg-[#8B6F47] hover:bg-[#7a603d] transition"
                   >
                     Detail
                   </Link>
 
+                  {/* Delete Button */}
                   <button
                     onClick={() => handleDelete(lp.id)}
                     disabled={deletingId === lp.id}
-                    className={`px-3 py-1 rounded-lg text-white ${
+                    className={`flex items-center gap-1 px-4 py-2 rounded-lg text-white transition ${
                       deletingId === lp.id
-                        ? "bg-gray-400"
-                        : "bg-red-500"
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-red-600 hover:bg-red-700"
                     }`}
                   >
+                    <TrashIcon className="w-5 h-5" />
                     {deletingId === lp.id ? "Deleting..." : "Delete"}
                   </button>
                 </div>
