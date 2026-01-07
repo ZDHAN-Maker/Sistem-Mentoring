@@ -1,105 +1,107 @@
 // src/pages/Role/Admin/TutoringScheduleAdmin.jsx
 
 import React, { useState, useMemo } from "react";
-import useSchedule from "../../../hooks/useSchedule";
 import Button from "../../../components/Button";
+import useSchedule from "../../../hooks/useSchedule";
+
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CalendarDaysIcon,
+  ClockIcon,
+  UserIcon,
+  PencilSquareIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 
 export default function TutoringScheduleAdmin() {
-  const { schedules, createNewSchedule, editSchedule, removeSchedule } =
-    useSchedule();
+  const {
+    schedules,
+    createNewSchedule,
+    editSchedule,
+    removeSchedule,
+    loading,
+  } = useSchedule();
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showModal, setShowModal] = useState(false);
-
-  const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
-
+  const [eventTime, setEventTime] = useState("");
+  const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [title, setTitle] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [status, setStatus] = useState("Belum Dimulai");
 
   const monthNames = [
     "Januari","Februari","Maret","April","Mei","Juni",
     "Juli","Agustus","September","Oktober","November","Desember",
   ];
+  const dayNames = ["SEN","SEL","RAB","KAM","JUM","SAB","MIN"];
 
-  const dayNames = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
-
-  // ---- Calendar generator ----
-  const calendarDays = useMemo(() => {
-    const firstDay = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth(),
-      1
-    );
-    const lastDay = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth() + 1,
-      0
-    );
+  // ===== Kalender generator mirip contoh baru =====
+  const getDaysInMonth = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
 
     const days = [];
-    const startOffset = firstDay.getDay();
-    const totalDays = lastDay.getDate();
+    const prevMonthDays = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+    const prevMonthLastDay = new Date(year, month, 0).getDate();
 
-    // Fill blanks
-    for (let i = 0; i < startOffset; i++) {
-      days.push({ day: "", date: null, isCurrentMonth: false });
-    }
-
-    // Actual days
-    for (let i = 1; i <= totalDays; i++) {
+    for (let i = prevMonthDays; i > 0; i--) {
       days.push({
-        day: i,
-        date: new Date(currentDate.getFullYear(), currentDate.getMonth(), i),
-        isCurrentMonth: true,
+        day: prevMonthLastDay - i + 1,
+        isCurrentMonth: false,
+        date: new Date(year, month - 1, prevMonthLastDay - i + 1),
       });
     }
 
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+      days.push({ day: i, isCurrentMonth: true, date: new Date(year, month, i) });
+    }
+
+    while (days.length < 42) {
+      const d = days.length - lastDay.getDate() + 1;
+      days.push({ day: d, isCurrentMonth: false, date: new Date(year, month + 1, d) });
+    }
+
     return days;
-  }, [currentDate]);
+  };
 
-  // ---- Open modal create ----
-  const openModalForCreate = (dateObj) => {
-    if (!dateObj) return;
+  const days = useMemo(() => getDaysInMonth(currentDate), [currentDate]);
 
-    setSelectedSchedule(null);
-    setSelectedDate(dateObj.toISOString().split("T")[0]); // yyyy-mm-dd
+  // ===== Event handlers =====
+  const handleDateClick = (date) => {
+    setSelectedDate(date);
+    setEventTime("");
     setTitle("");
-    setStartTime("");
-    setEndTime("");
-    setStatus("Belum Dimulai");
-
+    setSelectedSchedule(null);
     setShowModal(true);
   };
 
-  // ---- Open modal edit ----
-  const openModalForEdit = (schedule) => {
-    const baseDate = schedule.start_time.split(" ")[0];
-
+  const handleEdit = (schedule) => {
+    const date = new Date(schedule.start_time);
     setSelectedSchedule(schedule);
-    setSelectedDate(baseDate);
+    setSelectedDate(date);
+    setEventTime(date.toISOString().slice(11, 16));
     setTitle(schedule.title);
-    setStartTime(schedule.start_time.split(" ")[1]?.slice(0, 5) || "");
-    setEndTime(schedule.end_time.split(" ")[1]?.slice(0, 5) || "");
-    setStatus(schedule.status || "Belum Dimulai");
-
     setShowModal(true);
   };
 
-  // ---- Save schedule ----
-  const saveSchedule = async () => {
-    if (!selectedDate) return;
+  const handleDelete = async (id) => {
+    if (!window.confirm("Yakin ingin menghapus jadwal ini?")) return;
+    await removeSchedule(id);
+  };
 
-    const payload = {
-      title,
-      description: "-",
-      start_time: `${selectedDate} ${startTime}`,
-      end_time: `${selectedDate} ${endTime}`,
-      status,
-      pairing_id: 1, // default pairing (nanti dihubungkan)
-    };
+  const handleSave = async () => {
+    if (!selectedDate || !eventTime || !title) return;
+
+    const y = selectedDate.getFullYear();
+    const m = String(selectedDate.getMonth() + 1).padStart(2, "0");
+    const d = String(selectedDate.getDate()).padStart(2, "0");
+    const start_time = `${y}-${m}-${d} ${eventTime}:00`;
+    const end_time = `${y}-${m}-${d} ${eventTime}:00`;
+
+    const payload = { title, start_time, end_time, status: "Belum Dimulai", pairing_id: 1 };
 
     if (selectedSchedule) {
       await editSchedule(selectedSchedule.id, payload);
@@ -108,170 +110,150 @@ export default function TutoringScheduleAdmin() {
     }
 
     setShowModal(false);
+    setSelectedSchedule(null);
   };
 
-  // ---- Filter events this month ----
-  const eventsThisMonth = schedules.filter((s) => {
-    return (
+  const eventsThisMonth = schedules.filter(
+    (s) =>
       new Date(s.start_time).getMonth() === currentDate.getMonth() &&
       new Date(s.start_time).getFullYear() === currentDate.getFullYear()
-    );
-  });
+  );
 
-  const statusColor = (st) => {
-    if (st === "Selesai") return "bg-green-100 border-green-300";
-    if (st === "Tidak Selesai") return "bg-red-100 border-red-300";
-    return "bg-yellow-100 border-yellow-300";
-  };
-
-  // ---- UI ----
   return (
-    <div className="flex bg-[#f8fafc] min-h-screen">
-      <div className="flex-1 flex flex-col">
-        <div className="p-8">
-          <h1 className="text-3xl font-semibold mb-6">Mentoring Schedule</h1>
+    <div className="p-8 bg-[#f7f9fc] min-h-screen">
+      {/* ===== Kalender ===== */}
+      <div className="bg-white p-8 rounded-3xl shadow-md border mb-8">
+        <div className="flex items-center justify-between mb-8">
+          <button
+            onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
+            className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition"
+          >
+            <ChevronLeftIcon className="w-6 h-6" />
+          </button>
 
-          {/* Calendar */}
-          <div className="bg-white p-8 rounded-2xl shadow-md border mb-8">
-            <div className="flex items-center justify-between mb-8">
-              <Button onClick={() => setCurrentDate(new Date(currentDate.setFullYear(currentDate.getFullYear() - 1)))}>
-                «
-              </Button>
-              <Button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))}>
-                ‹
-              </Button>
+          <h2 className="text-3xl font-bold flex items-center gap-2">
+            <CalendarDaysIcon className="w-7 h-7 text-blue-500" />
+            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+          </h2>
 
-              <h2 className="text-2xl font-bold">
-                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-              </h2>
+          <button
+            onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))}
+            className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition"
+          >
+            <ChevronRightIcon className="w-6 h-6" />
+          </button>
+        </div>
 
-              <Button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))}>
-                ›
-              </Button>
-              <Button onClick={() => setCurrentDate(new Date(currentDate.setFullYear(currentDate.getFullYear() + 1)))}>
-                »
-              </Button>
+        <div className="grid grid-cols-7 mb-2">
+          {dayNames.map((day) => (
+            <div key={day} className="text-center font-bold py-3 border-b">
+              {day}
             </div>
+          ))}
+        </div>
 
-            {/* Headers */}
-            <div className="grid grid-cols-7 mb-2">
-              {dayNames.map((d) => (
-                <div key={d} className="text-center font-semibold py-4 border-b">
-                  {d}
-                </div>
-              ))}
+        <div className="grid grid-cols-7 gap-1">
+          {days.map((d, i) => (
+            <div
+              key={i}
+              onClick={() => d.isCurrentMonth && handleDateClick(d.date)}
+              className={`border p-5 rounded-xl cursor-pointer transition ${
+                d.isCurrentMonth ? "bg-white hover:bg-blue-50" : "bg-gray-50 text-gray-400"
+              }`}
+            >
+              <div className="text-lg font-semibold">{d.day}</div>
             </div>
-
-            {/* Calendar grid */}
-            <div className="grid grid-cols-7">
-              {calendarDays.map((d, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => d.isCurrentMonth && openModalForCreate(d.date)}
-                  className={`border p-6 min-h-[100px] cursor-pointer hover:bg-gray-100 
-                    ${!d.isCurrentMonth ? "bg-gray-50 text-gray-400" : ""}
-                  `}
-                >
-                  <div className="text-xl font-semibold">{d.day}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Event List */}
-          <div className="bg-white p-6 rounded-2xl shadow-md border">
-            <h2 className="text-xl font-semibold mb-4">Semua Jadwal Mentor/Mentee</h2>
-
-            {eventsThisMonth.length === 0 ? (
-              <p className="text-gray-500">Belum ada acara</p>
-            ) : (
-              <ul className="space-y-4">
-                {eventsThisMonth.map((ev) => (
-                  <li
-                    key={ev.id}
-                    className={`p-4 border rounded-xl shadow-sm ${statusColor(ev.status)}`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-bold text-lg">{ev.title}</p>
-                        <p className="text-sm">
-                          {ev.start_time} → {ev.end_time}
-                        </p>
-                        <p className="text-sm">Status: {ev.status}</p>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Button onClick={() => openModalForEdit(ev)} className="!px-4 !py-1">
-                          Edit
-                        </Button>
-
-                        <Button
-                          onClick={() => removeSchedule(ev.id)}
-                          className="!px-4 !py-1 bg-red-600 hover:bg-red-700 text-white"
-                        >
-                          Hapus
-                        </Button>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Modal */}
+      {/* ===== Daftar Jadwal ===== */}
+      <div className="bg-white p-6 rounded-2xl shadow-md border">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <ClockIcon className="w-6 h-6 text-indigo-500" />
+          Jadwal Mentor
+        </h2>
+
+        {loading ? (
+          <p>Loading...</p>
+        ) : eventsThisMonth.length === 0 ? (
+          <p className="text-gray-500">Belum ada jadwal</p>
+        ) : (
+          <ul className="space-y-4">
+            {eventsThisMonth.map((ev) => (
+              <li
+                key={ev.id}
+                className="p-5 border rounded-2xl bg-gray-50 shadow-sm hover:shadow-md transition"
+              >
+                <p className="font-bold flex items-center gap-2">
+                  <UserIcon className="w-5 h-5 text-green-600" />
+                  {ev.title}
+                </p>
+
+                <p className="text-sm mt-1 mb-3 text-gray-600">
+                  {new Date(ev.start_time).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })}
+                </p>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleEdit(ev)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-100 text-blue-700 hover:bg-blue-200"
+                  >
+                    <PencilSquareIcon className="w-5 h-5" />
+                    Edit
+                  </button>
+
+                  <button
+                    onClick={() => handleDelete(ev.id)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-100 text-red-700 hover:bg-red-200"
+                  >
+                    <TrashIcon className="w-5 h-5" />
+                    Hapus
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* ===== Modal ===== */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-2xl shadow-2xl w-96 border">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-2xl w-96 shadow-xl">
             <h3 className="text-xl font-semibold mb-4">
               {selectedSchedule ? "Edit Jadwal" : "Buat Jadwal"}
             </h3>
 
-            <label className="text-sm">Judul</label>
+            <label className="text-sm font-medium">Judul</label>
             <input
               className="w-full p-3 border rounded-lg mb-4"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
 
-            <label className="text-sm">Waktu Mulai</label>
+            <label className="text-sm font-medium">Waktu</label>
             <input
               type="time"
-              className="w-full p-3 border rounded-lg mb-4"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
+              className="w-full p-3 border rounded-lg mb-6"
+              value={eventTime}
+              onChange={(e) => setEventTime(e.target.value)}
             />
-
-            <label className="text-sm">Waktu Selesai</label>
-            <input
-              type="time"
-              className="w-full p-3 border rounded-lg mb-4"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-            />
-
-            <label className="text-sm">Status</label>
-            <select
-              className="w-full p-3 border rounded-lg mb-4"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-            >
-              <option>Belum Dimulai</option>
-              <option>Selesai</option>
-              <option>Tidak Selesai</option>
-            </select>
 
             <div className="flex justify-end gap-3">
-              <Button
+              <button
                 onClick={() => setShowModal(false)}
-                className="!bg-gray-200 hover:!bg-gray-300"
+                className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
               >
                 Batal
-              </Button>
+              </button>
 
-              <Button onClick={saveSchedule}>Simpan</Button>
+              <button
+                onClick={handleSave}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Simpan
+              </button>
             </div>
           </div>
         </div>
