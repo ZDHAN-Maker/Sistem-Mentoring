@@ -16,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 class MentorService
 {
     /**
-     * Ambil semua mentor
+     * Ambil semua user yang berperan sebagai mentor.
      */
     public function getAllMentors()
     {
@@ -24,7 +24,7 @@ class MentorService
     }
 
     /**
-     * Ambil detail mentor tertentu
+     * Ambil detail mentor berdasarkan ID (hanya role mentor).
      */
     public function getMentorById($id)
     {
@@ -32,7 +32,7 @@ class MentorService
     }
 
     /**
-     * Ambil semua mentee milik mentor
+     * Ambil semua mentee aktif yang dipair dengan mentor.
      */
     public function getMentorMentees($mentorId)
     {
@@ -43,17 +43,17 @@ class MentorService
     }
 
     /**
-     * Ambil semua jadwal mentor
+     * Ambil semua jadwal mentoring milik mentor.
      */
     public function getMentorSchedules($mentorId)
     {
-        return Schedule::whereHas('pairing', function ($q) use ($mentorId) {
-            $q->where('mentor_id', $mentorId);
+        return Schedule::whereHas('pairing', function ($query) use ($mentorId) {
+            $query->where('mentor_id', $mentorId);
         })->get();
     }
 
     /**
-     * Buat pairing mentor ↔ mentee
+     * Membuat pairing mentor ↔ mentee baru.
      */
     public function createPairing(array $data)
     {
@@ -64,7 +64,7 @@ class MentorService
 
         if ($exists) {
             throw ValidationException::withMessages([
-                'pairing' => 'Pairing mentor dan mentee sudah ada'
+                'pairing' => 'Pairing mentor dan mentee sudah ada.'
             ]);
         }
 
@@ -75,9 +75,8 @@ class MentorService
         ]);
     }
 
-
     /**
-     * Buat jadwal mentoring
+     * Membuat jadwal mentoring.
      */
     public function scheduleMentoring(array $data)
     {
@@ -89,9 +88,8 @@ class MentorService
         ]);
     }
 
-
     /**
-     * Berikan tugas
+     * Mentor memberikan tugas ke mentee.
      */
     public function giveTask($mentorId, array $data, Request $request)
     {
@@ -109,11 +107,12 @@ class MentorService
             'status'     => 'submitted',
         ];
 
+        // Upload file jika tipe tugas adalah "file"
         if ($data['type'] === 'file' && $request->hasFile('file_path')) {
-            $path = $request->file('file_path')->store('tasks', 'public');
-            $taskData['file_path'] = $path;
+            $taskData['file_path'] = $request->file('file_path')->store('tasks', 'public');
         }
 
+        // Jika tipe "video" atau "link", simpan URL
         if (in_array($data['type'], ['video', 'link'])) {
             $taskData['file_path'] = $data['link_url'];
         }
@@ -121,51 +120,49 @@ class MentorService
         return Task::create($taskData);
     }
 
-
     /**
-     * Berikan feedback
+     * Mentor memberikan feedback pada laporan progress.
      */
     public function giveFeedback($mentorId, $reportId, $feedback)
     {
-        $report = ProgressReport::whereHas('pairing', function ($q) use ($mentorId) {
-            $q->where('mentor_id', $mentorId);
+        $report = ProgressReport::whereHas('pairing', function ($query) use ($mentorId) {
+            $query->where('mentor_id', $mentorId);
         })
             ->with('pairing.mentee')
             ->findOrFail($reportId);
 
         $report->update([
-            'feedback' => $feedback
+            'feedback' => $feedback,
         ]);
 
         return $report;
     }
 
-
     /**
-     * Upload materi oleh mentor
+     * Upload materi baru oleh mentor + generate progress otomatis untuk semua mentee yang dipair.
      */
     public function uploadMaterial($mentorId, array $data, Request $request)
     {
         $filePath = null;
 
-        // Upload video
+        // Upload video materi
         if ($request->hasFile('video')) {
             $filePath = $request->file('video')->store('materials', 'public');
         }
 
-        // Buat material 1x saja untuk mentor
+        // Buat material baru
         $material = Material::create([
             'mentor_id'  => $mentorId,
             'title'      => $data['title'],
             'video_path' => $filePath,
         ]);
 
-        // Ambil semua mentee yang dipairing dengan mentor ini
+        // Ambil semua pairing aktif mentor
         $pairings = Pairing::where('mentor_id', $mentorId)
             ->where('status', 'active')
             ->get();
 
-        // Buat progress otomatis untuk setiap mentee
+        // Generate progress untuk semua mentee
         foreach ($pairings as $pairing) {
             MaterialProgress::firstOrCreate(
                 [
@@ -182,13 +179,16 @@ class MentorService
         return $material;
     }
 
+    /**
+     * Ambil progress materi untuk semua mentee di pairing tertentu.
+     */
     public function getMentorMaterialProgress($mentorId, $pairingId)
     {
-        return MaterialProgress::whereHas('material', function ($q) use ($mentorId) {
-            $q->where('mentor_id', $mentorId);
+        return MaterialProgress::whereHas('material', function ($query) use ($mentorId) {
+            $query->where('mentor_id', $mentorId);
         })
-            ->whereHas('mentee.pairings', function ($q) use ($pairingId) {
-                $q->where('pairings.id', $pairingId)
+            ->whereHas('mentee.pairings', function ($query) use ($pairingId) {
+                $query->where('pairings.id', $pairingId)
                     ->where('pairings.status', 'active');
             })
             ->with([
@@ -198,47 +198,37 @@ class MentorService
             ->get();
     }
 
-
-
     /**
-     * Dashboard otomatis
+     * Dashboard mentor otomatis.
      */
-
     public function getMentorDashboard($mentorId)
     {
         $mentor = User::findOrFail($mentorId);
 
         // Ambil semua pairing mentor
-        $pairingIds = Pairing::where('mentor_id', $mentorId)
-            ->pluck('id');
-
-        // Total mentee
-        $totalMentee = $pairingIds->count();
-
-        // Total sesi terjadwal
-        $totalSession = Schedule::whereIn('pairing_id', $pairingIds)
-            ->count();
-
-        // Total sesi selesai (progress report)
-        $completedSession = ProgressReport::whereIn('pairing_id', $pairingIds)
-            ->count();
+        $pairingIds = Pairing::where('mentor_id', $mentorId)->pluck('id');
 
         return [
             'mentor' => [
-                'id'   => $mentor->id,
-                'name' => $mentor->name,
+                'id'    => $mentor->id,
+                'name'  => $mentor->name,
                 'email' => $mentor->email,
             ],
             'program' => 'Program Default',
-            'totalMentee' => $totalMentee,
-            'totalSession' => $totalSession,
-            'completedSession' => $completedSession,
-            'progress' => $totalSession > 0
-                ? round(($completedSession / $totalSession) * 100)
-                : 0,
+            'totalMentee'      => $pairingIds->count(),
+            'totalSession'     => Schedule::whereIn('pairing_id', $pairingIds)->count(),
+            'completedSession' => ProgressReport::whereIn('pairing_id', $pairingIds)->count(),
+            'progress' => function () use ($pairingIds) {
+                $total = Schedule::whereIn('pairing_id', $pairingIds)->count();
+                $done  = ProgressReport::whereIn('pairing_id', $pairingIds)->count();
+                return $total > 0 ? round(($done / $total) * 100) : 0;
+            },
         ];
     }
 
+    /**
+     * Ambil pairing aktif milik mentor beserta jadwalnya.
+     */
     public function getMentorPairings($mentorId)
     {
         return Pairing::with([
@@ -250,12 +240,14 @@ class MentorService
             ->get();
     }
 
-    // Update Schedule
+    /**
+     * Update jadwal mentoring.
+     */
     public function updateSchedule($mentorId, $scheduleId, array $data)
     {
         $schedule = Schedule::where('id', $scheduleId)
-            ->whereHas('pairing', function ($q) use ($mentorId) {
-                $q->where('mentor_id', $mentorId);
+            ->whereHas('pairing', function ($query) use ($mentorId) {
+                $query->where('mentor_id', $mentorId);
             })
             ->firstOrFail();
 
@@ -268,25 +260,29 @@ class MentorService
         return $schedule;
     }
 
-    // delete shcedule
+    /**
+     * Hapus jadwal mentoring.
+     */
     public function deleteSchedule($mentorId, $scheduleId)
     {
         $schedule = Schedule::where('id', $scheduleId)
-            ->whereHas('pairing', function ($q) use ($mentorId) {
-                $q->where('mentor_id', $mentorId)
+            ->whereHas('pairing', function ($query) use ($mentorId) {
+                $query->where('mentor_id', $mentorId)
                     ->where('status', 'active');
             })
-            ->with('pairing')
             ->firstOrFail();
-        $schedule->delete();
 
+        $schedule->delete();
         return true;
     }
 
+    /**
+     * Ambil semua progress report dari mentee mentor.
+     */
     public function getMyMenteesReports($mentorId)
     {
-        return ProgressReport::whereHas('pairing', function ($q) use ($mentorId) {
-            $q->where('mentor_id', $mentorId);
+        return ProgressReport::whereHas('pairing', function ($query) use ($mentorId) {
+            $query->where('mentor_id', $mentorId);
         })
             ->with([
                 'pairing.mentee:id,name,email',
