@@ -61,8 +61,8 @@ cd back-end
 
 # Migrasi & Seed database
 
-php artisan migrate
-php artisan db:seed
+- php artisan migrate
+- php artisan db:seed
 
 ---
 # Buat storage link
@@ -73,9 +73,9 @@ php artisan storage:link
 
 # Jalankan server backend
 
-php artisan serve --host=localhost
+- php artisan serve --host=localhost
 
-API Endpoint: http://localhost:8000
+- API Endpoint: http://localhost:8000
 
 ---
 # 2️⃣ Front-end Setup (React Vite)
@@ -96,6 +96,6 @@ npm install
 
 # Jalankan server development
 
-npm run dev
+- npm run dev
 
-URL Frontend: http://localhost:5173
+- URL Frontend: http://localhost:5173
