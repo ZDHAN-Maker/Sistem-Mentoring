@@ -50,12 +50,12 @@ cd back-end
 ---
 #  Konfigurasi Environment
 
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=back_end_sistem_mentoring
-DB_USERNAME=root
-DB_PASSWORD=
+- DB_CONNECTION=mysql
+- DB_HOST=127.0.0.1
+- DB_PORT=3306
+- DB_DATABASE=back_end_sistem_mentoring
+- DB_USERNAME=root
+- DB_PASSWORD=
 
 ---
 
