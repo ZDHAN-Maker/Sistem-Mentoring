@@ -7,23 +7,25 @@ use App\Models\Notification;
 class NotificationService
 {
     /**
-     * Membuat notifikasi baru (mendukung polymorphic)
+     * Membuat notifikasi baru untuk user.
+     * - Mendukung relasi polymorphic (notifiable)
+     * - Semua notifikasi baru otomatis berstatus "unread"
      */
     public function createNotification($userId, $title, $message, $type = 'general', $notifiable = null)
     {
         return Notification::create([
-            'user_id'        => $userId,
-            'type'           => $type,
-            'title'          => $title,
-            'message'        => $message,
-            'status'         => 'unread',
+            'user_id'         => $userId,
+            'type'            => $type,
+            'title'           => $title,
+            'message'         => $message,
+            'status'          => 'unread',
             'notifiable_id'   => $notifiable?->id,
             'notifiable_type' => $notifiable ? get_class($notifiable) : null,
         ]);
     }
 
     /**
-     * Ambil semua notifikasi milik user
+     * Mengambil semua notifikasi milik user (urut terbaru).
      */
     public function getUserNotifications($userId)
     {
@@ -33,7 +35,7 @@ class NotificationService
     }
 
     /**
-     * Tandai notifikasi sebagai read
+     * Menandai notifikasi sebagai "read".
      */
     public function markAsRead($notificationId)
     {
@@ -44,7 +46,7 @@ class NotificationService
     }
 
     /**
-     * Hapus notifikasi
+     * Menghapus satu notifikasi.
      */
     public function deleteNotification($notificationId)
     {
