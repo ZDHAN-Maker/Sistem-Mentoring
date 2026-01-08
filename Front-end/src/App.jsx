@@ -12,14 +12,12 @@ import DashboardMentee from './pages/Role/Mentee/DashboardMentee';
 
 import ProtectedRoute from './components/PrivateRoute';
 import Header from './components/Header';
-import Langganan from './pages/Langganan';
 
 const PUBLIC_PREFIX = [
   '/login',
   '/register',
   '/program',
   '/langganan',
-  '/elearning',
   '/lupa-password', 
 ];
 
