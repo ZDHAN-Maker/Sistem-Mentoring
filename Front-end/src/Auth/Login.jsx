@@ -183,18 +183,6 @@ const Login = () => {
                 <div className="grow border-t border-gray-200"></div>
               </div>
 
-              <button
-                type="button"
-                disabled={isLoading}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg flex items-center justify-center gap-3 font-medium text-gray-700 bg-white hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <img
-                  src="/assets/google.png"
-                  alt="Google Logo"
-                  className="w-7 h-7 object-contain"
-                />
-                <span className="text-base">Masuk Dengan Google</span>
-              </button>
             </form>
 
             <p className="text-center text-sm text-gray-500 mt-6">

@@ -23,43 +23,23 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (email, password, remember = false) => {
-    try {
-      console.log("🚀 Starting login process...");
-      
-      // 1. Get CSRF cookie
-      await getCsrfCookie();
-      
-      // 2. Tunggu sebentar untuk cookie siap
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      console.log("📤 Sending login request...");
+    await getCsrfCookie();
 
-      // 3. Login request
-      const loginResponse = await api.post("/login", { 
-        email, 
-        password, 
-        remember 
-      });
-      
-      console.log("✅ Login successful:", loginResponse.data);
+    const res = await api.post("/login", {
+      email,
+      password,
+      remember,
+    });
 
-      // 4. Get user data
-      const { data: user } = await api.get("/user");
+    const user = res.data.user;
+    saveUser(user);
 
-      saveUser(user);
-
-      return user;
-    } catch (error) {
-      console.error("❌ Login error:", error.response?.data || error.message);
-      throw error;
-    }
+    return user;
   };
 
   const logout = async () => {
     try {
       await api.post("/logout");
-    } catch (error) {
-      console.error("Logout error:", error);
     } finally {
       clearUser();
     }
@@ -69,8 +49,6 @@ export const AuthProvider = ({ children }) => {
     const init = async () => {
       try {
         await getCsrfCookie();
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
         const { data: user } = await api.get("/user");
         saveUser(user);
       } catch {
@@ -86,7 +64,7 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider
       value={{
-        authData,
+        user: authData,
         loading,
         login,
         logout,

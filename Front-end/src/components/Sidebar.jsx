@@ -48,16 +48,16 @@ const Sidebar = () => {
   const currentMenu = menus[role] || [];
 
   return (
-    <aside className="w-64 bg-white shadow-md p-6 flex flex-col justify-between">
+    <aside className="w-64 h-screen bg-[#f7f1e9]/80 backdrop-blur-lg shadow-xl border-r border-[#d3c7b8]/50 px-6 py-6 flex flex-col justify-between">
       <div>
         {/* ===== Logo Section ===== */}
-        <div className="flex flex-col items-center mb-8">
+        <div className="flex flex-col items-center mb-10">
           <img
             src="/assets/Logo Sistem Mentoring.png"
             alt="Logo"
-            className="w-20 h-20 object-contain mb-2"
+            className="w-20 h-20 object-contain mb-3 drop-shadow-sm"
           />
-          <h2 className="text-lg font-semibold text-gray-700">
+          <h2 className="text-lg font-bold tracking-wide text-[#5a4635]">
             {role === "mentor"
               ? "Mentor Panel"
               : role === "admin"
@@ -67,19 +67,25 @@ const Sidebar = () => {
         </div>
 
         {/* ===== Learning Section ===== */}
-        <div className="text-gray-500 text-xs uppercase mb-2">Learning</div>
+        <div className="text-[#8b7762] text-xs uppercase tracking-widest mb-3">
+          Learning
+        </div>
+
         <ul>
           {currentMenu.map((item, index) => {
             const isActive = location.pathname === item.path;
+
             return (
               <li
                 key={index}
-                className={`${
-                  isActive
-                    ? "bg-[#b38867] text-white"
-                    : "text-gray-700 hover:bg-gray-100"
-                } rounded-md px-3 py-2 mb-2 cursor-pointer transition-colors`}
                 onClick={() => handleNavigation(item.path)}
+                className={`px-4 py-2 mb-2 rounded-xl cursor-pointer transition-all duration-200 font-medium tracking-wide
+              ${
+                isActive
+                  ? "bg-[#b38867] text-white shadow-md"
+                  : "text-[#5a4635] hover:bg-[#f0e7dd]"
+              }
+            `}
               >
                 {item.name}
               </li>
@@ -88,11 +94,14 @@ const Sidebar = () => {
         </ul>
 
         {/* ===== Account Section ===== */}
-        <div className="text-gray-500 text-xs uppercase mt-4 mb-2">Account</div>
+        <div className="text-[#8b7762] text-xs uppercase tracking-widest mt-6 mb-3">
+          Account
+        </div>
+
         <ul>
           <li
-            className="text-gray-700 hover:bg-red-100 rounded-md px-3 py-2 mb-2 cursor-pointer"
             onClick={() => handleNavigation("/logout")}
+            className="px-4 py-2 rounded-xl text-red-600 font-semibold cursor-pointer hover:bg-red-100 transition"
           >
             Logout
           </li>

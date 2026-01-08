@@ -11,7 +11,7 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const { notifications, markAsRead, deleteNotification } = useNotifications();
 
-  const unreadCount = notifications.filter(n => n.status === "unread").length;
+  const unreadCount = notifications.filter((n) => n.status === "unread").length;
   const [openNotif, setOpenNotif] = useState(false);
 
   const handleLogout = async () => {
@@ -21,7 +21,6 @@ const Navbar = () => {
 
   return (
     <header className="backdrop-blur-xl bg-[#f7f1e9]/70 shadow-lg px-8 py-4 flex justify-between items-center border-b border-[#d3c7b8]/50">
-      
       {/* Logo */}
       <h1 className="text-3xl font-extrabold text-[#5a4635] tracking-wide drop-shadow-sm">
         Aeterna Mentoring
@@ -29,7 +28,6 @@ const Navbar = () => {
 
       {/* Right section */}
       <div className="flex items-center gap-8 relative">
-
         {/* Notification Icon */}
         <div className="relative">
           <button
@@ -53,9 +51,11 @@ const Navbar = () => {
               </h3>
 
               {notifications.length === 0 ? (
-                <p className="text-center text-gray-500 py-6">Tidak ada notifikasi</p>
+                <p className="text-center text-gray-500 py-6">
+                  Tidak ada notifikasi
+                </p>
               ) : (
-                notifications.map(notif => (
+                notifications.map((notif) => (
                   <div
                     key={notif.id}
                     className={`px-4 py-4 border-b border-gray-100 hover:bg-[#f9f3eb] transition cursor-pointer ${
@@ -64,7 +64,9 @@ const Navbar = () => {
                     onClick={() => markAsRead(notif.id)}
                   >
                     <div className="flex justify-between items-start">
-                      <p className="text-sm text-gray-700 leading-snug">{notif.message}</p>
+                      <p className="text-sm text-gray-700 leading-snug">
+                        {notif.message}
+                      </p>
 
                       <button
                         onClick={(e) => {
@@ -95,7 +97,7 @@ const Navbar = () => {
             className="text-[#5a4635]"
           />
           <span className="text-[#3a2f23] font-semibold tracking-wide">
-            {user?.username || user?.name || "User"}
+            {user?.name ?? "User"}
           </span>
         </div>
 
