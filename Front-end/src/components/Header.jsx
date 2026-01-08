@@ -1,20 +1,24 @@
 export default function Header() {
   return (
-    <header className="w-full bg-white border-b border-gray-200">
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <header className="w-full backdrop-blur-xl bg-white/70 border-b border-[#e4d9cd] shadow-sm">
+      <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+        
         {/* === Kiri: Logo + Search === */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <img
             src="/assets/Logo Sistem Mentoring.png"
             alt="Logo"
-            className="w-10 h-10"
-            
+            className="w-12 h-12 hover:scale-105 transition-transform"
           />
+
+          {/* Search Input */}
           <div className="relative">
             <input
               type="text"
-              placeholder="Cari Program"
-              className="w-72 h-9 pl-10 pr-3 rounded-md border border-gray-300 text-sm placeholder-gray-400 focus:ring-1 focus:ring-[#b38867] focus:border-[#b38867] outline-none"
+              placeholder="Cari Program..."
+              className="w-72 h-10 pl-10 pr-3 rounded-lg border border-[#c7b39f] bg-white/60 backdrop-blur-sm 
+              text-sm placeholder-gray-400 focus:ring-2 focus:ring-[#b38867] focus:border-[#b38867] outline-none
+              transition shadow-sm"
             />
             <svg
               className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -32,23 +36,43 @@ export default function Header() {
         </div>
 
         {/* === Tengah: Menu Navigasi === */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-700">
-          <a href="/program" className="hover:text-[#b38867]">Program</a>
-          <a href="/langganan" className="hover:text-[#b38867]">Langganan</a>
-          <a href="/e-learning" className="hover:text-[#b38867]">E-Learning</a>
+        <nav className="hidden md:flex items-center gap-10 text-[15px] font-semibold text-gray-700">
+          <a
+            href="/program"
+            className="relative hover:text-[#b38867] transition group"
+          >
+            Program
+            <span className="absolute left-0 -bottom-1 w-full h-[2px] bg-[#b38867] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
+          </a>
+
+          <a
+            href="/langganan"
+            className="relative hover:text-[#b38867] transition group"
+          >
+            Langganan
+            <span className="absolute left-0 -bottom-1 w-full h-[2px] bg-[#b38867] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
+          </a>
         </nav>
 
-        {/* === Kanan: Tombol Auth === */}
-        <div className="flex gap-3">
+        {/* === Kanan: Auth Buttons === */}
+        <div className="flex gap-4">
+
+          {/* Button Daftar */}
           <a
             href="/register"
-            className="px-4 h-9 inline-flex items-center justify-center rounded-md border border-[#b38867] text-[#b38867] hover:bg-[#b38867] hover:text-white transition"
+            className="px-5 h-10 inline-flex items-center justify-center rounded-lg border border-[#b38867] text-[#b38867] 
+            font-semibold bg-white/60 backdrop-blur-md shadow-sm
+            hover:bg-[#b38867] hover:text-white hover:shadow-lg hover:scale-105 transition-all"
           >
             Daftar
           </a>
+
+          {/* Button Masuk */}
           <a
             href="/login"
-            className="px-4 h-9 inline-flex items-center justify-center rounded-md bg-[#b38867] text-white hover:bg-[#a27355] transition"
+            className="px-5 h-10 inline-flex items-center justify-center rounded-lg 
+            bg-gradient-to-r from-[#b38867] to-[#a0704c] text-white 
+            font-semibold shadow-md hover:shadow-xl hover:scale-105 hover:brightness-110 transition-all"
           >
             Masuk
           </a>

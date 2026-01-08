@@ -37,10 +37,6 @@ const Sidebar = () => {
     admin: [
       { name: "Dashboard", path: "/admin-dashboard" },
       { name: "User Management", path: "/admin-dashboard/user-management" },
-      {
-        name: "Learning Activities",
-        path: "/admin-dashboard/learning-activities",
-      },
       { name: "Learning Path", path: "/admin-dashboard/learning-path" },
       { name: "Mentor-Mentee Pairing", path: "/admin-dashboard/pairings" },
       { name: "Progress Report", path: "/admin-dashboard/progress-report" },
