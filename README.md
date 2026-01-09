@@ -99,3 +99,23 @@ npm install
 - npm run dev
 
 - URL Frontend: http://localhost:5173
+
+
+---
+
+# Akun User
+
+- 'name' => 'Admin User',
+  'email' => 'admin@example.com',
+  'password' => Hash::make('password'),
+  'role' => 'admin',
+
+- 'name' => 'Mentor User',
+  'email' => 'mentor@example.com',
+  'password' => Hash::make('password'),
+  'role' => 'mentor',
+
+- 'name' => 'Mentee User',
+  'email' => 'mentee@example.com',
+  'password' => Hash::make('password'),
+  'role' => 'mentee',
