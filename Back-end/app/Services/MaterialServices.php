@@ -3,140 +3,85 @@
 namespace App\Services;
 
 use App\Models\Material;
+use App\Models\Pairing;
+use App\Models\User;
+use Exception;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class MaterialService
 {
-    public function createMaterial(array $data, $videoFile)
+    /**
+     * Membuat materi baru.
+     */
+    public function createMaterial(array $data, User $mentor, $file = null): Material
     {
-        // Upload video
-        $videoPath = $this->uploadVideo($videoFile);
-        
-        // Get video metadata
-        $metadata = $this->getVideoMetadata($videoFile);
-        
-        // Create material
-        $material = Material::create([
-            'title' => $data['title'],
-            'description' => $data['description'] ?? null,
-            'video_path' => $videoPath,
-            'mentor_id' => auth()->id(),
-            'schedule_id' => $data['schedule_id'] ?? null,
-            'video_size' => $metadata['size'],
-            'video_format' => $metadata['format'],
-            'duration' => $metadata['duration'] ?? null,
-            'status' => $data['status'] ?? 'draft',
-            'order' => $data['order'] ?? $this->getNextOrder(),
-        ]);
-
-        // Generate thumbnail if needed
-        if (isset($data['generate_thumbnail']) && $data['generate_thumbnail']) {
-            $this->generateThumbnail($material);
+        // Jika materi spesifik untuk satu pairing, pastikan pairing itu milik mentor ini
+        if (isset($data['pairing_id'])) {
+            $pairing = Pairing::find($data['pairing_id']);
+            if ($pairing->mentor_id !== $mentor->id) {
+                throw new Exception("Anda tidak berhak menambahkan materi ke sesi mentoring ini.", 403);
+            }
         }
 
-        return $material;
+        // Handle File Upload
+        if ($file && in_array($data['type'], ['pdf', 'video'])) {
+            $path = $file->store('materials', 'public');
+            $data['file_path'] = $path;
+        }
+
+        $data['mentor_id'] = $mentor->id;
+        $data['status'] = $data['status'] ?? 'published'; // Default status
+
+        return Material::create($data);
     }
 
-    public function updateMaterial(Material $material, array $data, $videoFile = null)
+    /**
+     * Mengubah data materi.
+     */
+    public function updateMaterial(Material $material, array $data, User $mentor, $file = null): Material
     {
-        if ($videoFile) {
-            // Delete old video
-            $this->deleteVideo($material->video_path);
-            
-            // Upload new video
-            $videoPath = $this->uploadVideo($videoFile);
-            $metadata = $this->getVideoMetadata($videoFile);
-            
-            $data['video_path'] = $videoPath;
-            $data['video_size'] = $metadata['size'];
-            $data['video_format'] = $metadata['format'];
-            $data['duration'] = $metadata['duration'] ?? null;
+        // Validasi Kepemilikan
+        if ($material->mentor_id !== $mentor->id) {
+            throw new Exception("Anda tidak berhak mengubah materi ini.", 403);
+        }
+
+        // Handle File Upload & Hapus File Lama
+        if ($file && in_array($data['type'], ['pdf', 'video'])) {
+            // Hapus file lama jika ada
+            if ($material->file_path && Storage::disk('public')->exists($material->file_path)) {
+                Storage::disk('public')->delete($material->file_path);
+            }
+            // Simpan file baru
+            $data['file_path'] = $file->store('materials', 'public');
+        }
+
+        // Bersihkan data yang tidak relevan (Misal: dari tipe PDF berubah ke Link)
+        if ($data['type'] === 'link') {
+            $data['file_path'] = null; // Reset path file
+            if ($material->file_path) {
+                Storage::disk('public')->delete($material->file_path);
+            }
+        } else {
+            $data['external_url'] = null; // Reset URL jika tipenya file
         }
 
         $material->update($data);
-        
-        return $material->fresh();
+        return $material;
     }
 
-    public function deleteMaterial(Material $material)
+    /**
+     * Menghapus materi (Soft Delete).
+     */
+    public function deleteMaterial(Material $material, User $mentor): void
     {
-        // Delete video file
-        $this->deleteVideo($material->video_path);
-        
-        // Delete thumbnail if exists
-        if ($material->thumbnail_path) {
-            $this->deleteVideo($material->thumbnail_path);
+        if ($material->mentor_id !== $mentor->id) {
+            throw new Exception("Anda tidak berhak menghapus materi ini.", 403);
         }
-        
-        // Soft delete material
+
+        // Karena model menggunakan SoftDeletes, file aslinya TIDAK dihapus dari storage.
+        // Jika ingin menghapus permanen filenya juga, uncomment baris di bawah ini:
+        // if ($material->file_path) Storage::disk('public')->delete($material->file_path);
+
         $material->delete();
-        
-        return true;
-    }
-
-    protected function uploadVideo($file)
-    {
-        $filename = Str::random(40) . '.' . $file->getClientOriginalExtension();
-        $path = $file->storeAs('materials/videos', $filename, 'public');
-        
-        return $path;
-    }
-
-    protected function deleteVideo($path)
-    {
-        if (Storage::disk('public')->exists($path)) {
-            Storage::disk('public')->delete($path);
-        }
-    }
-
-    protected function getVideoMetadata($file)
-    {
-        return [
-            'size' => $this->formatBytes($file->getSize()),
-            'format' => $file->getClientOriginalExtension(),
-            'duration' => null, // Bisa diintegrasikan dengan FFmpeg
-        ];
-    }
-
-    protected function formatBytes($bytes, $precision = 2)
-    {
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        
-        for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
-            $bytes /= 1024;
-        }
-        
-        return round($bytes, $precision) . ' ' . $units[$i];
-    }
-
-    protected function getNextOrder()
-    {
-        return Material::where('mentor_id', auth()->id())->max('order') + 1;
-    }
-
-    protected function generateThumbnail(Material $material)
-    {
-        // Implementasi generate thumbnail menggunakan FFmpeg
-        // Placeholder untuk sekarang
-        return null;
-    }
-
-    public function getMaterialsByMentor($mentorId)
-    {
-        return Material::byMentor($mentorId)
-            ->ordered()
-            ->with(['schedule'])
-            ->get();
-    }
-
-    public function reorderMaterials(array $orderData)
-    {
-        foreach ($orderData as $item) {
-            Material::where('id', $item['id'])
-                ->update(['order' => $item['order']]);
-        }
-        
-        return true;
     }
 }

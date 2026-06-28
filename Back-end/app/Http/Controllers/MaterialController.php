@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreMaterialRequest;
 use App\Models\Material;
+use App\Models\Pairing;
 use App\Services\MaterialService;
+use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
 
 class MaterialController extends Controller
 {
@@ -16,134 +19,112 @@ class MaterialController extends Controller
         $this->materialService = $materialService;
     }
 
-    public function index()
+    /**
+     * GET: Menampilkan daftar materi
+     */
+    public function index(Request $request)
     {
-        $materials = $this->materialService->getMaterialsByMentor(auth()->id());
+        $user = Auth::user();
 
-        return response()->json([
-            'success' => true,
-            'data' => $materials
-        ]);
-    }
+        if ($user->hasRole('Mentor')) {
+            // Mentor melihat semua materi yang dia buat
+            $materials = Material::where('mentor_id', $user->id)
+                ->with('pairing:id,mentee_id') // Optional: Lihat spesifik pairing
+                ->latest()
+                ->get();
+        } else if ($user->hasRole('Mentee')) {
+            // Mentee melihat materi dari pairing miliknya (materi spesifik ATAU materi general dari mentornya)
+            $mentorIds = Pairing::where('mentee_id', $user->id)->pluck('mentor_id');
+            $pairingIds = Pairing::where('mentee_id', $user->id)->pluck('id');
 
-    public function store(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'video' => 'required|file|mimes:mp4,avi,mov,wmv|max:512000',
-            'schedule_id' => 'nullable|exists:schedules,id',
-            'status' => 'nullable|in:draft,published',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors()
-            ], 422);
+            $materials = Material::where('status', 'published')
+                ->where(function ($query) use ($mentorIds, $pairingIds) {
+                    $query->whereIn('pairing_id', $pairingIds) // Materi spesifik untuk mentee ini
+                          ->orWhere(function ($q) use ($mentorIds) {
+                              $q->whereNull('pairing_id')->whereIn('mentor_id', $mentorIds); // Materi umum dari mentornya
+                          });
+                })->latest()->get();
+        } else {
+            return response()->json(['message' => 'Role tidak valid.'], 403);
         }
 
+        return response()->json([
+            'status' => 'success',
+            'data' => $materials
+        ], 200);
+    }
+
+    /**
+     * POST: Mentor membuat materi baru
+     */
+    public function store(StoreMaterialRequest $request)
+    {
         try {
-            $material = $this->materialService->createMaterial(
-                $request->all(),
-                $request->file('video')
-            );
+            $user = Auth::user();
+            $file = $request->file('file'); // Ambil file jika ada
+
+            $material = $this->materialService->createMaterial($request->validated(), $user, $file);
 
             return response()->json([
-                'success' => true,
-                'message' => 'Material uploaded successfully',
+                'status' => 'success',
+                'message' => 'Materi berhasil diunggah.',
                 'data' => $material
             ], 201);
-        } catch (\Exception $e) {
+
+        } catch (Exception $e) {
+            $statusCode = $e->getCode() === 403 ? 403 : 400;
             return response()->json([
-                'success' => false,
-                'message' => 'Failed to upload material: ' . $e->getMessage()
-            ], 500);
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], $statusCode);
         }
     }
 
-    public function show(Material $material)
+    /**
+     * POST: Mentor mengubah materi (Menggunakan POST karena upload file di PHP via PUT sering bermasalah)
+     */
+    public function update(StoreMaterialRequest $request, Material $material)
     {
-        if ($material->mentor_id !== auth()->id()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized'
-            ], 403);
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => $material->load(['schedule'])
-        ]);
-    }
-
-    public function update(Request $request, Material $material)
-    {
-        if ($material->mentor_id !== auth()->id()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized'
-            ], 403);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'title' => 'sometimes|required|string|max:255',
-            'description' => 'nullable|string',
-            'video' => 'nullable|file|mimes:mp4,avi,mov,wmv|max:512000',
-            'schedule_id' => 'nullable|exists:schedules,id',
-            'status' => 'nullable|in:draft,published',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
         try {
-            $material = $this->materialService->updateMaterial(
-                $material,
-                $request->all(),
-                $request->file('video')
-            );
+            $user = Auth::user();
+            $file = $request->file('file');
+
+            $updatedMaterial = $this->materialService->updateMaterial($material, $request->validated(), $user, $file);
 
             return response()->json([
-                'success' => true,
-                'message' => 'Material updated successfully',
-                'data' => $material
-            ]);
-        } catch (\Exception $e) {
+                'status' => 'success',
+                'message' => 'Materi berhasil diperbarui.',
+                'data' => $updatedMaterial
+            ], 200);
+
+        } catch (Exception $e) {
+            $statusCode = $e->getCode() === 403 ? 403 : 400;
             return response()->json([
-                'success' => false,
-                'message' => 'Failed to update material: ' . $e->getMessage()
-            ], 500);
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], $statusCode);
         }
     }
 
+    /**
+     * DELETE: Mentor menghapus materi
+     */
     public function destroy(Material $material)
     {
-        if ($material->mentor_id !== auth()->id()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized'
-            ], 403);
-        }
-
         try {
-            $this->materialService->deleteMaterial($material);
+            $user = Auth::user();
+            $this->materialService->deleteMaterial($material, $user);
 
             return response()->json([
-                'success' => true,
-                'message' => 'Material deleted successfully'
-            ]);
-        } catch (\Exception $e) {
+                'status' => 'success',
+                'message' => 'Materi berhasil dihapus.'
+            ], 200);
+
+        } catch (Exception $e) {
             return response()->json([
-                'success' => false,
-                'message' => 'Failed to delete material: ' . $e->getMessage()
-            ], 500);
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 403);
         }
     }
 }

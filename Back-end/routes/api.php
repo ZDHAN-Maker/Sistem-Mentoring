@@ -98,3 +98,24 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
     
 });
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    
+    // ==========================================
+    // AREA BERSAMA (Melihat daftar materi)
+    // ==========================================
+    Route::get('/materials', [MaterialController::class, 'index']);
+    
+    // ==========================================
+    // AREA MENTOR (Manajemen Materi)
+    // ==========================================
+    Route::middleware('role:Mentor')->group(function () {
+        Route::post('/materials', [MaterialController::class, 'store']);
+        
+        // Memakai POST untuk mempermudah upload file saat Update (atau minta frontend kirim _method=PUT)
+        Route::post('/materials/{material}', [MaterialController::class, 'update']);
+        
+        Route::delete('/materials/{material}', [MaterialController::class, 'destroy']);
+    });
+    
+});
