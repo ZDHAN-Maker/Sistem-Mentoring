@@ -2,139 +2,93 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RegisterRequest;
 use App\Services\AuthService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
+use App\Models\User;
+use Exception;
 
 class AuthController extends Controller
 {
     protected $authService;
-    protected $userService;
 
     public function __construct(AuthService $authService)
     {
         $this->authService = $authService;
     }
 
-    // Register new user
-    public function register(Request $request)
+    public function register(RegisterRequest $request)
     {
-        $validated = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|string|email|max:255|unique:users,email',
-            'password' => 'required|string|min:6',
-            'role'     => 'required|in:admin,mentor,mentee'
-        ]);
+        try {
+            $user = $this->authService->registerUser($request->validated());
+            
+            // Buat token (Misal menggunakan Laravel Sanctum)
+            $token = $user->createToken('auth_token')->plainTextToken;
 
-        $user = User::create([
-            'name'     => $validated['name'],
-            'email'    => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role'     => $validated['role'],
-        ]);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Registrasi berhasil.',
+                'data' => [
+                    'user' => $user,
+                    'token' => $token,
+                ]
+            ], 201); // 201 Created
 
-        Auth::login($user);
-        $request->session()->regenerate();
-        $request->session()->save();
-
-        return response()->json([
-            'message' => 'Registrasi berhasil',
-            'user'    => $user,
-        ], 201);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Registrasi gagal: ' . $e->getMessage()
+            ], 400); // 400 Bad Request
+        }
     }
 
-    // User login
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
-        $credentials = $request->validate([
-            'email'    => 'required|string|email',
-            'password' => 'required|string',
-        ]);
+        $user = User::where('email', $request->email)->first();
 
-        $user = User::where('email', $credentials['email'])->first();
-
-        if (!$user || !Hash::check($credentials['password'], $user->password)) {
+        // Verifikasi kredensial secara manual untuk API
+        if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
-                'message' => 'Email atau password salah'
-            ], 401);
+                'status' => 'error',
+                'message' => 'Email atau password salah.'
+            ], 401); // 401 Unauthorized
         }
 
-        // Login user
-        Auth::login($user, $request->boolean('remember', false));
+        // Cek status aktif
+        if (!$user->is_active) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Akun Anda telah dinonaktifkan.'
+            ], 403); // 403 Forbidden
+        }
 
-        // Regenerate session
-        $request->session()->regenerate();
-        $request->session()->save();
+        // Buat token baru
+        $token = $user->createToken('auth_token')->plainTextToken;
+        
+        // Ambil role user untuk diberikan ke frontend
+        $roles = $user->roles->pluck('name');
 
-        // Get session ID and create cookie manually
-        $sessionId = $request->session()->getId();
-        $sessionName = config('session.cookie');
-
-        \Log::info('Login successful', [
-            'user_id' => $user->id,
-            'session_id' => $sessionId,
-            'session_name' => $sessionName,
-            'remember' => $request->boolean('remember', false),
-        ]);
-
-        // CRITICAL: Return response with cookie
         return response()->json([
-            'message' => 'Login berhasil',
-            'user'    => $user,
-            'role'    => $user->role,
-        ])->cookie(
-            $sessionName,
-            $sessionId,
-            config('session.lifetime'),
-            config('session.path'),
-            config('session.domain'),
-            config('session.secure'),
-            config('session.http_only'),
-            false,
-            config('session.same_site')
-        );
+            'status' => 'success',
+            'message' => 'Berhasil login.',
+            'data' => [
+                'user' => $user,
+                'roles' => $roles,
+                'token' => $token
+            ]
+        ], 200); // 200 OK
     }
 
-    // User logout
     public function logout(Request $request)
     {
-        Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return response()->json(['message' => 'Logout berhasil'], 200);
-    }
-
-    // Get authenticated user
-    public function getUser(Request $request)
-    {
-        \Log::info('Get User Request', [
-            'has_user' => $request->user() !== null,
-            'session_id' => $request->session()->getId(),
-            'auth_check' => Auth::check(),
-        ]);
-
-        if (!$request->user()) {
-            return response()->json([
-                'message' => 'Unauthenticated.',
-            ], 401);
-        }
+        // Hapus token yang sedang digunakan (Sanctum)
+        $request->user()->currentAccessToken()->delete();
 
         return response()->json([
-            'auth' => true,
-            'user' => $request->user(),
-            'role' => $request->user()->role,
-        ]);
-    }
-
-    // Get authenticated user 
-    public function me(Request $request)
-    {
-        return response()->json(
-            $this->userService->getAuthenticatedUser($request)
-        );
+            'status' => 'success',
+            'message' => 'Anda telah berhasil logout.'
+        ], 200);
     }
 }

@@ -84,4 +84,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(MaterialProgress::class, 'mentee_id');
     }
+
+    public function hasrole(string $role): bool
+    {
+        return $this->roles()->where('name', $role)->exists();
+    }
+
+    public function hasAnyRole(array $roles): bool
+    {
+        return $this->roles()->whereIn('name', $roles)->exists();
+    }
 }

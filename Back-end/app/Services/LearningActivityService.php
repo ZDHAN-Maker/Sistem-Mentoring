@@ -1,41 +1,57 @@
-<?
+<?php
 
 namespace App\Services;
 
 use App\Models\LearningActivity;
-use App\Models\Material;
+use App\Models\User;
+use Exception;
+use Illuminate\Support\Facades\DB;
 
 class LearningActivityService
 {
-    public function createLearningActivity(array $data)
+    /**
+     * Membuat bidang keahlian baru (Master Data).
+     */
+    public function createActivity(array $data): LearningActivity
     {
         return LearningActivity::create($data);
     }
 
-    public function getMaterialsByLearningActivity($learningActivityId)
+    /**
+     * Mengubah bidang keahlian yang sudah ada.
+     */
+    public function updateActivity(LearningActivity $activity, array $data): LearningActivity
     {
-        // Ambil semua materi yang terkait dengan learning activity
-        $learningActivity = LearningActivity::find($learningActivityId);
-
-        if (!$learningActivity) {
-            return null;
-        }
-
-        return $learningActivity->materials;  // Mengambil semua materi yang berhubungan dengan learning activity ini
+        $activity->update($data);
+        return $activity;
     }
 
-    public function assignMentorToActivity($learningActivityId, $mentorId)
+    /**
+     * Menghapus bidang keahlian.
+     */
+    public function deleteActivity(LearningActivity $activity): void
     {
-        $activity = LearningActivity::find($learningActivityId);
+        // Secara otomatis akan menghapus relasi di tabel pivot jika onDelele('cascade') 
+        // di-set pada migration. Jika tidak, bersihkan pivot secara manual:
+        $activity->mentors()->detach();
+        $activity->delete();
+    }
 
-        if (!$activity) return false;
-
-        if ($activity->mentors()->where('mentor_id', $mentorId)->exists()) {
-            return true;
+    /**
+     * Menetapkan (Sync) bidang keahlian ke Mentor.
+     * Menggunakan method sync() agar data lama yang tidak dipilih akan terhapus otomatis,
+     * dan data baru akan ditambahkan tanpa terjadi duplikasi.
+     */
+    public function syncMentorActivities(User $mentor, array $activityIds): array
+    {
+        // 1. Validasi bahwa user yang di-passing benar-benar memiliki role 'Mentor'
+        if (!$mentor->hasRole('Mentor')) {
+            throw new Exception("User yang dipilih bukan seorang Mentor.");
         }
 
-        $activity->mentors()->attach($mentorId);
+        // 2. Lakukan proses sync pada tabel pivot (mentor_learning_activity)
+        $changes = $mentor->learningActivities()->sync($activityIds);
 
-        return true;
+        return $changes;
     }
 }

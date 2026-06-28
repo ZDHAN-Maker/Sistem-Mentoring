@@ -11,6 +11,12 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\LearningActivityController;
+use App\Http\Controllers\PairingController;
+
+// Contoh rute yang hanya untuk Mentor
+Route::middleware(['auth:sanctum', 'role:Mentor'])->group(function () {
+    Route::post('/mentor/create-task', [TaskController::class, 'store']);
+});
 
 
 // ✅ Route tanpa middleware dulu (untuk login/register)
@@ -18,77 +24,55 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 
 // ✅ Route yang memerlukan autentikasi
-Route::middleware(['auth:sanctum'])->group(function () {
-    Route::get('/user', [AuthController::class, 'getUser']);
+Route::middleware('auth:sanctum')->group(function () {
+
+    // Route untuk Logout
     Route::post('/logout', [AuthController::class, 'logout']);
-});
 
-// User Profile
-Route::middleware('auth:sanctum')->get('/user/me', [UserController::class, 'me']);
-
-// Dashboard
-Route::middleware('auth:sanctum')->get('/dashboard', [DashboardController::class, 'index']);
-
-
-// Material Management
-// Material Management
-Route::middleware(['auth:sanctum'])->group(function () {
-    Route::prefix('materials')->group(function () {
-        Route::get('/', [MaterialController::class, 'index']);
-        Route::post('/', [MaterialController::class, 'store']);
-        Route::get('/{material}', [MaterialController::class, 'show']);
-        Route::put('/{material}', [MaterialController::class, 'update']);
-        Route::delete('/{material}', [MaterialController::class, 'destroy']);
-        Route::post('/reorder', [MaterialController::class, 'reorder']);
+    // Mengambil profil user yang sedang login 
+    Route::get('/user', function (Request $request) {
+        return response()->json([
+            'status' => 'success',
+            'data' => $request->user()->load('roles')
+        ]);
     });
 });
 
-
-// Mentee Management
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/mentees', [MenteeController::class, 'index']);
-    Route::get('/mentees/{id}', [MenteeController::class, 'show']);
-    Route::get('/mentees/{id}/reports', [MenteeController::class, 'reports']);
-    Route::get('/mentees/{id}/tasks', [MenteeController::class, 'tasks']);
-    Route::post('/mentees/{id}/tasks', [MenteeController::class, 'uploadTask']);
-});
-
-// Mentor Management
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/mentors', [MentorController::class, 'index']);
-    Route::get('/mentors/{id}', [MentorController::class, 'show']);
-    Route::get('/mentors/{id}/mentees', [MentorController::class, 'mentees']);
-    Route::get('/mentors/{id}/schedules', [MentorController::class, 'schedules']);
-    Route::post('/mentors/{id}/tasks', [MentorController::class, 'giveTask']);
-    Route::post('/mentors/report/{reportId}/feedback', [MentorController::class, 'giveFeedback']);
-    Route::post('/mentors/{id}/materials', [MentorController::class, 'uploadMaterial']);
-});
-
-// Notification Management
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/notifications', [NotificationController::class, 'index']);
-    Route::post('/notifications', [NotificationController::class, 'store']);
-    Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
-    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
-});
-
-// Task & Submission Management
-Route::middleware(['auth:sanctum', 'role:mentor'])->group(function () {
-    Route::post('/tasks', [TaskController::class, 'store']);
-    Route::put('/tasks/{task}', [TaskController::class, 'update']);
-    Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
-    Route::put('/submissions/{submissionId}/review', [TaskController::class, 'review']);
+Route::middleware(['auth:sanctum', 'role:Admin'])->group(function () {
+    // Menampilkan semua pairing
+    Route::get('/pairings', [PairingController::class, 'index']);
+    
+    // Membuat pairing baru
+    Route::post('/pairings', [PairingController::class, 'store']);
+    
+    // Mengakhiri masa pairing
+    Route::patch('/pairings/{pairing}/complete', [PairingController::class, 'complete']);
 });
 
 Route::middleware(['auth:sanctum'])->group(function () {
-    Route::get('/tasks', [TaskController::class, 'index']);
-    Route::get('/tasks/{task}', [TaskController::class, 'show']);
-    Route::post('/tasks/{task}/submit', [TaskController::class, 'submit']);
-});
+    
+    // Semua user terautentikasi bisa melihat daftar keahlian
+    Route::get('/learning-activities', [LearningActivityController::class, 'index']);
 
-Route::middleware(['auth:sanctum'])->prefix('learning-activities')->group(function () {
-    Route::get('/activities', [LearningActivityController::class, 'index']);
-    Route::post('/activities', [LearningActivityController::class, 'store']);
-    Route::get('/activities/{id}/materials', [LearningActivityController::class, 'getMaterials']);
-    Route::post('/activities/{id}/assign-mentor', [LearningActivityController::class, 'assignMentor']);
+    // ==========================================
+    // AREA ADMIN (Manajemen Master Data Keahlian)
+    // ==========================================
+    Route::middleware('role:Admin')->group(function () {
+        Route::post('/learning-activities', [LearningActivityController::class, 'store']);
+        Route::put('/learning-activities/{learningActivity}', [LearningActivityController::class, 'update']);
+        Route::delete('/learning-activities/{learningActivity}', [LearningActivityController::class, 'destroy']);
+        
+        // Admin bisa menetapkan keahlian ke Mentor mana saja
+        Route::post('/mentors/{mentor}/learning-activities', [LearningActivityController::class, 'syncMentorActivities']);
+    });
+
+    // ==========================================
+    // AREA MENTOR (Mentor memilih keahliannya sendiri)
+    // ==========================================
+    Route::middleware('role:Mentor')->group(function () {
+        // Mentor menge-post keahlian untuk ID-nya sendiri
+        // Disarankan frontend mengirimkan ID user yang sedang login di URL parameter
+        Route::post('/my-learning-activities/{mentor}', [LearningActivityController::class, 'syncMentorActivities']);
+    });
+
 });

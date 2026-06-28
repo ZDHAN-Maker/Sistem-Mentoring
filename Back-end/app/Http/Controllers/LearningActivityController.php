@@ -1,62 +1,98 @@
-<?
+<?php
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreLearningActivityRequest;
+use App\Http\Requests\SyncMentorActivityRequest;
 use App\Models\LearningActivity;
+use App\Models\User;
 use App\Services\LearningActivityService;
+use Exception;
 use Illuminate\Http\Request;
 
 class LearningActivityController extends Controller
 {
-    protected $learningActivityService;
+    protected $activityService;
 
-    public function __construct(LearningActivityService $learningActivityService)
+    public function __construct(LearningActivityService $activityService)
     {
-        $this->learningActivityService = $learningActivityService;
+        $this->activityService = $activityService;
     }
 
+    /**
+     * GET: Menampilkan semua daftar bidang keahlian
+     */
     public function index()
     {
-        // Ambil semua aktivitas pembelajaran
-        $learningActivities = LearningActivity::all();
-        return response()->json(['success' => true, 'data' => $learningActivities]);
+        $activities = LearningActivity::all();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $activities
+        ], 200);
     }
 
-    public function store(Request $request)
+    /**
+     * POST: Menambah bidang keahlian baru (Biasanya oleh Admin)
+     */
+    public function store(StoreLearningActivityRequest $request)
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-        ]);
+        $activity = $this->activityService->createActivity($request->validated());
 
-        $learningActivity = $this->learningActivityService->createLearningActivity($validated);
-        
-        return response()->json(['success' => true, 'data' => $learningActivity]);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Bidang keahlian berhasil ditambahkan.',
+            'data' => $activity
+        ], 201);
     }
 
-    public function getMaterials($learningActivityId)
+    /**
+     * PUT/PATCH: Mengubah detail bidang keahlian
+     */
+    public function update(StoreLearningActivityRequest $request, LearningActivity $learningActivity)
     {
-        // Ambil materi yang terkait dengan aktivitas pembelajaran
-        $materials = $this->learningActivityService->getMaterialsByLearningActivity($learningActivityId);
+        $updatedActivity = $this->activityService->updateActivity($learningActivity, $request->validated());
 
-        if ($materials === null) {
-            return response()->json(['success' => false, 'message' => 'Learning Activity not found'], 404);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Bidang keahlian berhasil diperbarui.',
+            'data' => $updatedActivity
+        ], 200);
+    }
+
+    /**
+     * DELETE: Menghapus bidang keahlian
+     */
+    public function destroy(LearningActivity $learningActivity)
+    {
+        $this->activityService->deleteActivity($learningActivity);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Bidang keahlian berhasil dihapus.'
+        ], 200); // Bisa juga menggunakan 204 No Content (tanpa body response)
+    }
+
+    /**
+     * POST: Menetapkan keahlian ke Mentor tertentu
+     */
+    public function syncMentorActivities(SyncMentorActivityRequest $request, User $mentor)
+    {
+        try {
+            $changes = $this->activityService->syncMentorActivities($mentor, $request->learning_activity_ids);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Bidang keahlian mentor berhasil diperbarui.',
+                // Load relasi agar data ter-update langsung terlihat di response
+                'data' => $mentor->load('learningActivities:id,title') 
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal memperbarui keahlian: ' . $e->getMessage()
+            ], 400);
         }
-
-        return response()->json(['success' => true, 'data' => $materials]);
-    }
-
-    public function assignMentor(Request $request, $learningActivityId)
-    {
-        $validated = $request->validate([
-            'mentor_id' => 'required|exists:users,id,role,mentor',
-        ]);
-
-        $result = $this->learningActivityService->assignMentorToActivity($learningActivityId, $validated['mentor_id']);
-
-        if ($result) {
-            return response()->json(['success' => true, 'message' => 'Mentor assigned successfully']);
-        }
-
-        return response()->json(['success' => false, 'message' => 'Failed to assign mentor'], 400);
     }
 }
