@@ -13,11 +13,18 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $fillable = [
-        'name', 'email', 'password', 'avatar', 'bio', 'is_active', 'email_verified_at'
+        'name',
+        'email',
+        'password',
+        'avatar',
+        'bio',
+        'is_active',
+        'email_verified_at'
     ];
 
     protected $hidden = [
-        'password', 'remember_token',
+        'password',
+        'remember_token',
     ];
 
     protected $casts = [
@@ -71,5 +78,10 @@ class User extends Authenticatable
     public function notifications(): HasMany
     {
         return $this->hasMany(Notification::class);
+    }
+
+    public function materialProgresses(): HasMany
+    {
+        return $this->hasMany(MaterialProgress::class, 'mentee_id');
     }
 }
