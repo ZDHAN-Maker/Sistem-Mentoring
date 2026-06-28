@@ -12,6 +12,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\LearningActivityController;
 use App\Http\Controllers\PairingController;
+use App\Http\Controllers\MaterialProgressController;
 
 // Contoh rute yang hanya untuk Mentor
 Route::middleware(['auth:sanctum', 'role:Mentor'])->group(function () {
@@ -116,6 +117,23 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/materials/{material}', [MaterialController::class, 'update']);
         
         Route::delete('/materials/{material}', [MaterialController::class, 'destroy']);
+    });
+    
+});
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    
+    // ==========================================
+    // AREA BERSAMA (Melihat Progress)
+    // ==========================================
+    Route::get('/material-progress', [MaterialProgressController::class, 'index']);
+    
+    // ==========================================
+    // AREA MENTEE (Tracking Progress)
+    // ==========================================
+    Route::middleware('role:Mentee')->group(function () {
+        // Menggunakan POST karena ini mencakup Create dan Update (Upsert)
+        Route::post('/material-progress', [MaterialProgressController::class, 'upsert']);
     });
     
 });
