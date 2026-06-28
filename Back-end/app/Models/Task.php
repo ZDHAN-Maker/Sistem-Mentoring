@@ -2,33 +2,31 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Task extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
-        'pairing_id',
-        'mentee_id',
-        'judul',
-        'deskripsi',
-        'file_path',
-        'type',
-        'status',
+        'mentor_id', 'pairing_id', 'title', 'description', 'type', 'due_date', 'status'
     ];
 
-    public function pairing()
+    protected $casts = [
+        'due_date' => 'datetime',
+    ];
+
+    public function mentor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'mentor_id');
+    }
+
+    public function pairing(): BelongsTo
     {
         return $this->belongsTo(Pairing::class);
     }
 
-    public function mentee()
-    {
-        return $this->belongsTo(User::class, 'mentee_id');
-    }
-    public function submissions()
+    public function submissions(): HasMany
     {
         return $this->hasMany(Submission::class);
     }

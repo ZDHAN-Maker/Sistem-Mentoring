@@ -3,23 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class LearningActivity extends Model
 {
     protected $fillable = ['title', 'description'];
 
-    public function mentors()
+    public function mentors(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'mentor_learning_activity', 'learning_activity_id', 'mentor_id');
-    }
-
-    public function materials()
-    {
-        return $this->hasMany(Material::class);
-    }
-
-    public function mentees()
-    {
-        return $this->hasMany(User::class, 'learning_activity_id');
+        return $this->belongsToMany(User::class, 'mentor_learning_activity', 'learning_activity_id', 'mentor_id')->withTimestamps();
     }
 }

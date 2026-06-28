@@ -2,26 +2,26 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProgressReport extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
-        'pairing_id',
-        'catatan',
-        'tanggal',
+        'pairing_id', 'mentor_id', 'report_date', 'note'
     ];
 
-    public function pairing()
+    protected $casts = [
+        'report_date' => 'date',
+    ];
+
+    public function pairing(): BelongsTo
     {
         return $this->belongsTo(Pairing::class);
     }
 
-    public function mentee()
+    public function mentor(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'mentee_id');
+        return $this->belongsTo(User::class, 'mentor_id');
     }
 }

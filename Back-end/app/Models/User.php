@@ -5,95 +5,71 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasFactory, Notifiable;
 
     protected $fillable = [
-        'name',
-        'email',
-        'password',
-        'role',
+        'name', 'email', 'password', 'avatar', 'bio', 'is_active', 'email_verified_at'
     ];
 
     protected $hidden = [
-        'password',
-        'remember_token',
+        'password', 'remember_token',
     ];
 
-    protected function casts(): array
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'is_active' => 'boolean',
+    ];
+
+    // Relasi ke Roles
+    public function roles(): BelongsToMany
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->belongsToMany(Role::class, 'user_roles', 'user_id', 'role_id')->withTimestamps();
     }
 
-    /**
-     * Relasi Mentor dengan Pairing (Jika menggunakan tabel Pairing untuk relasi Mentor-Mentee)
-     */
-    public function mentorPairings()
+    // Relasi sebagai Mentor di Pairings
+    public function mentorPairings(): HasMany
     {
         return $this->hasMany(Pairing::class, 'mentor_id');
     }
 
-    /**
-     * Relasi Mentee dengan Pairing (Jika menggunakan tabel Pairing untuk relasi Mentor-Mentee)
-     */
-    public function menteePairings()
+    // Relasi sebagai Mentee di Pairings
+    public function menteePairings(): HasMany
     {
         return $this->hasMany(Pairing::class, 'mentee_id');
     }
 
-    /**
-     * Relasi ke Notifications (Satu user dapat memiliki banyak notifikasi)
-     */
-    public function notifications()
+    // Relasi Mentor ke Bidang Keahlian (Learning Activities)
+    public function learningActivities(): BelongsToMany
     {
-        return $this->hasMany(Notification::class);
+        return $this->belongsToMany(LearningActivity::class, 'mentor_learning_activity', 'mentor_id', 'learning_activity_id')->withTimestamps();
     }
 
-    /**
-     * Relasi ke Tasks (Satu user bisa memiliki banyak tasks sebagai mentee)
-     */
-    public function tasks()
+    // Materi yang dibuat oleh Mentor
+    public function materials(): HasMany
     {
-        return $this->hasMany(Task::class, 'mentee_id');
+        return $this->hasMany(Material::class, 'mentor_id');
     }
 
-    /**
-     * Relasi ke Submission (Satu user bisa memiliki banyak submissions sebagai mentee)
-     */
-    public function submissions()
+    // Tugas yang dibuat oleh Mentor
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(Task::class, 'mentor_id');
+    }
+
+    // Tugas yang dikumpulkan oleh Mentee
+    public function submissions(): HasMany
     {
         return $this->hasMany(Submission::class, 'mentee_id');
     }
 
-    /**
-     * Relasi ke Schedules (Satu user bisa memiliki banyak jadwal)
-     */
-    public function schedules()
+    // Notifikasi milik User
+    public function notifications(): HasMany
     {
-        return $this->hasMany(Schedule::class);
-    }
-
-    /**
-     * Relasi ke ProgressReport (Satu user bisa memiliki banyak laporan)
-     */
-    public function progressReports()
-    {
-        return $this->hasMany(ProgressReport::class, 'mentee_id');
-    }
-
-    public function learningActivity()
-    {
-        return $this->belongsTo(LearningActivity::class);
-    }
-
-    public function assignedActivities()
-    {
-        return $this->belongsToMany(LearningActivity::class, 'mentor_learning_activity', 'mentor_id');
+        return $this->hasMany(Notification::class);
     }
 }

@@ -3,46 +3,25 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Material extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
-        'title',
-        'description',
-        'video_path',
-        'mentor_id',
-        'schedule_id',
-        'video_size',
-        'video_format',
-        'duration',
-        'thumbnail_path',
-        'status',
-        'order'
+        'mentor_id', 'pairing_id', 'title', 'description', 'type', 'file_path', 'external_url', 'duration', 'status'
     ];
 
-
-    public function mentor()
+    public function mentor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'mentor_id');
     }
 
-    public function schedule()
+    // Materi bisa bersifat general (null pairing) atau spesifik untuk pairing tertentu
+    public function pairing(): BelongsTo
     {
-        return $this->belongsTo(Schedule::class, 'schedule_id');
-    }
-
-    public function learningActivity()
-    {
-        return $this->belongsTo(LearningActivity::class);
-    }
-
-    public function scopeByMentor($query, $mentorId)
-    {
-        return $query->where('mentor_id', $mentorId);
-    }
-
-    public function scopeOrdered($query)
-    {
-        return $query->orderBy('order', 'asc');
+        return $this->belongsTo(Pairing::class);
     }
 }

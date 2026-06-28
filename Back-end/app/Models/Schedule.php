@@ -2,20 +2,21 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Schedule extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
-        'pairing_id',
-        'tanggal',
-        'keterangan',
+        'pairing_id', 'title', 'description', 'location', 'meeting_link', 'start_time', 'end_time', 'status'
     ];
 
-    public function pairing()
+    protected $casts = [
+        'start_time' => 'datetime',
+        'end_time' => 'datetime',
+    ];
+
+    public function pairing(): BelongsTo
     {
         return $this->belongsTo(Pairing::class);
     }
