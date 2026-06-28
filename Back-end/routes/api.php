@@ -76,3 +76,25 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
 });
+
+use App\Http\Controllers\ScheduleController;
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    
+    // ==========================================
+    // AREA BERSAMA (Mentor & Mentee)
+    // ==========================================
+    // Melihat daftar jadwal yang terkait dengan diri mereka
+    Route::get('/schedules', [ScheduleController::class, 'index']);
+    
+    // ==========================================
+    // AREA MENTOR (Manajemen Jadwal)
+    // ==========================================
+    Route::middleware('role:Mentor')->group(function () {
+        Route::post('/schedules', [ScheduleController::class, 'store']);
+        Route::put('/schedules/{schedule}', [ScheduleController::class, 'update']);
+        Route::patch('/schedules/{schedule}/status', [ScheduleController::class, 'updateStatus']);
+        Route::delete('/schedules/{schedule}', [ScheduleController::class, 'destroy']);
+    });
+    
+});
