@@ -147,3 +147,15 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
 });
+
+Route::middleware('auth:sanctum')->group(function () {
+    
+    // Rute utama Notifikasi
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
+    
+    // Rute interaksi Notifikasi menggunakan PATCH (karena hanya mengupdate sebagian field)
+    Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+
+});

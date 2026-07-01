@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Services\NotificationService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Auth\Access\AuthorizationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Exception;
 
 class NotificationController extends Controller
 {
@@ -16,61 +20,96 @@ class NotificationController extends Controller
     }
 
     /**
-     * Ambil semua notifikasi user yang sedang login
+     * GET /api/notifications
+     * Mengambil daftar notifikasi
      */
-    public function index()
+    public function index(Request $request): JsonResponse
     {
-        $userId = Auth::id();
-        $notifications = $this->notificationService->getUserNotifications($userId);
+        try {
+            $filters = $request->only(['unread_only', 'per_page']);
+            $notifications = $this->notificationService->getUserNotifications($request->user(), $filters);
 
-        return response()->json($notifications);
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Daftar notifikasi berhasil diambil.',
+                'data'    => $notifications->items(),
+                'meta'    => [
+                    'current_page' => $notifications->currentPage(),
+                    'last_page'    => $notifications->lastPage(),
+                    'per_page'     => $notifications->perPage(),
+                    'total'        => $notifications->total(),
+                    'unread_count' => $request->user()->notifications()->where('is_read', false)->count(),
+                ]
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Terjadi kesalahan saat mengambil notifikasi.'
+            ], 500);
+        }
     }
 
     /**
-     * Buat notifikasi baru untuk user
+     * PATCH /api/notifications/{id}/read
+     * Menandai satu notifikasi telah dibaca
      */
-    public function store(Request $request)
+    public function markAsRead(Request $request, int $id): JsonResponse
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'message' => 'required|string',
-            'type'    => 'nullable|string',
-        ]);
+        try {
+            $notification = $this->notificationService->markAsRead($id, $request->user());
 
-        $notification = $this->notificationService->createNotification(
-            $request->user_id,
-            $request->message,
-            $request->type ?? 'general'
-        );
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Notifikasi ditandai telah dibaca.',
+                'data'    => $notification
+            ], 200);
 
-        return response()->json([
-            'message'      => 'Notifikasi berhasil dibuat',
-            'notification' => $notification
-        ], 201);
+        } catch (NotFoundHttpException $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 404);
+        } catch (AuthorizationException $e) {
+            return response()->json(['status' => 'forbidden', 'message' => $e->getMessage()], 403);
+        }
     }
 
     /**
-     * Tandai notifikasi sebagai dibaca
+     * PATCH /api/notifications/read-all
+     * Menandai semua notifikasi telah dibaca
      */
-    public function markAsRead($id)
+    public function markAllAsRead(Request $request): JsonResponse
     {
-        $notification = $this->notificationService->markAsRead($id);
+        try {
+            $updatedCount = $this->notificationService->markAllAsRead($request->user());
 
-        return response()->json([
-            'message'      => 'Notifikasi ditandai sebagai dibaca',
-            'notification' => $notification
-        ]);
+            return response()->json([
+                'status'  => 'success',
+                'message' => "Berhasil menandai $updatedCount notifikasi sebagai telah dibaca.",
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Terjadi kesalahan sistem.'
+            ], 500);
+        }
     }
 
     /**
-     * Hapus notifikasi
+     * DELETE /api/notifications/{id}
+     * Menghapus notifikasi
      */
-    public function destroy($id)
+    public function destroy(Request $request, int $id): JsonResponse
     {
-        $this->notificationService->deleteNotification($id);
+        try {
+            $this->notificationService->deleteNotification($id, $request->user());
 
-        return response()->json([
-            'message' => 'Notifikasi berhasil dihapus'
-        ]);
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Notifikasi berhasil dihapus.'
+            ], 200);
+
+        } catch (NotFoundHttpException $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 404);
+        } catch (AuthorizationException $e) {
+            return response()->json(['status' => 'forbidden', 'message' => $e->getMessage()], 403);
+        }
     }
 }
