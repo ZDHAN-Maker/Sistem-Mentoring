@@ -31,6 +31,11 @@ class EventServiceProvider extends ServiceProvider
         \App\Events\SubmissionReviewed::class => [
             \App\Listeners\SendSubmissionReviewedNotification::class,
         ],
+
+        // --- MODUL PROGRESS REPORT / PENILAIAN (Baru) ---
+        \App\Events\ProgressReportCreated::class => [
+            \App\Listeners\SendProgressReportCreatedNotification::class,
+        ],
     ];
 
     /**

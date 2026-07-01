@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ProgressReport;
 use App\Models\Pairing;
 use App\Models\User;
+use App\Events\ProgressReportCreated;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Auth\Access\AuthorizationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -21,7 +22,7 @@ class ProgressReportService
         // Jika dia Mentor, hanya tampilkan laporan yang dia buat
         if ($user->hasRole('Mentor')) {
             $query->where('mentor_id', $user->id);
-        } 
+        }
         // Jika dia Mentee, hanya tampilkan laporan perkembangan dirinya sendiri
         elseif ($user->hasRole('Mentee')) {
             $query->whereHas('pairing', function ($q) use ($user) {
@@ -39,49 +40,59 @@ class ProgressReportService
     }
 
     /**
-     * Mengambil detail laporan tunggal dengan validasi kepemilikan
+     * Mentor membuat laporan penilaian / evaluasi perkembangan mentee
      */
-    public function getReportById(int $id, User $user): ProgressReport
+    public function createReport(array $data, User $mentor): ProgressReport
     {
-        $report = ProgressReport::with(['pairing.mentee', 'pairing.mentor', 'mentor'])->find($id);
+        // 1. Keamanan RESTful: Pastikan ID Pairing yang dikirim adalah milik Mentor yang sedang login
+        $pairing = Pairing::where('id', $data['pairing_id'])
+            ->where('mentor_id', $mentor->id)
+            ->first();
 
-        if (!$report) {
-            throw new NotFoundHttpException('Laporan perkembangan tidak ditemukan.');
+        if (!$pairing) {
+            throw new AuthorizationException('Anda tidak memiliki hak akses untuk memberikan penilaian pada sesi pairing ini.');
         }
 
-        // Validasi Hak Akses Baca
-        if ($user->hasRole('Mentor') && $report->mentor_id !== $user->id) {
-            throw new AuthorizationException('Anda tidak memiliki akses ke laporan ini.');
-        }
+        // 2. Simpan data evaluasi perkembangan ke database
+        $report = ProgressReport::create([
+            'pairing_id'  => $data['pairing_id'],
+            'mentor_id'   => $mentor->id,
+            'title'       => $data['title'],       // Misal: "Evaluasi Bulan Juni"
+            'summary'     => $data['summary'],     // Catatan rangkuman mentor
+            'performance_grade' => $data['performance_grade'], // Nilai performa (misal skala 1-100 atau A-E)
+            'status'      => 'published'
+        ]);
 
-        if ($user->hasRole('Mentee') && $report->pairing->mentee_id !== $user->id) {
-            throw new AuthorizationException('Anda tidak diizinkan melihat laporan ini.');
-        }
+        // 3. Eager load relasi pairing dan mentee untuk kebutuhan data di Listener
+        $report->load(['pairing.mentee']);
+
+        // 4. PICU EVENT: Sistem mengurus notifikasi di background proses secara otomatis
+        event(new ProgressReportCreated($report));
 
         return $report;
     }
 
     /**
-     * Membuat laporan baru oleh Mentor
+     * Mengambil detail laporan penilaian (Dapat diakses oleh Mentor pemilik atau Mentee bersangkutan)
      */
-    public function createReport(array $data, User $mentor): ProgressReport
+    public function getReportById(int $id, User $user): ProgressReport
     {
-        // 1. Validasi apakah pairing tersebut milik mentor yang sedang login
-        $pairing = Pairing::where('id', $data['pairing_id'])
-                          ->where('mentor_id', $mentor->id)
-                          ->first();
+        $report = ProgressReport::with(['pairing.mentee', 'pairing.mentor'])->find($id);
 
-        if (!$pairing) {
-            throw new AuthorizationException('Gagal membuat laporan. Hubungan mentoring (Pairing) tidak valid atau bukan milik Anda.');
+        if (!$report) {
+            throw new NotFoundHttpException('Laporan penilaian tidak ditemukan.');
         }
 
-        // 2. Simpan data laporan
-        return ProgressReport::create([
-            'pairing_id'  => $data['pairing_id'],
-            'mentor_id'   => $mentor->id,
-            'report_date' => $data['report_date'],
-            'note'        => $data['note']
-        ]);
+        // Validasi batasan data: Mentor pembimbing atau Mentee yang dinilai yang boleh melihat
+        if ($user->hasRole('Mentor') && $report->mentor_id !== $user->id) {
+            throw new AuthorizationException('Anda tidak diizinkan melihat laporan ini.');
+        }
+
+        if ($user->hasRole('Mentee') && $report->pairing->mentee_id !== $user->id) {
+            throw new AuthorizationException('Ini bukan laporan penilaian Anda.');
+        }
+
+        return $report;
     }
 
     /**
