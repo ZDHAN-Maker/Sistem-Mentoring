@@ -74,6 +74,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 });
 
 use App\Http\Controllers\ScheduleController;
+use App\Http\Controllers\SubmissionController;
 
 Route::middleware(['auth:sanctum'])->group(function () {
     
@@ -171,6 +172,24 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/tasks', [TaskController::class, 'store']);
         Route::put('/tasks/{id}', [TaskController::class, 'update']);
         Route::delete('/tasks/{id}', [TaskController::class, 'destroy']);
+    });
+
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    
+    // Endpoint Bersama (Daftar & Detail disaring otomatis isinya di layer Service)
+    Route::get('/submissions', [SubmissionController::class, 'index']);
+    Route::get('/submissions/{id}', [SubmissionController::class, 'show']);
+
+    // Endpoint Khusus Mentee untuk mengumpulkan tugas
+    Route::middleware('role:Mentee')->group(function () {
+        Route::post('/submissions', [SubmissionController::class, 'store']);
+    });
+
+    // Endpoint Khusus Mentor untuk memberikan nilai & feedback
+    Route::middleware('role:Mentor')->group(function () {
+        Route::patch('/submissions/{id}/review', [SubmissionController::class, 'review']);
     });
 
 });
