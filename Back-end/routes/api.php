@@ -159,3 +159,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
 
 });
+
+Route::middleware('auth:sanctum')->group(function () {
+    
+    // Akses bersama: Mentor melihat task buatannya, Mentee melihat task yang ditugaskan kepadanya.
+    Route::get('/tasks', [TaskController::class, 'index']);
+    Route::get('/tasks/{id}', [TaskController::class, 'show']);
+
+    // Akses khusus Mentor (Membuat, Mengubah, Menghapus Tugas)
+    Route::middleware('role:Mentor')->group(function () {
+        Route::post('/tasks', [TaskController::class, 'store']);
+        Route::put('/tasks/{id}', [TaskController::class, 'update']);
+        Route::delete('/tasks/{id}', [TaskController::class, 'destroy']);
+    });
+
+});

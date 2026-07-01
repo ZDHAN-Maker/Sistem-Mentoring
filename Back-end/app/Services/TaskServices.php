@@ -3,129 +3,157 @@
 namespace App\Services;
 
 use App\Models\Task;
-use App\Models\Submission;
-use Illuminate\Support\Facades\Storage;
+use App\Models\Pairing;
+use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Auth\Access\AuthorizationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class TaskService
 {
-    /**
-     * Create new task (mentor)
-     */
-    public function createTask($mentorId, array $data)
+    protected $notificationService;
+
+    // Inject NotificationService untuk otomatisasi notifikasi
+    public function __construct(NotificationService $notificationService)
     {
-        $videoPath = null;
-
-        if (isset($data['video_file'])) {
-            $videoPath = $data['video_file']->store('tasks/videos', 'public');
-        }
-
-        return Task::create([
-            'mentor_id'   => $mentorId,
-            'title'       => $data['title'],
-            'description' => $data['description'] ?? null,
-            'video_path'  => $videoPath,
-            'deadline'    => $data['deadline'] ?? null,
-        ]);
+        $this->notificationService = $notificationService;
     }
 
     /**
-     * Get all tasks
+     * Mengambil daftar tugas berdasarkan role
      */
-    public function getAllTasks()
+    public function getTasksByUser(User $user, array $filters = []): LengthAwarePaginator
     {
-        return Task::with('mentor')->get();
+        $query = Task::with(['pairing.mentee', 'pairing.mentor']);
+
+        if ($user->hasRole('Mentor')) {
+            $query->where('mentor_id', $user->id);
+        } elseif ($user->hasRole('Mentee')) {
+            // Mentee hanya bisa melihat task miliknya yang tidak berstatus draft
+            $query->whereHas('pairing', function ($q) use ($user) {
+                $q->where('mentee_id', $user->id);
+            })->whereIn('status', ['published', 'closed']);
+        }
+
+        if (!empty($filters['pairing_id'])) {
+            $query->where('pairing_id', $filters['pairing_id']);
+        }
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        return $query->latest()->paginate($filters['per_page'] ?? 15);
     }
 
     /**
-     * Get task detail (with submissions)
+     * Mengambil detail tugas
      */
-    public function getTaskById($id)
+    public function getTaskById(int $id, User $user): Task
     {
-        return Task::with(['mentor', 'submissions.mentee'])->findOrFail($id);
-    }
+        $task = Task::with(['pairing.mentee', 'pairing.mentor', 'submissions'])->find($id);
 
-    /**
-     * Update task (mentor)
-     */
-    public function updateTask($id, array $data)
-    {
-        $task = Task::findOrFail($id);
-
-        if (isset($data['title'])) {
-            $task->title = $data['title'];
+        if (!$task) {
+            throw new NotFoundHttpException('Tugas tidak ditemukan.');
         }
 
-        if (isset($data['description'])) {
-            $task->description = $data['description'];
+        // Validasi akses Mentor
+        if ($user->hasRole('Mentor') && $task->mentor_id !== $user->id) {
+            throw new AuthorizationException('Anda tidak memiliki akses ke tugas ini.');
         }
 
-        if (isset($data['deadline'])) {
-            $task->deadline = $data['deadline'];
-        }
-
-        if (isset($data['video_file'])) {
-            if ($task->video_path && Storage::disk('public')->exists($task->video_path)) {
-                Storage::disk('public')->delete($task->video_path);
+        // Validasi akses Mentee
+        if ($user->hasRole('Mentee')) {
+            if ($task->pairing->mentee_id !== $user->id) {
+                throw new AuthorizationException('Anda tidak diizinkan melihat tugas ini.');
             }
-            $task->video_path = $data['video_file']->store('tasks/videos', 'public');
+            if ($task->status === 'draft') {
+                throw new AuthorizationException('Tugas ini belum diterbitkan oleh mentor.');
+            }
         }
-
-        $task->save();
 
         return $task;
     }
 
     /**
-     * Delete task
+     * Mentor membuat tugas baru
      */
-    public function deleteTask($id)
+    public function createTask(array $data, User $mentor): Task
     {
-        $task = Task::findOrFail($id);
+        // Validasi kepemilikan pairing
+        $pairing = Pairing::where('id', $data['pairing_id'])
+                          ->where('mentor_id', $mentor->id)
+                          ->with('mentee')
+                          ->first();
 
-        if ($task->video_path && Storage::disk('public')->exists($task->video_path)) {
-            Storage::disk('public')->delete($task->video_path);
+        if (!$pairing) {
+            throw new AuthorizationException('Pairing tidak valid atau bukan milik Anda.');
         }
 
-        return $task->delete();
+        $task = Task::create(array_merge($data, ['mentor_id' => $mentor->id]));
+
+        // Jika langsung dipublish, kirim notifikasi ke Mentee
+        if ($task->status === 'published') {
+            $this->notificationService->sendNotification(
+                $pairing->mentee,
+                "Tugas Baru: {$task->title}",
+                "Mentor Anda telah mengunggah tugas baru. Tenggat waktu: " . ($task->due_date ? $task->due_date->format('d M Y') : 'Tidak ada'),
+                'new_task',
+                $task
+            );
+        }
+
+        return $task;
     }
 
     /**
-     * Submit task (mentee)
+     * Mentor mengubah tugas
      */
-    public function submitTask($taskId, $menteeId, array $data)
+    public function updateTask(int $id, array $data, User $mentor): Task
     {
-        $submissionFile = null;
+        $task = Task::with('pairing.mentee')->find($id);
 
-        if (isset($data['file'])) {
-            $submissionFile = $data['file']->store('submissions', 'public');
+        if (!$task) {
+            throw new NotFoundHttpException('Tugas tidak ditemukan.');
         }
 
-        return Submission::create([
-            'task_id'   => $taskId,
-            'mentee_id' => $menteeId,
-            'file_path' => $submissionFile,
-            'answer'    => $data['answer'] ?? null,
-            'status'    => 'submitted',
-        ]);
+        if ($task->mentor_id !== $mentor->id) {
+            throw new AuthorizationException('Anda tidak memiliki hak akses untuk mengubah tugas ini.');
+        }
+
+        $oldStatus = $task->status;
+        $task->update($data);
+
+        // Jika status berubah dari draft ke published, kirim notifikasi
+        if ($oldStatus === 'draft' && $task->status === 'published') {
+            $this->notificationService->sendNotification(
+                $task->pairing->mentee,
+                "Tugas Baru Diterbitkan: {$task->title}",
+                "Mentor Anda telah menerbitkan tugas yang harus dikerjakan.",
+                'new_task',
+                $task
+            );
+        }
+
+        return $task;
     }
 
     /**
-     * Review submission (mentor memberi nilai/feedback)
+     * Menghapus tugas
      */
-    public function reviewSubmission($submissionId, array $data)
+    public function deleteTask(int $id, User $mentor): void
     {
-        $submission = Submission::findOrFail($submissionId);
+        $task = Task::find($id);
 
-        if (isset($data['status'])) {
-            $submission->status = $data['status'];
+        if (!$task) {
+            throw new NotFoundHttpException('Tugas tidak ditemukan.');
         }
 
-        if (isset($data['grade'])) {
-            $submission->grade = $data['grade'];
+        if ($task->mentor_id !== $mentor->id) {
+            throw new AuthorizationException('Anda tidak memiliki hak akses untuk menghapus tugas ini.');
         }
 
-        $submission->save();
-
-        return $submission;
+        // Hapus tugas (Submissions akan otomatis terhapus jika di migration pakai cascadeOnDelete)
+        $task->delete();
     }
 }
