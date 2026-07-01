@@ -6,6 +6,8 @@ use App\Models\Submission;
 use App\Models\Task;
 use App\Models\User;
 use App\Services\NotificationService;
+use App\Events\SubmissionSubmitted;
+use App\Events\SubmissionReviewed;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Auth\Access\AuthorizationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -74,39 +76,32 @@ class SubmissionService
     }
 
     /**
-     * PROSES 1: Mentee mengumpulkan tugas
+     * PROSES 1: Mentee mengumpulkan tugas (Submit)
      */
     public function createSubmission(array $data, $file, User $mentee): Submission
     {
+        // Eager load relasi pairing untuk validasi keamanan dan pengiriman event
         $task = Task::with('pairing.mentor')->find($data['task_id']);
 
         if (!$task) {
             throw new NotFoundHttpException('Tugas tidak ditemukan.');
         }
 
-        // Pastikan tugas ini ditujukan untuk hubungan pairing mentee ini
         if ($task->pairing->mentee_id !== $mentee->id) {
             throw new AuthorizationException('Tugas ini tidak ditugaskan untuk Anda.');
         }
 
-        // Cek jika status tugas ditutup (Closed)
         if ($task->status === 'closed') {
             throw new Exception('Gagal mengumpulkan. Tugas ini sudah ditutup oleh mentor.');
         }
 
-        // Handle Upload File jika ada
-        $filePath = null;
-        if ($file) {
-            $filePath = $file->store('submissions/files', 'public');
-        }
+        $filePath = $file ? $file->store('submissions/files', 'public') : null;
 
-        // Cek jika sebelumnya mentee sudah pernah mengumpulkan (Re-upload/Update data)
         $submission = Submission::where('task_id', $task->id)
-                                ->where('mentee_id', $mentee->id)
-                                ->first();
+            ->where('mentee_id', $mentee->id)
+            ->first();
 
         if ($submission) {
-            // Hapus file lama jika mentee mengunggah file baru
             if ($filePath && $submission->file_path) {
                 Storage::disk('public')->delete($submission->file_path);
             }
@@ -114,10 +109,9 @@ class SubmissionService
             $submission->update([
                 'file_path' => $filePath ?? $submission->file_path,
                 'answer'    => $data['answer'] ?? $submission->answer,
-                'status'    => 'submitted' // reset status jika sebelumnya diperbaiki
+                'status'    => 'submitted'
             ]);
-        } else {
-            // Buat record baru
+        } {
             $submission = Submission::create([
                 'task_id'   => $task->id,
                 'mentee_id' => $mentee->id,
@@ -127,36 +121,27 @@ class SubmissionService
             ]);
         }
 
-        // TRIGGER NOTIFIKASI: Beritahu Mentor bahwa Mentee telah mengumpulkan tugas
-        $mentor = $task->pairing->mentor;
-        $this->notificationService->sendNotification(
-            $mentor,
-            "Submission Baru: {$mentee->name}",
-            "{$mentee->name} telah mengumpulkan tugas '{$task->title}'. Silakan periksa.",
-            'new_submission',
-            $submission
-        );
+        // PICU EVENT: Beritahu mentor via background job antrean database/redis
+        event(new SubmissionSubmitted($submission->load(['task.pairing.mentor', 'mentee'])));
 
         return $submission;
     }
 
     /**
-     * PROSES 2: Mentor Menilai & Memberi Feedback
+     * PROSES 2: Mentor menilai tugas (Review)
      */
     public function reviewSubmission(int $id, array $data, User $mentor): Submission
     {
-        $submission = Submission::with(['task', 'mentee'])->find($id);
+        $submission = Submission::with(['task.pairing', 'mentee'])->find($id);
 
         if (!$submission) {
             throw new NotFoundHttpException('Data submission tidak ditemukan.');
         }
 
-        // Pastikan yang menilai adalah mentor pemilik tugas tersebut
         if ($submission->task->mentor_id !== $mentor->id) {
             throw new AuthorizationException('Anda tidak memiliki otoritas untuk menilai submission ini.');
         }
 
-        // Update data penilaian
         $submission->update([
             'grade'       => $data['grade'],
             'feedback'    => $data['feedback'],
@@ -165,15 +150,8 @@ class SubmissionService
             'reviewed_at' => now()
         ]);
 
-        // TRIGGER NOTIFIKASI: Beritahu Mentee bahwa tugasnya sudah dinilai
-        $mentee = $submission->mentee;
-        $this->notificationService->sendNotification(
-            $mentee,
-            "Tugas Anda Telah Dinilai",
-            "Tugas '{$submission->task->title}' telah diperiksa oleh Mentor. Nilai Anda: {$data['grade']}.",
-            'submission_reviewed',
-            $submission
-        );
+        // PICU EVENT: Beritahu mentee bahwa nilainya sudah keluar
+        event(new SubmissionReviewed($submission));
 
         return $submission;
     }
