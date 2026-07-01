@@ -13,11 +13,6 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Pastikan Sanctum middleware ada
-        $middleware->api(prepend: [
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-        ]);
-
         // Mendaftarkan alias middleware
         $middleware->alias([
             'role' => RoleMiddleware::class,

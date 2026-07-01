@@ -37,6 +37,8 @@ class LearningActivityController extends Controller
      */
     public function store(StoreLearningActivityRequest $request)
     {
+        \Log::info('STORE HIT', ['user' => auth()->user()->email, 'roles' => auth()->user()->roles->pluck('name')]);
+        //
         $activity = $this->activityService->createActivity($request->validated());
 
         return response()->json([
@@ -85,9 +87,8 @@ class LearningActivityController extends Controller
                 'status' => 'success',
                 'message' => 'Bidang keahlian mentor berhasil diperbarui.',
                 // Load relasi agar data ter-update langsung terlihat di response
-                'data' => $mentor->load('learningActivities:id,title') 
+                'data' => $mentor->load('learningActivities:id,title')
             ], 200);
-
         } catch (Exception $e) {
             return response()->json([
                 'status' => 'error',
