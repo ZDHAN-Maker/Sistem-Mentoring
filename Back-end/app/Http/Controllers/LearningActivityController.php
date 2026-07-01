@@ -37,8 +37,6 @@ class LearningActivityController extends Controller
      */
     public function store(StoreLearningActivityRequest $request)
     {
-        \Log::info('STORE HIT', ['user' => auth()->user()->email, 'roles' => auth()->user()->roles->pluck('name')]);
-        //
         $activity = $this->activityService->createActivity($request->validated());
 
         return response()->json([
