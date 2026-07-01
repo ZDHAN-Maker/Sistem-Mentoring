@@ -207,3 +207,10 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
 });
+
+Route::middleware('auth:sanctum')->group(function () {
+    
+    // Satu rute untuk semua Dashboard (Otomatis membedakan data Admin, Mentor, dan Mentee)
+    Route::get('/dashboard', [DashboardController::class, 'index']);
+
+});

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreLearningActivityRequest;
-use App\Http\Requests\SyncMentorActivityRequest;
+use App\Http\Requests\SyncExpertiseRequest;
 use App\Models\LearningActivity;
 use App\Models\User;
 use App\Services\LearningActivityService;
@@ -76,7 +76,7 @@ class LearningActivityController extends Controller
     /**
      * POST: Menetapkan keahlian ke Mentor tertentu
      */
-    public function syncMentorActivities(SyncMentorActivityRequest $request, User $mentor)
+    public function syncMentorActivities(SyncExpertiseRequest $request, User $mentor)
     {
         try {
             $changes = $this->activityService->syncMentorActivities($mentor, $request->learning_activity_ids);

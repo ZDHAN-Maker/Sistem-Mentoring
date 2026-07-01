@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Services\DashboardService;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Exception;
 
 class DashboardController extends Controller
 {
@@ -15,27 +18,46 @@ class DashboardController extends Controller
     }
 
     /**
-     * Ambil data dashboard sesuai role user yang login
+     * GET /api/dashboard
+     * Endpoint tunggal cerdas untuk memuat data kartu dashboard secara dinamis
      */
-    public function index()
+    public function index(Request $request): JsonResponse
     {
         try {
-            $user = Auth::user();
+            $user = $request->user();
+            $data = [];
+            $activeRole = 'Unknown';
 
-            if ($user->role === 'admin') {
-                $stats = $this->dashboardService->getAdminStats();
-            } elseif ($user->role === 'mentor') {
-                $stats = $this->dashboardService->getMentorStats($user->id);
-            } else { // mentee
-                $stats = $this->dashboardService->getMenteeStats($user->id);
+            // Seleksi data berdasarkan Role Prioritas pengguna
+            if ($user->hasRole('Admin')) {
+                $activeRole = 'Admin';
+                $data = $this->dashboardService->getAdminDashboardStats();
+            } elseif ($user->hasRole('Mentor')) {
+                $activeRole = 'Mentor';
+                $data = $this->dashboardService->getMentorDashboardStats($user);
+            } elseif ($user->hasRole('Mentee')) {
+                $activeRole = 'Mentee';
+                $data = $this->dashboardService->getMenteeDashboardStats($user);
+            } else {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Role Anda tidak terdaftar di sistem dashboard.'
+                ], 403);
             }
 
             return response()->json([
-                'role'  => $user->role,
-                'stats' => $stats,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Error: ' . $e->getMessage()], 500);
+                'status'  => 'success',
+                'message' => "Data dashboard untuk role {$activeRole} berhasil dimuat.",
+                'role'    => $activeRole,
+                'cards'   => $data
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Gagal memuat data dashboard, terjadi kesalahan sistem.',
+                'debug'   => config('app.debug') ? $e->getMessage() : null
+            ], 500);
         }
     }
 }
