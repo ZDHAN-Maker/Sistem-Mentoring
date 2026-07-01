@@ -4,8 +4,8 @@ use App\Http\Controllers\Api\MentorExpertiseController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\MenteeController;
-use App\Http\Controllers\MentorController;
+use App\Http\Controllers\ScheduleController;
+use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TaskController;
 use Illuminate\Http\Request;
@@ -74,8 +74,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 });
 
-use App\Http\Controllers\ScheduleController;
-use App\Http\Controllers\SubmissionController;
+
 
 Route::middleware(['auth:sanctum'])->group(function () {
     
