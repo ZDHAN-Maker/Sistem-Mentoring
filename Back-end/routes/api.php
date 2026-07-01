@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Api\MentorExpertiseController;
+use App\Http\Controllers\MentorExpertiseController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
