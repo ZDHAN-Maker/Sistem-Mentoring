@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\MentorExpertiseController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
@@ -190,6 +191,19 @@ Route::middleware('auth:sanctum')->group(function () {
     // Endpoint Khusus Mentor untuk memberikan nilai & feedback
     Route::middleware('role:Mentor')->group(function () {
         Route::patch('/submissions/{id}/review', [SubmissionController::class, 'review']);
+    });
+
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    
+    // Semua user yang login (Admin, Mentor, Mentee) bisa melihat opsi keahlian yang tersedia
+    Route::get('/learning-activities', [MentorExpertiseController::class, 'index']);
+
+    // Khusus Aktor: Mentor (Untuk mengelola bidang keahliannya sendiri)
+    Route::middleware('role:Mentor')->group(function () {
+        Route::get('/mentor/expertises', [MentorExpertiseController::class, 'myExpertises']);
+        Route::post('/mentor/expertises', [MentorExpertiseController::class, 'sync']);
     });
 
 });

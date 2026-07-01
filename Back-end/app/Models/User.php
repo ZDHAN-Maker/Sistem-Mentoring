@@ -53,7 +53,12 @@ class User extends Authenticatable
     // Relasi Mentor ke Bidang Keahlian (Learning Activities)
     public function learningActivities(): BelongsToMany
     {
-        return $this->belongsToMany(LearningActivity::class, 'mentor_learning_activity', 'mentor_id', 'learning_activity_id')->withTimestamps();
+        return $this->belongsToMany(
+            LearningActivity::class,
+            'mentor_learning_activity',
+            'mentor_id',
+            'learning_activity_id'
+        )->withTimestamps();
     }
 
     // Materi yang dibuat oleh Mentor
