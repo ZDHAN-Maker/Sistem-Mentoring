@@ -13,12 +13,7 @@ use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\LearningActivityController;
 use App\Http\Controllers\PairingController;
 use App\Http\Controllers\MaterialProgressController;
-
-// Contoh rute yang hanya untuk Mentor
-Route::middleware(['auth:sanctum', 'role:Mentor'])->group(function () {
-    Route::post('/mentor/create-task', [TaskController::class, 'store']);
-});
-
+Use App\Http\Controllers\ProgressReportController;
 
 // ✅ Route tanpa middleware dulu (untuk login/register)
 Route::post('/login', [AuthController::class, 'login']);
@@ -136,4 +131,19 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/material-progress', [MaterialProgressController::class, 'upsert']);
     });
     
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    
+    // Endpoint yang bisa diakses bersama (Admin, Mentor, Mentee) dengan batasan data otomatis di Service
+    Route::get('/progress-reports', [ProgressReportController::class, 'index']);
+    Route::get('/progress-reports/{id}', [ProgressReportController::class, 'show']);
+
+    // Endpoint khusus yang hanya boleh dieksekusi oleh Mentor (Sesuai deskripsi proses aktor)
+    Route::middleware('role:Mentor')->group(function () {
+        Route::post('/progress-reports', [ProgressReportController::class, 'store']);
+        Route::put('/progress-reports/{id}', [ProgressReportController::class, 'update']);
+        Route::delete('/progress-reports/{id}', [ProgressReportController::class, 'destroy']);
+    });
+
 });
