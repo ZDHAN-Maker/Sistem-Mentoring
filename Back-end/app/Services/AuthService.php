@@ -14,10 +14,9 @@ class AuthService
     /**
      * Menangani proses registrasi user dan menetapkan role.
      */
-    public function registerUser(array $data): User
+    public function registerUser(array $data): array
     {
         return DB::transaction(function () use ($data) {
-            // 1. Buat User Baru
             $user = User::create([
                 'name' => $data['name'],
                 'email' => $data['email'],
@@ -25,17 +24,21 @@ class AuthService
                 'is_active' => true,
             ]);
 
-            // 2. Cari Role berdasarkan input
             $role = Role::where('name', $data['role'])->first();
 
             if (!$role) {
                 throw new Exception("Role '{$data['role']}' tidak ditemukan di sistem.");
             }
 
-            // 3. Pasangkan User dengan Role melalui Pivot Table (user_roles)
             $user->roles()->attach($role->id);
 
-            return $user;
+            // token dibuat di dalam transaction yang sama
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return [
+                'user' => $user,
+                'token' => $token,
+            ];
         });
     }
 }

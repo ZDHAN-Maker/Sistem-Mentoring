@@ -22,25 +22,18 @@ class AuthController extends Controller
     public function register(RegisterRequest $request)
     {
         try {
-            $user = $this->authService->registerUser($request->validated());
-            
-            // Buat token (Misal menggunakan Laravel Sanctum)
-            $token = $user->createToken('auth_token')->plainTextToken;
+            $result = $this->authService->registerUser($request->validated());
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Registrasi berhasil.',
-                'data' => [
-                    'user' => $user,
-                    'token' => $token,
-                ]
-            ], 201); // 201 Created
-
+                'data' => $result,
+            ], 201);
         } catch (Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Registrasi gagal: ' . $e->getMessage()
-            ], 400); // 400 Bad Request
+            ], 400);
         }
     }
 
@@ -66,7 +59,7 @@ class AuthController extends Controller
 
         // Buat token baru
         $token = $user->createToken('auth_token')->plainTextToken;
-        
+
         // Ambil role user untuk diberikan ke frontend
         $roles = $user->roles->pluck('name');
 
