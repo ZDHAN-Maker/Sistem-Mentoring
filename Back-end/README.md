@@ -44,6 +44,53 @@ We would like to extend our thanks to the following sponsors for funding Laravel
 - **[Redberry](https://redberry.international/laravel-development)**
 - **[Active Logic](https://activelogic.com)**
 
+## Deploying the Backend with Supabase and Render
+
+This repository can use Supabase as the PostgreSQL database and Render to host the Laravel backend.
+
+### Recommended environment variables
+
+Copy `.env.example` to `.env` and update the values before deployment. For Supabase:
+
+- `DB_CONNECTION=pgsql`
+- `DB_HOST=db.ormcjpudfxijduihifik.supabase.co`
+- `DB_PORT=5432`
+- `DB_DATABASE=postgres`
+- `DB_USERNAME=postgres`
+- `DB_PASSWORD=YOUR_SUPABASE_PASSWORD`
+- `DB_SSLMODE=require`
+- `DB_URL=postgresql://postgres:YOUR_SUPABASE_PASSWORD@db.ormcjpudfxijduihifik.supabase.co:5432/postgres`
+
+If your Supabase password contains special characters, percent-encode it in `DB_URL`.
+
+### Render setup
+
+1. Create a new Web Service on Render.
+2. Choose the repository root `Back-end`.
+3. Set the build command to:
+   - `composer install --no-dev --optimize-autoloader`
+4. Set the start command to:
+   - `php artisan serve --host 0.0.0.0 --port $PORT`
+5. Add Render environment variables matching your `.env` values.
+6. Set `APP_ENV=production`, `APP_DEBUG=false`, and `APP_URL=https://<your-render-service>.onrender.com`.
+
+### Database migration and seeding
+
+After deployment, run these commands in Render's deploy shell or via a deploy hook:
+
+- `php artisan migrate --force`
+- `php artisan db:seed --force`
+
+The repository already includes migrations for all application tables and seeders for the default roles and initial users.
+
+### Local validation
+
+I verified that the Laravel migrations and seeders work locally with SQLite by running:
+
+- `php artisan migrate:fresh --seed`
+
+This confirms the migration files and seeder logic are functioning.
+
 ## Contributing
 
 Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
