@@ -9,15 +9,14 @@
     "routes": [
         {
             "src": "/build/(.*)",
-            "dest": "/public/build/"
+            "dest": "/public/build/$1"
         },
         {
             "src": "/(.*)",
             "dest": "/api/index.php"
         }
     ],
-    "public": true,
-    "buildcommand": "vite build",
+    "buildCommand": "vite build",
     "outputDirectory": "public",
     "env": {
         "APP_NAME": "Sistem Mentoring",
