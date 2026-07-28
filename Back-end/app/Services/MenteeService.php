@@ -64,13 +64,10 @@ class MenteeService
         ]);
 
         $filePath = null;
-        if ($request->hasFile('file_path') && $request->file('file_path')->isValid()) {
-            $file = $request->file('file_path');
-            $filePath = $file->store('tasks', 'public');
-        } else {
-            throw new \Exception("File upload failed or no file provided.");
+        $file = $request->file('file_path');
+        if ($file) {
+            $filePath = $file->store('tasks', 's3');
         }
-
 
         $task = Task::create([
             'mentee_id'  => $menteeId,

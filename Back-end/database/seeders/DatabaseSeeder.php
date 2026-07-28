@@ -17,9 +17,8 @@ class DatabaseSeeder extends Seeder
         $mentorRole = Role::where('name', 'Mentor')->first();
         $menteeRole = Role::where('name', 'Mentee')->first();
 
-        // Menggunakan updateOrCreate untuk mencari email, jika ada akan diupdate, jika tidak akan dibuat.
         $admin = User::updateOrCreate(
-            ['email' => 'admin@example.com'], // Kondisi pencarian
+            ['email' => 'admin@example.com'], 
             [
                 'name'      => 'Admin User',
                 'password'  => Hash::make('password'),
@@ -27,7 +26,6 @@ class DatabaseSeeder extends Seeder
             ]
         );
         if ($adminRole) {
-            // Menggunakan syncWithoutDetaching agar data relasi tidak duplikat
             $admin->roles()->syncWithoutDetaching([$adminRole->id]);
         }
 

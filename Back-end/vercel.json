@@ -22,8 +22,10 @@
     "APP_ENV": "production",
     "APP_DEBUG": "true",
     "APP_URL": "https://sistem-mentoring.vercel.app",
+    "FRONTEND_URL": "https://your-frontend-app.com",
 
     "LOG_CHANNEL": "stderr",
+    "LOG_LEVEL": "warning",
     "VIEW_COMPILED_PATH": "/tmp",
     "APP_CONFIG_CACHE": "/tmp/config.php",
     "APP_EVENTS_CACHE": "/tmp/events.php",
@@ -32,8 +34,27 @@
     "APP_SERVICES_CACHE": "/tmp/services.php",
 
     "SESSION_DRIVER": "cookie",
+    "SESSION_SECURE_COOKIE": "true",
+    "SESSION_SAME_SITE": "lax",
     "CACHE_STORE": "array",
     "QUEUE_CONNECTION": "sync",
-    "BROADCAST_CONNECTION": "log"
+    "BROADCAST_CONNECTION": "log",
+
+    "DB_CONNECTION": "pgsql",
+    "DB_HOST": "aws-1-ap-south-1.pooler.supabase.com",
+    "DB_PORT": "5432",
+    "DB_DATABASE": "postgres",
+    "DB_USERNAME": "postgres.ormcjpudfxijduihifik",
+    "DB_SSLMODE": "require",
+
+    "FILESYSTEM_DISK": "s3",
+    "AWS_DEFAULT_REGION": "ap-south-1",
+    "AWS_BUCKET": "uploads",
+    "AWS_ENDPOINT": "https://ormcjpudfxijduihifik.storage.supabase.co/storage/v1/s3",
+    "AWS_URL": "https://ormcjpudfxijduihifik.storage.supabase.co/storage/v1/object/public/uploads",
+    "AWS_USE_PATH_STYLE_ENDPOINT": "true",
+
+    "SANCTUM_STATEFUL_DOMAINS": "your-frontend-app.com",
+    "CORS_SUPPORTS_CREDENTIALS": "true"
   }
 }

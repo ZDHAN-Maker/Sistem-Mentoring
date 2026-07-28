@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Material;
 use App\Models\User;
 use App\Models\Schedule;
 use App\Models\Task;
@@ -90,9 +91,19 @@ class MentorService
     /**
      * Mentor mengupload materi (misalnya video, file, dll)
      */
-    public function uploadMaterial($mentorId, array $data)
-    {
-        // sementara masih dummy, nanti bisa diarahkan ke tabel materials
-        return $mentorId . " upload materi ke: " . $data['file_path'];
+    public function uploadMaterial($mentorId, array $data, $file = null)
+{
+    $filePath = null;
+    if ($file) {
+        $filePath = $file->store('materials', 's3');
     }
+
+    return Material::create([
+        'mentor_id'  => $mentorId,
+        'judul'      => $data['judul'] ?? null,
+        'type'       => $data['type'] ?? 'pdf',
+        'file_path'  => $filePath,
+        'external_url' => $data['external_url'] ?? null,
+    ]);
+}
 }

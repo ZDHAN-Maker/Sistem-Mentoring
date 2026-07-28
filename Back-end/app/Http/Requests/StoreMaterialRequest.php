@@ -8,7 +8,7 @@ class StoreMaterialRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; 
+        return true;
     }
 
     public function rules(): array
@@ -18,13 +18,13 @@ class StoreMaterialRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'type' => ['required', 'string', 'in:video,pdf,link'],
-            
-            // Wajib upload file jika tipe adalah video atau pdf (Maksimal 20MB)
-            'file' => ['required_if:type,video,pdf', 'file', 'mimes:pdf,mp4,avi,mov', 'max:20480'],
-            
+
+            // Wajib upload file jika tipe adalah video atau pdf (Maksimal 50MB)
+            'file' => ['required_if:type,video,pdf', 'file', 'mimes:pdf,mp4,avi,mov', 'max:51200'],
+
             // Wajib isi URL jika tipe adalah link
             'external_url' => ['required_if:type,link', 'nullable', 'url', 'max:255'],
-            
+
             'duration' => ['nullable', 'integer'], // Misalnya durasi dalam menit
             'status' => ['nullable', 'string', 'in:draft,published'],
         ];

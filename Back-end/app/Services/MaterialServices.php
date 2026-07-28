@@ -45,24 +45,18 @@ class MaterialService
             throw new Exception("Anda tidak berhak mengubah materi ini.", 403);
         }
 
-        // Handle File Upload & Hapus File Lama
         if ($file && in_array($data['type'], ['pdf', 'video'])) {
-            // Hapus file lama jika ada
-            if ($material->file_path && Storage::disk('public')->exists($material->file_path)) {
-                Storage::disk('public')->delete($material->file_path);
+            if ($material->file_path && Storage::disk('s3')->exists($material->file_path)) {
+                Storage::disk('s3')->delete($material->file_path);
             }
-            // Simpan file baru
-            $data['file_path'] = $file->store('materials', 'public');
+            $data['file_path'] = $file->store('materials', 's3');
         }
 
-        // Bersihkan data yang tidak relevan (Misal: dari tipe PDF berubah ke Link)
         if ($data['type'] === 'link') {
-            $data['file_path'] = null; // Reset path file
+            $data['file_path'] = null;
             if ($material->file_path) {
-                Storage::disk('public')->delete($material->file_path);
+                Storage::disk('s3')->delete($material->file_path);
             }
-        } else {
-            $data['external_url'] = null; // Reset URL jika tipenya file
         }
 
         $material->update($data);
