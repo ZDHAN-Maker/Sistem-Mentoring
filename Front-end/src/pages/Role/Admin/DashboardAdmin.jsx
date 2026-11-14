@@ -9,6 +9,7 @@ import DashboardHomeAdmin from "./DashboardHomeAdmin";
 import PairingAdmin from "./PairingAdmin";
 import ListOfMentees from "./ListOfMentees";
 import LearningActivities from "./LearningActivities";
+import SubscriptionPlansAdmin from "./SubscriptionPlansAdmin";
 import ProgressReportAdmin from "./ProgressReportAdmin";
 import TutoringScheduleAdmin from "./TutoringScheduleAdmin";
 
@@ -33,6 +34,7 @@ const DashboardAdmin = () => {
             <Route path="/users" element={<ListOfMentees />} />
             <Route path="/mentees" element={<ListOfMentees />} />
             <Route path="/learning-activities" element={<LearningActivities />} />
+            <Route path="/plans" element={<SubscriptionPlansAdmin />} />
             <Route path="/reports" element={<ProgressReportAdmin />} />
             <Route path="/schedules" element={<TutoringScheduleAdmin />} />
           </Routes>

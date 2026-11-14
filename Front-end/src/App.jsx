@@ -22,14 +22,15 @@ const AppContent = () => {
   // Halaman publik (tidak perlu login)
   const publicPaths = ['/login', '/register', '/program', '/langganan', '/elearning'];
 
-  // Hanya tampilkan Header di halaman publik
-  const showHeader = publicPaths.includes(location.pathname) && !isAuthenticated;
+  // Hanya tampilkan Header di halaman publik (case-insensitive)
+  const showHeader = publicPaths.includes(location.pathname.toLowerCase()) && !isAuthenticated;
 
   return (
     <>
       {showHeader && <Header />}
       <Routes>
         <Route path='/langganan' element={<Langganan />} />
+        <Route path='/Langganan' element={<Navigate to='/langganan' replace />} />
         <Route path='/program' element={<Program />} />
 
         {/* Jika user sudah login, arahkan ke dashboard sesuai role */}

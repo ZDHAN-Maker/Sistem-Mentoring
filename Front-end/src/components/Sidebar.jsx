@@ -17,6 +17,7 @@ const Sidebar = () => {
       { name: "Mentoring Pairings", path: "/admin-dashboard/pairings" },
       { name: "User Management", path: "/admin-dashboard/users" },
       { name: "Learning Activities", path: "/admin-dashboard/learning-activities" },
+      { name: "Paket Langganan", path: "/admin-dashboard/plans" },
       { name: "Progress Reports", path: "/admin-dashboard/reports" },
       { name: "Tutoring Schedule", path: "/admin-dashboard/schedules" },
     ],

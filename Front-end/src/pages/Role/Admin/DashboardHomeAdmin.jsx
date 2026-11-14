@@ -12,7 +12,8 @@ import {
   Award,
   PlusCircle,
   ArrowRight,
-  RefreshCw
+  RefreshCw,
+  Package
 } from "lucide-react";
 
 const DashboardHomeAdmin = () => {
@@ -111,7 +112,7 @@ const DashboardHomeAdmin = () => {
       {/* Quick Action Buttons */}
       <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">Aksi Cepat</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link
             to="/admin-dashboard/pairings"
             className="flex items-center justify-between p-4 rounded-xl border border-[#b38867]/30 bg-[#b38867]/5 hover:bg-[#b38867]/10 transition group"
@@ -124,6 +125,20 @@ const DashboardHomeAdmin = () => {
               </div>
             </div>
             <ArrowRight size={18} className="text-[#b38867] group-hover:translate-x-1 transition-transform" />
+          </Link>
+
+          <Link
+            to="/admin-dashboard/plans"
+            className="flex items-center justify-between p-4 rounded-xl border border-amber-200 bg-amber-50/50 hover:bg-amber-50 transition group"
+          >
+            <div className="flex items-center gap-3">
+              <Package className="text-amber-600" size={22} />
+              <div>
+                <p className="font-semibold text-gray-800 text-sm">Paket Langganan</p>
+                <p className="text-xs text-gray-500">Kelola Paket & Harga</p>
+              </div>
+            </div>
+            <ArrowRight size={18} className="text-amber-600 group-hover:translate-x-1 transition-transform" />
           </Link>
 
           <Link
