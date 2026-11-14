@@ -10,17 +10,22 @@ import DashboardMentee from './pages/Role/Mentee/DashboardMentee';
 import ProtectedRoute from './components/PrivateRoute';
 import Header from './components/Header';
 import Langganan from './pages/Langganan';
+import ELearning from './pages/E-Learning';
 
 const AppContent = () => {
   const { isAuthenticated, role, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-500 font-medium">
+        Memuat aplikasi...
+      </div>
+    );
   }
 
   // Halaman publik (tidak perlu login)
-  const publicPaths = ['/login', '/register', '/program', '/langganan', '/elearning'];
+  const publicPaths = ['/login', '/register', '/program', '/langganan', '/e-learning', '/elearning'];
 
   // Hanya tampilkan Header di halaman publik (case-insensitive)
   const showHeader = publicPaths.includes(location.pathname.toLowerCase()) && !isAuthenticated;
@@ -29,9 +34,15 @@ const AppContent = () => {
     <>
       {showHeader && <Header />}
       <Routes>
+        {/* Halaman Publik */}
+        <Route path='/program' element={<Program />} />
+        
         <Route path='/langganan' element={<Langganan />} />
         <Route path='/Langganan' element={<Navigate to='/langganan' replace />} />
-        <Route path='/program' element={<Program />} />
+        
+        <Route path='/e-learning' element={<ELearning />} />
+        <Route path='/E-Learning' element={<Navigate to='/e-learning' replace />} />
+        <Route path='/elearning' element={<Navigate to='/e-learning' replace />} />
 
         {/* Jika user sudah login, arahkan ke dashboard sesuai role */}
         <Route
@@ -78,13 +89,16 @@ const AppContent = () => {
             </ProtectedRoute>
           }
         />
+
+        {/* Fallback 404 Route */}
+        <Route path="*" element={<Navigate to="/program" replace />} />
       </Routes>
     </>
   );
 };
 
 const App = () => (
-  <Router>
+  <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
     <AppContent />
   </Router>
 );

@@ -69,17 +69,28 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const checkAuth = async () => {
+      const token = localStorage.getItem("auth_token");
+      if (!token) {
+        clearAuthSession();
+        setLoading(false);
+        return;
+      }
+
       const authSession = localStorage.getItem("auth_session");
       const savedUser = localStorage.getItem("user");
       const savedRole = localStorage.getItem("role");
 
       if (authSession === "true" && savedUser && savedRole) {
-        const parsedUser = JSON.parse(savedUser);
-        setAuthData({
-          isAuthenticated: true,
-          user: parsedUser,
-          role: savedRole,
-        });
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          setAuthData({
+            isAuthenticated: true,
+            user: parsedUser,
+            role: savedRole,
+          });
+        } catch {
+          // ignore json parse error
+        }
       }
 
       try {

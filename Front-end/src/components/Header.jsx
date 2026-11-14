@@ -1,20 +1,30 @@
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+
 export default function Header() {
+  const location = useLocation();
+  const currentPath = location.pathname.toLowerCase();
+
   return (
-    <header className="w-full bg-white border-b border-gray-200">
+    <header className="w-full bg-white border-b border-gray-200 sticky top-0 z-30 shadow-xs">
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* === Kiri: Logo + Search === */}
-        <div className="flex items-center gap-3">
-          <img
-            src="/assets/Logo Sistem Mentoring.png"
-            alt="Logo"
-            className="w-10 h-10"
-            
-          />
-          <div className="relative">
+        <div className="flex items-center gap-4">
+          <Link to="/program" className="flex items-center gap-2.5">
+            <img
+              src="/assets/Logo Sistem Mentoring.png"
+              alt="Logo"
+              className="w-10 h-10 object-contain"
+            />
+            <span className="font-bold text-gray-800 text-base hidden sm:inline tracking-tight">
+              Aeterna
+            </span>
+          </Link>
+          <div className="relative hidden sm:block">
             <input
               type="text"
-              placeholder="Cari Program"
-              className="w-72 h-9 pl-10 pr-3 rounded-md border border-gray-300 text-sm placeholder-gray-400 focus:ring-1 focus:ring-[#b38867] focus:border-[#b38867] outline-none"
+              placeholder="Cari Modul & Program..."
+              className="w-64 h-9 pl-9 pr-3 rounded-xl border border-gray-200 text-xs placeholder-gray-400 focus:ring-2 focus:ring-[#b38867] focus:outline-none transition"
             />
             <svg
               className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -32,26 +42,47 @@ export default function Header() {
         </div>
 
         {/* === Tengah: Menu Navigasi === */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-700">
-          <a href="/program" className="hover:text-[#b38867]">Program</a>
-          <a href="/Langganan" className="hover:text-[#b38867]">Langganan</a>
-          <a href="/E-Learning" className="hover:text-[#b38867]">E-Learning</a>
+        <nav className="flex items-center gap-6 text-sm font-semibold text-gray-600">
+          <Link
+            to="/program"
+            className={`transition-colors ${
+              currentPath === '/program' ? 'text-[#b38867] font-bold' : 'hover:text-[#b38867]'
+            }`}
+          >
+            Program
+          </Link>
+          <Link
+            to="/langganan"
+            className={`transition-colors ${
+              currentPath === '/langganan' ? 'text-[#b38867] font-bold' : 'hover:text-[#b38867]'
+            }`}
+          >
+            Langganan
+          </Link>
+          <Link
+            to="/e-learning"
+            className={`transition-colors ${
+              currentPath === '/e-learning' ? 'text-[#b38867] font-bold' : 'hover:text-[#b38867]'
+            }`}
+          >
+            E-Learning
+          </Link>
         </nav>
 
         {/* === Kanan: Tombol Auth === */}
-        <div className="flex gap-3">
-          <a
-            href="/register"
-            className="px-4 h-9 inline-flex items-center justify-center rounded-md border border-[#b38867] text-[#b38867] hover:bg-[#b38867] hover:text-white transition"
+        <div className="flex gap-2.5">
+          <Link
+            to="/register"
+            className="px-4 h-9 inline-flex items-center justify-center rounded-xl border border-[#b38867] text-[#b38867] text-xs font-semibold hover:bg-amber-50 transition"
           >
             Daftar
-          </a>
-          <a
-            href="/login"
-            className="px-4 h-9 inline-flex items-center justify-center rounded-md bg-[#b38867] text-white hover:bg-[#a27355] transition"
+          </Link>
+          <Link
+            to="/login"
+            className="px-4 h-9 inline-flex items-center justify-center rounded-xl bg-[#b38867] text-white text-xs font-semibold hover:bg-[#a27355] shadow-xs transition"
           >
             Masuk
-          </a>
+          </Link>
         </div>
       </div>
     </header>
