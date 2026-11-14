@@ -12,6 +12,14 @@ const Sidebar = () => {
 
   // ================= MENU CONFIG =================
   const menus = {
+    admin: [
+      { name: "Dashboard", path: "/admin-dashboard" },
+      { name: "Mentoring Pairings", path: "/admin-dashboard/pairings" },
+      { name: "User Management", path: "/admin-dashboard/users" },
+      { name: "Learning Activities", path: "/admin-dashboard/learning-activities" },
+      { name: "Progress Reports", path: "/admin-dashboard/reports" },
+      { name: "Tutoring Schedule", path: "/admin-dashboard/schedules" },
+    ],
     mentor: [
       { name: "Dashboard", path: "/mentor-dashboard" },
       { name: "List of Mentees", path: "/mentor-dashboard/mentees" },
@@ -47,7 +55,7 @@ const Sidebar = () => {
             className="w-20 h-20 object-contain mb-2"
           />
           <h2 className="text-lg font-semibold text-gray-700">
-            {role === "mentor" ? "Mentor Panel" : "Mentee Panel"}
+            {role === "admin" ? "Admin Panel" : role === "mentor" ? "Mentor Panel" : "Mentee Panel"}
           </h2>
         </div>
 

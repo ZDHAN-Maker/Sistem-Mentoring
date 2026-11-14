@@ -28,24 +28,42 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("role");
     localStorage.removeItem("auth_session");
     localStorage.removeItem("auth_timestamp");
+    localStorage.removeItem("auth_token");
   };
 
   const login = async (email, password, remember = false) => {
     await getCsrfCookie();
     const res = await api.post("/login", { email, password, remember });
-    const userData = res.data.user;
+
+    // ✅ FIX: Backend mengembalikan { status, data: { user, roles, token } }
+    const responseData = res.data.data;
+    const userData = responseData.user;
+    const roles = responseData.roles;    // array, misal: ["Admin"]
+    const token = responseData.token;
+
+    // Simpan token untuk dikirim sebagai Bearer di setiap request
+    localStorage.setItem("auth_token", token);
+
+    // Ambil role pertama dan ubah ke lowercase agar cocok dengan routing
+    const userRole = roles?.[0]?.toLowerCase() ?? null;
 
     setAuthData({
       isAuthenticated: true,
       user: userData,
-      role: userData.role,
+      role: userRole,
     });
 
-    return userData;
+    // Kembalikan userData DAN role agar Login.jsx bisa langsung redirect
+    return { user: userData, role: userRole };
   };
 
   const logout = async () => {
-    await api.post("/logout");
+    try {
+      await api.post("/logout");
+    } catch {
+      // Tetap clear session meskipun request logout gagal
+    }
+    localStorage.removeItem("auth_token");
     clearAuthSession();
   };
 
@@ -66,8 +84,10 @@ export const AuthProvider = ({ children }) => {
 
       try {
         const res = await api.get("/user");
-        const userData = res.data.user;
-        const userRole = res.data.role;
+        // ✅ FIX: Backend mengembalikan { status, data: { user (dengan relasi roles) } }
+        const userData = res.data.data;
+        const roles = userData.roles;   // relasi roles sudah di-load (->load('roles'))
+        const userRole = roles?.[0]?.name?.toLowerCase() ?? null;
 
         setAuthData({
           isAuthenticated: true,

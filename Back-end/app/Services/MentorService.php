@@ -16,7 +16,9 @@ class MentorService
      */
     public function getAllMentors()
     {
-        return User::where('role', 'mentor')->get();
+        return User::whereHas('roles', fn($q) => $q->where('name', 'Mentor'))
+            ->with(['roles', 'learningActivities'])
+            ->get();
     }
 
     /**
@@ -24,7 +26,9 @@ class MentorService
      */
     public function getMentorById($id)
     {
-        return User::where('role', 'mentor')->findOrFail($id);
+        return User::whereHas('roles', fn($q) => $q->where('name', 'Mentor'))
+            ->with(['roles', 'learningActivities'])
+            ->findOrFail($id);
     }
 
     /**

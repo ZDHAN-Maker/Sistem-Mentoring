@@ -15,6 +15,8 @@ use App\Http\Controllers\LearningActivityController;
 use App\Http\Controllers\PairingController;
 use App\Http\Controllers\MaterialProgressController;
 use App\Http\Controllers\ProgressReportController;
+use App\Http\Controllers\MentorController;
+use App\Http\Controllers\MenteeController;
 
 // ✅ Route tanpa middleware dulu (untuk login/register)
 Route::post('/login', [AuthController::class, 'login']);
@@ -44,6 +46,16 @@ Route::middleware(['auth:sanctum', 'role:Admin'])->group(function () {
 
     // Mengakhiri masa pairing
     Route::patch('/pairings/{pairing}/complete', [PairingController::class, 'complete']);
+
+    // Manajemen User
+    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::put('/users/{id}', [UserController::class, 'update']);
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
+
+    // Daftar Mentor dan Mentee untuk keperluan Admin / Pairing
+    Route::get('/mentors', [MentorController::class, 'index']);
+    Route::get('/mentees', [MenteeController::class, 'index']);
 });
 
 Route::middleware(['auth:sanctum'])->group(function () {

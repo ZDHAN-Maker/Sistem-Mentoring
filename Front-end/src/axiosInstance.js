@@ -37,21 +37,22 @@ const GET_AUTH_FLAG = () => {
 // Request Interceptor
 api.interceptors.request.use(
   (config) => {
-    // Add CSRF token
+    // ✅ FIX: Sertakan Bearer token untuk Sanctum token-based auth
+    const authToken = localStorage.getItem('auth_token');
+    if (authToken) {
+      config.headers['Authorization'] = `Bearer ${authToken}`;
+    }
+
+    // Add CSRF token (untuk web session jika diperlukan)
     const cookies = document.cookie.split('; ');
     const xsrfCookie = cookies.find(row => row.startsWith('XSRF-TOKEN='));
     
     if (xsrfCookie) {
       const token = decodeURIComponent(xsrfCookie.split('=')[1]);
       config.headers['X-XSRF-TOKEN'] = token;
-      console.log('🔑 CSRF token attached');
-    } else {
-      console.warn('⚠️ No CSRF token found in cookies');
     }
     
-    // ✅ Log cookies untuk debugging
     console.log('📤 Request:', config.method?.toUpperCase(), config.url);
-    console.log('🍪 Cookies:', document.cookie);
     
     return config;
   },
@@ -92,6 +93,7 @@ api.interceptors.response.use(
       localStorage.removeItem('auth_timestamp');
       localStorage.removeItem('user');
       localStorage.removeItem('role');
+      localStorage.removeItem('auth_token');
     }
     
     if (status === 419) {

@@ -26,16 +26,16 @@ const Login = () => {
 
     try {
       // Panggil login langsung dari AuthProvider
-      const user = await login(email, password, rememberMe);
+      const { role: userRole } = await login(email, password, rememberMe);
 
-      // Redirect sesuai role
+      // Redirect sesuai role (role sudah disimpan di AuthContext)
       const redirectPaths = {
         admin: "/admin-dashboard",
         mentor: "/mentor-dashboard",
         mentee: "/mentee-dashboard",
       };
 
-      navigate(redirectPaths[user.role] || "/");
+      navigate(redirectPaths[userRole] || "/");
     } catch (error) {
       let msg = "Terjadi kesalahan saat login.";
 

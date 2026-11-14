@@ -13,7 +13,7 @@ class UserService
      */
     public function getAllUsers()
     {
-        return User::all();
+        return User::with('roles')->get();
     }
 
     /**
@@ -21,7 +21,7 @@ class UserService
      */
     public function getUserById($id)
     {
-        return User::findOrFail($id);
+        return User::with('roles')->findOrFail($id);
     }
 
     /**
