@@ -21,7 +21,11 @@ import {
   UserX,
   ExternalLink,
   Filter,
-  CheckSquare
+  CheckSquare,
+  CalendarDays,
+  List,
+  Sparkles,
+  Users
 } from "lucide-react";
 
 export default function MentoringSchedule() {
@@ -31,7 +35,12 @@ export default function MentoringSchedule() {
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [copiedLink, setCopiedLink] = useState(null);
-  const [statusFilter, setStatusFilter] = useState("all"); // 'all' | 'planned' | 'ongoing' | 'completed'
+
+  // View Mode: 'calendar' (Besar) | 'list' (Daftar)
+  const [viewMode, setViewMode] = useState("calendar");
+
+  // Filter Status
+  const [statusFilter, setStatusFilter] = useState("all");
 
   // Kalender Navigation State
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -48,7 +57,10 @@ export default function MentoringSchedule() {
     end_time: "",
   });
 
-  // Modal Complete Session & Session Notes State
+  // Modal Day Detail (ketika klik tanggal yang memiliki jadwal)
+  const [selectedDayData, setSelectedDayData] = useState(null);
+
+  // Modal Selesaikan Sesi & Catatan Pertemuan
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [completingSchedule, setCompletingSchedule] = useState(null);
   const [completeForm, setCompleteForm] = useState({
@@ -78,14 +90,29 @@ export default function MentoringSchedule() {
     fetchData();
   }, []);
 
-  const openCreateModal = () => {
-    const now = new Date();
-    now.setHours(now.getHours() + 1, 0, 0, 0);
-    const startStr = now.toISOString().slice(0, 16);
+  // Format YYYY-MM-DD lokal
+  const formatLocalDate = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
 
-    const end = new Date(now);
-    end.setHours(end.getHours() + 1);
-    const endStr = end.toISOString().slice(0, 16);
+  // Buka Modal Buat Jadwal
+  const openCreateModal = (targetDate = null) => {
+    let startStr, endStr;
+    if (targetDate) {
+      const dateStr = formatLocalDate(targetDate);
+      startStr = `${dateStr}T09:00`;
+      endStr = `${dateStr}T10:00`;
+    } else {
+      const now = new Date();
+      now.setHours(now.getHours() + 1, 0, 0, 0);
+      startStr = now.toISOString().slice(0, 16);
+      const end = new Date(now);
+      end.setHours(end.getHours() + 1);
+      endStr = end.toISOString().slice(0, 16);
+    }
 
     setFormData({
       pairing_id: mentees.length > 0 ? mentees[0].pairing_id : "",
@@ -96,7 +123,28 @@ export default function MentoringSchedule() {
       start_time: startStr,
       end_time: endStr,
     });
+    setSelectedDayData(null);
     setShowModal(true);
+  };
+
+  // Handler Klik Tanggal pada Kalender Besar
+  const handleDateClick = (dayDate, daySchedules) => {
+    if (daySchedules.length > 0) {
+      // Buka modal pop-up jadwal di tanggal tersebut
+      setSelectedDayData({
+        date: dayDate,
+        dateFormatted: dayDate.toLocaleDateString("id-ID", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          year: "numeric"
+        }),
+        schedules: daySchedules
+      });
+    } else {
+      // Langsung buka modal buat jadwal dengan tanggal tersebut terisi
+      openCreateModal(dayDate);
+    }
   };
 
   const handleCreateSchedule = async (e) => {
@@ -131,7 +179,6 @@ export default function MentoringSchedule() {
     setShowCompleteModal(true);
   };
 
-  // Simpan Selesai Sesi & Notulensi
   const handleSaveCompletion = async (e) => {
     e.preventDefault();
     if (!completingSchedule) return;
@@ -146,9 +193,12 @@ export default function MentoringSchedule() {
 
       setFeedback({ 
         type: "success", 
-        message: `Sesi "${completingSchedule.title}" berhasil diselesaikan dan catatan pertemuan tersimpan!` 
+        message: `Sesi "${completingSchedule.title}" berhasil diselesaikan dan notulensi tersimpan!` 
       });
       setShowCompleteModal(false);
+      if (selectedDayData) {
+        setSelectedDayData(null);
+      }
       fetchData();
     } catch (err) {
       const msg = err.response?.data?.message || "Gagal memperbarui status sesi bimbingan.";
@@ -175,12 +225,17 @@ export default function MentoringSchedule() {
       await api.delete(`/schedules/${schedule.id}`);
       setFeedback({ type: "success", message: "Jadwal berhasil dihapus." });
       setSchedules((prev) => prev.filter((s) => s.id !== schedule.id));
+      if (selectedDayData) {
+        setSelectedDayData((prev) => ({
+          ...prev,
+          schedules: prev.schedules.filter((s) => s.id !== schedule.id)
+        }));
+      }
     } catch (err) {
       setFeedback({ type: "error", message: "Gagal menghapus jadwal." });
     }
   };
 
-  // Salin Link Meeting
   const handleCopyLink = (link, id) => {
     if (!link) return;
     navigator.clipboard.writeText(link);
@@ -188,7 +243,7 @@ export default function MentoringSchedule() {
     setTimeout(() => setCopiedLink(null), 2000);
   };
 
-  // Format WA Pengingat Jadwal
+  // Kirim Pengingat WhatsApp
   const sendWaReminder = (sch) => {
     const mentee = sch.pairing?.mentee;
     if (!mentee?.phone) {
@@ -213,7 +268,7 @@ export default function MentoringSchedule() {
       : "";
 
     const msg = encodeURIComponent(
-      `Halo ${mentee.name || "Mentee"}, mengingatkan sesi mentoring kita:\n\n*Topik:* ${sch.title}\n*Waktu:* ${dateStr}, pukul ${timeStr} WIB\n*Link Meeting:* ${sch.meeting_link || "Akan diinfokan segera"}\n\nSilakan bersiap sebelum waktu sesi dimulai. Sampai jumpa!`
+      `Halo ${mentee.name || "Mentee"}, mengingatkan jadwal sesi mentoring kita:\n\n*Topik:* ${sch.title}\n*Waktu:* ${dateStr}, pukul ${timeStr} WIB\n*Link Meeting:* ${sch.meeting_link || "Akan diinfokan segera"}\n\nSilakan bersiap sebelum waktu sesi dimulai. Sampai jumpa!`
     );
 
     window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
@@ -226,10 +281,81 @@ export default function MentoringSchedule() {
   const nextMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
+  const goToToday = () => {
+    setCurrentDate(new Date());
+  };
 
   const monthYearLabel = currentDate.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
 
-  // Filter schedules
+  // Kalkulasi Grid Hari untuk Kalender Besar
+  const calendarGrid = useMemo(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    const firstDayIndex = new Date(year, month, 1).getDay(); // 0 = Minggu
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    const prevMonthTotalDays = new Date(year, month, 0).getDate();
+
+    const days = [];
+
+    // Hari dari bulan sebelumnya (leading padding)
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      const dayNum = prevMonthTotalDays - i;
+      const d = new Date(year, month - 1, dayNum);
+      const dateKey = formatLocalDate(d);
+      const daySchs = schedules.filter((s) => s.start_time && s.start_time.slice(0, 10) === dateKey);
+
+      days.push({
+        date: d,
+        dayNumber: dayNum,
+        isCurrentMonth: false,
+        isToday: false,
+        dateKey,
+        schedules: daySchs,
+      });
+    }
+
+    // Hari di bulan aktif saat ini
+    const todayStr = formatLocalDate(new Date());
+    for (let dayNum = 1; dayNum <= totalDays; dayNum++) {
+      const d = new Date(year, month, dayNum);
+      const dateKey = formatLocalDate(d);
+      const isToday = dateKey === todayStr;
+      const daySchs = schedules.filter((s) => s.start_time && s.start_time.slice(0, 10) === dateKey);
+
+      days.push({
+        date: d,
+        dayNumber: dayNum,
+        isCurrentMonth: true,
+        isToday,
+        dateKey,
+        schedules: daySchs,
+      });
+    }
+
+    // Hari dari bulan berikutnya (trailing padding) agar genap kelipatan 7
+    const remaining = 7 - (days.length % 7);
+    if (remaining < 7) {
+      for (let dayNum = 1; dayNum <= remaining; dayNum++) {
+        const d = new Date(year, month + 1, dayNum);
+        const dateKey = formatLocalDate(d);
+        const daySchs = schedules.filter((s) => s.start_time && s.start_time.slice(0, 10) === dateKey);
+
+        days.push({
+          date: d,
+          dayNumber: dayNum,
+          isCurrentMonth: false,
+          isToday: false,
+          dateKey,
+          schedules: daySchs,
+        });
+      }
+    }
+
+    return days;
+  }, [currentDate, schedules]);
+
+  // Filter daftar jadwal untuk List View
   const filteredSchedules = useMemo(() => {
     if (statusFilter === "all") return schedules;
     if (statusFilter === "planned") return schedules.filter((s) => s.status === "planned" || s.status === "scheduled");
@@ -241,12 +367,12 @@ export default function MentoringSchedule() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header Halaman */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Jadwal Bimbingan Mentoring</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Atur agenda bimbingan online/offline, kirim pengingat WhatsApp, dan catat notulensi sesi bimbingan.
+            Klik tanggal pada kalender untuk mengatur jadwal bimbingan baru atau melihat sesi yang telah disetting.
           </p>
         </div>
 
@@ -258,12 +384,39 @@ export default function MentoringSchedule() {
           >
             <RefreshCw size={18} className={loading ? "animate-spin text-[#b38867]" : ""} />
           </button>
+
+          {/* Toggle View: Kalender Besar vs List View */}
+          <div className="inline-flex p-1 bg-gray-200/80 rounded-xl">
+            <button
+              onClick={() => setViewMode("calendar")}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                viewMode === "calendar"
+                  ? "bg-white text-gray-800 shadow-sm"
+                  : "text-gray-500 hover:text-gray-800"
+              }`}
+            >
+              <CalendarDays size={14} className="text-[#b38867]" />
+              <span>Kalender Besar</span>
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                viewMode === "list"
+                  ? "bg-white text-gray-800 shadow-sm"
+                  : "text-gray-500 hover:text-gray-800"
+              }`}
+            >
+              <List size={14} className="text-blue-600" />
+              <span>Daftar Agenda ({schedules.length})</span>
+            </button>
+          </div>
+
           <button
-            onClick={openCreateModal}
+            onClick={() => openCreateModal()}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#b38867] hover:bg-[#a27355] text-white text-sm font-semibold rounded-xl shadow-sm transition"
           >
             <Plus size={18} />
-            Buat Jadwal Baru
+            <span>Buat Jadwal Baru</span>
           </button>
         </div>
       </div>
@@ -287,63 +440,206 @@ export default function MentoringSchedule() {
         </div>
       )}
 
-      {/* Grid: Kalender Navigasi & Daftar Jadwal */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Kolom Kalender Ringkas */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-800 capitalize text-sm">{monthYearLabel}</h3>
-              <div className="flex items-center gap-1">
-                <button onClick={prevMonth} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-600 transition">
-                  <ChevronLeft size={16} />
-                </button>
-                <button onClick={nextMonth} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-600 transition">
-                  <ChevronRight size={16} />
-                </button>
+      {/* ============================================================== */}
+      {/* TAMPILAN 1: KALENDER BESAR & INTERAKTIF (USER REQUEST)           */}
+      {/* ============================================================== */}
+      {viewMode === "calendar" && (
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          {/* Calendar Toolbar Header */}
+          <div className="p-4 sm:p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-gradient-to-r from-gray-50/60 to-white">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-[#b38867]/15 text-[#b38867] rounded-xl border border-[#b38867]/30">
+                <CalendarIcon size={22} />
+              </div>
+              <div>
+                <h2 className="text-xl font-extrabold text-gray-900 capitalize tracking-tight">
+                  {monthYearLabel}
+                </h2>
+                <p className="text-xs text-gray-500">
+                  Total {schedules.length} jadwal terdaftar • Klik tanggal untuk menambah/melihat sesi
+                </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-gray-400 mb-2">
-              <span>Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span>
-            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={goToToday}
+                className="px-3.5 py-2 text-xs font-bold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition shadow-2xs"
+              >
+                Hari Ini
+              </button>
 
-            <div className="grid grid-cols-7 gap-1 text-center text-xs">
-              {Array.from({ length: 31 }).map((_, i) => {
-                const day = i + 1;
-                const isToday = new Date().getDate() === day && new Date().getMonth() === currentDate.getMonth();
-                return (
-                  <div
-                    key={i}
-                    className={`h-8 flex items-center justify-center rounded-lg transition ${
-                      isToday ? "bg-[#b38867] text-white font-bold" : "hover:bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    {day}
-                  </div>
-                );
-              })}
+              <div className="flex items-center bg-white border border-gray-300 rounded-xl overflow-hidden shadow-2xs">
+                <button
+                  onClick={prevMonth}
+                  className="p-2 hover:bg-gray-100 text-gray-600 transition"
+                  title="Bulan Sebelumnya"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <button
+                  onClick={nextMonth}
+                  className="p-2 hover:bg-gray-100 text-gray-600 transition border-l border-gray-200"
+                  title="Bulan Berikutnya"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-gray-100 text-xs text-gray-500 space-y-1.5">
-            <p className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#b38867]"></span> Hari Ini
-            </p>
-            <p className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Total Jadwal: {schedules.length}
-            </p>
-            <p className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Sesi Selesai: {schedules.filter(s => s.status === 'completed').length}
+          {/* Header Hari dalam Seminggu */}
+          <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50/90 text-center text-xs font-bold text-gray-600 uppercase tracking-wider py-3">
+            <span className="text-rose-600">Minggu</span>
+            <span>Senin</span>
+            <span>Selasa</span>
+            <span>Rabu</span>
+            <span>Kamis</span>
+            <span>Jumat</span>
+            <span className="text-blue-600">Sabtu</span>
+          </div>
+
+          {/* Grid Kalender Besar (Cell Generous Size) */}
+          <div className="grid grid-cols-7 divide-x divide-y divide-gray-200 border-b border-gray-200">
+            {calendarGrid.map((cell, idx) => {
+              const hasSchedules = cell.schedules.length > 0;
+              const isSunday = cell.date.getDay() === 0;
+
+              return (
+                <div
+                  key={idx}
+                  onClick={() => handleDateClick(cell.date, cell.schedules)}
+                  className={`min-h-[110px] md:min-h-[125px] p-2 transition-all flex flex-col justify-between cursor-pointer group relative ${
+                    !cell.isCurrentMonth
+                      ? "bg-gray-50/40 text-gray-400"
+                      : hasSchedules
+                      ? "bg-amber-50/25 hover:bg-amber-50/60"
+                      : "bg-white hover:bg-blue-50/30"
+                  }`}
+                  title={
+                    hasSchedules
+                      ? `${cell.schedules.length} Sesi Terjadwal. Klik untuk melihat/mengatur jadwal`
+                      : "Klik untuk mengatur jadwal bimbingan pada tanggal ini"
+                  }
+                >
+                  {/* Top Cell: Nomor Tanggal & Indikator Sesi */}
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`text-xs md:text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full transition ${
+                        cell.isToday
+                          ? "bg-[#b38867] text-white shadow-sm"
+                          : !cell.isCurrentMonth
+                          ? "text-gray-300"
+                          : isSunday
+                          ? "text-rose-600"
+                          : "text-gray-700 group-hover:text-[#b38867]"
+                      }`}
+                    >
+                      {cell.dayNumber}
+                    </span>
+
+                    {/* Keterangan Tanggal Telah Diset Jadwal */}
+                    {hasSchedules && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1 shadow-2xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse"></span>
+                        <span>{cell.schedules.length} Sesi</span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Body Cell: Chips/Badges Jadwal yang Terjadwal */}
+                  <div className="mt-1 space-y-1 overflow-hidden flex-1">
+                    {hasSchedules ? (
+                      <>
+                        {cell.schedules.slice(0, 2).map((sch) => {
+                          const isComp = sch.status === "completed";
+                          return (
+                            <div
+                              key={sch.id}
+                              className={`text-[11px] p-1.5 rounded-lg border leading-tight truncate transition ${
+                                isComp
+                                  ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                  : "bg-white text-gray-800 border-amber-200 shadow-2xs group-hover:border-[#b38867]"
+                              }`}
+                            >
+                              <div className="flex items-center gap-1">
+                                <Clock size={10} className={isComp ? "text-emerald-600" : "text-[#b38867]"} />
+                                <span className="font-bold">
+                                  {sch.start_time
+                                    ? new Date(sch.start_time).toLocaleTimeString("id-ID", {
+                                        hour: "2-digit",
+                                        minute: "2-digit"
+                                      })
+                                    : ""}
+                                </span>
+                              </div>
+                              <p className="truncate font-medium mt-0.5">{sch.title}</p>
+                            </div>
+                          );
+                        })}
+
+                        {cell.schedules.length > 2 && (
+                          <span className="text-[10px] font-bold text-gray-500 block text-right pr-1">
+                            +{cell.schedules.length - 2} jadwal lainnya
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <div className="h-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="text-[11px] text-[#b38867] font-semibold flex items-center gap-1">
+                          <Plus size={12} /> Tambah Jadwal
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Keterangan Footer Cell jika disetting jadwal */}
+                  {hasSchedules && (
+                    <div className="text-[10px] text-amber-700 font-semibold pt-1 border-t border-amber-100/60 truncate flex items-center justify-between">
+                      <span className="truncate">
+                        Mentee: {cell.schedules[0].pairing?.mentee?.name || "Mentee"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Legend / Panduan Keterangan Warna Kalender */}
+          <div className="p-4 bg-gray-50 flex flex-wrap items-center justify-between gap-4 text-xs text-gray-600">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-[#b38867]"></span>
+                <span className="font-medium">Hari Ini</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-md bg-amber-100 border border-amber-300"></span>
+                <span className="font-medium">Tanggal Telah Disetting Jadwal</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-md bg-emerald-100 border border-emerald-300"></span>
+                <span className="font-medium">Sesi Selesai (Completed)</span>
+              </div>
+            </div>
+            <p className="text-gray-400 italic text-[11px]">
+              *Tips: Klik langsung pada kotak tanggal untuk menambah atau melihat agenda bimbingan.
             </p>
           </div>
         </div>
+      )}
 
-        {/* Kolom Daftar Agenda Jadwal */}
-        <div className="lg:col-span-2 space-y-4">
+      {/* ============================================================== */}
+      {/* TAMPILAN 2: DAFTAR AGENDA (LIST VIEW)                           */}
+      {/* ============================================================== */}
+      {viewMode === "list" && (
+        <div className="space-y-4">
           {/* Header & Filter Tabs */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-3.5 rounded-2xl border border-gray-200 shadow-sm">
-            <h2 className="text-sm font-bold text-gray-800">Daftar Agenda Pertemuan</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
+            <div>
+              <h2 className="text-base font-bold text-gray-800">Daftar Agenda Pertemuan</h2>
+              <p className="text-xs text-gray-500">Urutan sesi bimbingan berdasarkan waktu pelaksanaan</p>
+            </div>
             <div className="inline-flex p-1 bg-gray-100 rounded-xl text-xs font-medium">
               <button
                 onClick={() => setStatusFilter("all")}
@@ -411,7 +707,6 @@ export default function MentoringSchedule() {
                           <span className="text-xs font-mono text-gray-400">ID #{sch.id}</span>
                         </div>
 
-                        {/* Nama Mentee Tag */}
                         {mentee?.name && (
                           <span className="text-xs font-semibold text-gray-700 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-200 flex items-center gap-1.5">
                             <span className="w-2 h-2 rounded-full bg-[#b38867]"></span>
@@ -420,13 +715,11 @@ export default function MentoringSchedule() {
                         )}
                       </div>
 
-                      {/* Judul & Deskripsi */}
                       <h3 className="font-bold text-gray-900 text-base">{sch.title}</h3>
                       <p className="text-xs text-gray-600 mt-1 leading-relaxed">
                         {sch.description || "Tidak ada rincian agenda."}
                       </p>
 
-                      {/* Info Waktu & Meeting */}
                       <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-gray-600">
                         <div className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-100">
                           <Clock size={13} className="text-[#b38867]" />
@@ -475,7 +768,6 @@ export default function MentoringSchedule() {
                         )}
                       </div>
 
-                      {/* Catatan Sesi & Notulensi Jika Selesai */}
                       {isCompleted && (
                         <div className="mt-4 p-3.5 bg-emerald-50/70 border border-emerald-200/80 rounded-xl text-xs space-y-1.5">
                           <div className="flex items-center justify-between">
@@ -494,15 +786,12 @@ export default function MentoringSchedule() {
                       )}
                     </div>
 
-                    {/* Action Bar */}
                     <div className="pt-3 mt-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        {/* Tombol Kirim Pengingat WhatsApp ke Mentee */}
+                      <div>
                         {!isCompleted && (
                           <button
                             onClick={() => sendWaReminder(sch)}
                             className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white border border-emerald-200 rounded-xl transition shadow-2xs"
-                            title="Kirim pesan pengingat jadwal langsung ke WA Mentee"
                           >
                             <MessageCircle size={13} />
                             <span>Kirim Pengingat WA</span>
@@ -511,7 +800,6 @@ export default function MentoringSchedule() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {/* Mulai Sesi */}
                         {(sch.status === "planned" || sch.status === "scheduled") && (
                           <button
                             onClick={() => handleUpdateStatus(sch.id, "ongoing")}
@@ -521,7 +809,6 @@ export default function MentoringSchedule() {
                           </button>
                         )}
 
-                        {/* Selesaikan Sesi & Tulis Notulensi */}
                         {(sch.status === "planned" || sch.status === "ongoing" || sch.status === "scheduled") && (
                           <button
                             onClick={() => openCompleteModal(sch)}
@@ -532,7 +819,6 @@ export default function MentoringSchedule() {
                           </button>
                         )}
 
-                        {/* Edit Catatan jika sudah selesai */}
                         {isCompleted && (
                           <button
                             onClick={() => openCompleteModal(sch)}
@@ -556,11 +842,11 @@ export default function MentoringSchedule() {
               })}
             </div>
           ) : (
-            <div className="p-12 text-center bg-white rounded-2xl border border-gray-200 text-gray-400">
+            <div className="p-16 text-center bg-white rounded-2xl border border-gray-200 text-gray-400">
               <CalendarIcon size={36} className="mx-auto mb-2 text-gray-300" />
               <p className="text-sm font-semibold text-gray-600">Tidak ada jadwal bimbingan.</p>
               <button
-                onClick={openCreateModal}
+                onClick={() => openCreateModal()}
                 className="mt-3 text-xs font-semibold text-[#b38867] hover:underline"
               >
                 + Buat Jadwal Pertemuan Baru
@@ -568,14 +854,191 @@ export default function MentoringSchedule() {
             </div>
           )}
         </div>
-      </div>
+      )}
 
-      {/* Modal Tambah Jadwal Baru */}
+      {/* ============================================================== */}
+      {/* POP-UP 1: DETAIL SESI PADA TANGGAL YANG DIKLIK (INTERACTIVE)    */}
+      {/* ============================================================== */}
+      {selectedDayData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-xl rounded-2xl shadow-xl border border-gray-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-amber-50/50 to-white">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-[#b38867] text-white rounded-xl shadow-sm">
+                  <CalendarIcon size={20} />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-gray-800">
+                    Jadwal Bimbingan Terjadwal
+                  </h2>
+                  <p className="text-xs text-gray-500 font-medium mt-0.5">
+                    {selectedDayData.dateFormatted} ({selectedDayData.schedules.length} Sesi)
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setSelectedDayData(null)}
+                className="text-gray-400 hover:text-gray-600 p-1.5 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* List Jadwal di Tanggal Ini */}
+            <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  Daftar Sesi pada Tanggal Ini:
+                </span>
+                <button
+                  onClick={() => openCreateModal(selectedDayData.date)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#b38867] hover:bg-[#a27355] text-white text-xs font-bold rounded-xl shadow-sm transition"
+                >
+                  <Plus size={14} />
+                  <span>+ Tambah Jadwal Baru</span>
+                </button>
+              </div>
+
+              {selectedDayData.schedules.map((sch) => {
+                const isCompleted = sch.status === "completed";
+                const mentee = sch.pairing?.mentee;
+
+                return (
+                  <div
+                    key={sch.id}
+                    className={`p-4 rounded-xl border transition ${
+                      isCompleted ? "bg-emerald-50/20 border-emerald-200" : "bg-gray-50 border-gray-200"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                          isCompleted
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-blue-100 text-blue-800"
+                        }`}
+                      >
+                        {isCompleted ? "Selesai" : "Terjadwal"}
+                      </span>
+                      <span className="text-xs text-gray-500 font-semibold">
+                        Mentee: {mentee?.name || "Mentee"}
+                      </span>
+                    </div>
+
+                    <h4 className="font-bold text-gray-900 text-sm">{sch.title}</h4>
+                    {sch.description && (
+                      <p className="text-xs text-gray-500 mt-1">{sch.description}</p>
+                    )}
+
+                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-600">
+                      <div className="flex items-center gap-1 font-semibold text-gray-700 bg-white px-2 py-1 rounded-md border border-gray-200">
+                        <Clock size={12} className="text-[#b38867]" />
+                        <span>
+                          {sch.start_time
+                            ? new Date(sch.start_time).toLocaleTimeString("id-ID", {
+                                hour: "2-digit",
+                                minute: "2-digit"
+                              })
+                            : ""}{" "}
+                          -{" "}
+                          {sch.end_time
+                            ? new Date(sch.end_time).toLocaleTimeString("id-ID", {
+                                hour: "2-digit",
+                                minute: "2-digit"
+                              })
+                            : ""}{" "}
+                          WIB
+                        </span>
+                      </div>
+
+                      {sch.meeting_link && (
+                        <a
+                          href={sch.meeting_link}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-blue-600 hover:underline font-semibold"
+                        >
+                          <Video size={13} />
+                          <span>Link Meeting</span>
+                        </a>
+                      )}
+                    </div>
+
+                    {/* Notulensi jika selesai */}
+                    {isCompleted && sch.session_notes && (
+                      <div className="mt-3 p-2.5 bg-emerald-100/40 rounded-lg text-xs text-emerald-900 border border-emerald-200">
+                        <strong>Notulensi:</strong> {sch.session_notes}
+                      </div>
+                    )}
+
+                    {/* Action Bar */}
+                    <div className="mt-3 pt-3 border-t border-gray-200 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        {!isCompleted && mentee?.phone && (
+                          <button
+                            onClick={() => sendWaReminder(sch)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-lg transition"
+                          >
+                            <MessageCircle size={12} />
+                            <span>WA Mentee</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {!isCompleted && (
+                          <button
+                            onClick={() => openCompleteModal(sch)}
+                            className="px-2.5 py-1 text-xs font-bold bg-[#b38867] hover:bg-[#a27355] text-white rounded-lg transition"
+                          >
+                            Selesaikan Sesi
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteSchedule(sch)}
+                          className="p-1 text-gray-400 hover:text-red-600 rounded transition"
+                          title="Hapus"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end">
+              <button
+                onClick={() => setSelectedDayData(null)}
+                className="px-4 py-2 text-xs font-semibold bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 rounded-xl transition"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* POP-UP 2: MODAL BUAT JADWAL BARU (PREFILL TANGGAL OTOMATIS)     */}
+      {/* ============================================================== */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 overflow-y-auto">
           <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl border border-gray-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-800">Buat Jadwal Bimbingan Baru</h2>
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-amber-50 text-amber-800 rounded-xl">
+                  <Plus size={18} />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-gray-800">Buat Jadwal Bimbingan Baru</h2>
+                  <p className="text-xs text-gray-500">Atur waktu dan ruang pertemuan mentoring</p>
+                </div>
+              </div>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
                 <X size={20} />
               </button>
@@ -595,10 +1058,13 @@ export default function MentoringSchedule() {
                   <option value="">-- Pilih Mentee --</option>
                   {mentees.map((m) => (
                     <option key={m.pairing_id} value={m.pairing_id}>
-                      {m.mentee?.name} ({m.mentee?.email})
+                      {m.mentee?.name} ({m.mentee?.email}) - {m.subscription_name}
                     </option>
                   ))}
                 </select>
+                {mentees.length === 0 && (
+                  <p className="text-xs text-amber-600 mt-1">Anda belum memiliki mentee bimbingan.</p>
+                )}
               </div>
 
               <div>
@@ -664,7 +1130,7 @@ export default function MentoringSchedule() {
                   placeholder="Persiapan sebelum sesi: siapkan pertanyaan dan link repo/figma..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full p-2.5 text-sm border border-gray-300 rounded-xl focus:ring-1 focus:ring-[#b38867] outline-none resize-none"
+                  className="w-full p-2.5 text-sm border border-gray-300 rounded-xl focus:ring-1 focus:ring-[#b38867] outline-none resize-none leading-relaxed"
                 />
               </div>
 
@@ -679,7 +1145,7 @@ export default function MentoringSchedule() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2.5 text-xs font-semibold text-white bg-[#b38867] hover:bg-[#a27355] rounded-xl transition disabled:opacity-50"
+                  className="px-5 py-2.5 text-xs font-semibold text-white bg-[#b38867] hover:bg-[#a27355] rounded-xl transition disabled:opacity-50 shadow-sm"
                 >
                   {submitting ? "Menyimpan..." : "Simpan Jadwal"}
                 </button>
@@ -689,7 +1155,9 @@ export default function MentoringSchedule() {
         </div>
       )}
 
-      {/* Modal Selesaikan Sesi & Tulis Notulensi */}
+      {/* ============================================================== */}
+      {/* POP-UP 3: SELESAIKAN SESI & CATAT NOTULENSI                     */}
+      {/* ============================================================== */}
       {showCompleteModal && completingSchedule && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 overflow-y-auto">
           <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl border border-gray-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
@@ -716,7 +1184,6 @@ export default function MentoringSchedule() {
                 </p>
               </div>
 
-              {/* Status Kehadiran Mentee */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                   Kehadiran Mentee
@@ -762,7 +1229,6 @@ export default function MentoringSchedule() {
                 </div>
               </div>
 
-              {/* Catatan Sesi / Notulensi */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
                   Catatan Pertemuan & Notulensi Sesi <span className="text-red-500">*</span>
