@@ -12,6 +12,7 @@ import LearningActivities from "./LearningActivities";
 import SubscriptionPlansAdmin from "./SubscriptionPlansAdmin";
 import ProgressReportAdmin from "./ProgressReportAdmin";
 import TutoringScheduleAdmin from "./TutoringScheduleAdmin";
+import SettingsAdmin from "./SettingsAdmin";
 
 const DashboardAdmin = () => {
   const { role } = useAuth();
@@ -37,6 +38,7 @@ const DashboardAdmin = () => {
             <Route path="/plans" element={<SubscriptionPlansAdmin />} />
             <Route path="/reports" element={<ProgressReportAdmin />} />
             <Route path="/schedules" element={<TutoringScheduleAdmin />} />
+            <Route path="/settings" element={<SettingsAdmin />} />
           </Routes>
         </main>
       </div>

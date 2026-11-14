@@ -37,6 +37,10 @@ Route::middleware('auth:sanctum')->group(function () {
             'data' => $request->user()->load('roles')
         ]);
     });
+
+    // Profil dan Password user yang sedang login (semua role)
+    Route::put('/user/profile', [UserController::class, 'updateMyProfile']);
+    Route::put('/user/change-password', [UserController::class, 'changeMyPassword']);
 });
 
 Route::middleware(['auth:sanctum', 'role:Admin'])->group(function () {
