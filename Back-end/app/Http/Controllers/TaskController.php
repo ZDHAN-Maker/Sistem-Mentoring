@@ -46,17 +46,20 @@ class TaskController extends Controller
     public function store(StoreTaskRequest $request): JsonResponse
     {
         try {
-            $task = $this->taskService->createTask($request->validated(), $request->user());
+            $tasks = $this->taskService->createTasks($request->validated(), $request->user());
 
             return response()->json([
                 'status'  => 'success',
-                'message' => 'Tugas berhasil dibuat.',
-                'data'    => $task
+                'message' => count($tasks) > 1 
+                    ? count($tasks) . ' tugas berhasil dibagikan sekaligus ke mentee terpilih.' 
+                    : 'Tugas berhasil dibuat dan ditugaskan ke mentee.',
+                'data'    => count($tasks) === 1 ? $tasks[0] : $tasks,
+                'count'   => count($tasks)
             ], 201);
         } catch (AuthorizationException $e) {
             return response()->json(['status' => 'forbidden', 'message' => $e->getMessage()], 403);
         } catch (Exception $e) {
-            return response()->json(['status' => 'error', 'message' => 'Gagal membuat tugas.'], 400);
+            return response()->json(['status' => 'error', 'message' => 'Gagal membuat tugas: ' . $e->getMessage()], 400);
         }
     }
 

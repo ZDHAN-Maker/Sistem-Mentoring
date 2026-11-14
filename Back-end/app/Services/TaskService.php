@@ -76,34 +76,63 @@ class TaskService
     }
 
     /**
-     * Mentor membuat tugas baru
+     * Mentor membuat tugas (mendukung satu atau banyak mentee sekaligus)
+     */
+    public function createTasks(array $data, User $mentor): array
+    {
+        $pairingIds = [];
+        if (!empty($data['pairing_ids']) && is_array($data['pairing_ids'])) {
+            $pairingIds = array_values(array_filter($data['pairing_ids']));
+        } elseif (!empty($data['pairing_id'])) {
+            $pairingIds = [$data['pairing_id']];
+        }
+
+        if (empty($pairingIds)) {
+            throw new AuthorizationException('Pilih minimal satu mentee bimbingan untuk ditugaskan.');
+        }
+
+        $validPairings = Pairing::whereIn('id', $pairingIds)
+            ->where('mentor_id', $mentor->id)
+            ->with('mentee')
+            ->get();
+
+        if ($validPairings->isEmpty()) {
+            throw new AuthorizationException('Tidak ada sesi pairing mentee yang valid milik Anda.');
+        }
+
+        $createdTasks = [];
+        foreach ($validPairings as $pairing) {
+            $taskData = $data;
+            unset($taskData['pairing_ids']);
+            $taskData['pairing_id'] = $pairing->id;
+            $taskData['mentor_id']  = $mentor->id;
+
+            $task = Task::create($taskData);
+
+            // Jika langsung dipublish, kirim notifikasi ke Mentee
+            if ($task->status === 'published' && $pairing->mentee) {
+                $this->notificationService->sendNotification(
+                    $pairing->mentee,
+                    "Tugas Baru: {$task->title}",
+                    "Mentor Anda telah mengunggah tugas baru. Tenggat waktu: " . ($task->due_date ? $task->due_date->format('d M Y') : 'Tidak ada'),
+                    'new_task',
+                    $task
+                );
+            }
+
+            $createdTasks[] = $task;
+        }
+
+        return $createdTasks;
+    }
+
+    /**
+     * Mentor membuat tugas tunggal (backward compatible)
      */
     public function createTask(array $data, User $mentor): Task
     {
-        // Validasi kepemilikan pairing
-        $pairing = Pairing::where('id', $data['pairing_id'])
-                          ->where('mentor_id', $mentor->id)
-                          ->with('mentee')
-                          ->first();
-
-        if (!$pairing) {
-            throw new AuthorizationException('Pairing tidak valid atau bukan milik Anda.');
-        }
-
-        $task = Task::create(array_merge($data, ['mentor_id' => $mentor->id]));
-
-        // Jika langsung dipublish, kirim notifikasi ke Mentee
-        if ($task->status === 'published') {
-            $this->notificationService->sendNotification(
-                $pairing->mentee,
-                "Tugas Baru: {$task->title}",
-                "Mentor Anda telah mengunggah tugas baru. Tenggat waktu: " . ($task->due_date ? $task->due_date->format('d M Y') : 'Tidak ada'),
-                'new_task',
-                $task
-            );
-        }
-
-        return $task;
+        $tasks = $this->createTasks($data, $mentor);
+        return $tasks[0];
     }
 
     /**

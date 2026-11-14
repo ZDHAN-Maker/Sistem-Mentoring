@@ -31,13 +31,27 @@ class StoreTaskRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'pairing_id'  => ['required', 'integer', 'exists:pairings,id'],
-            'title'       => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'type'        => ['nullable', 'in:file,link,video,text'],
-            'due_date'    => ['nullable', 'date'],
-            'status'      => ['nullable', 'in:draft,published,closed'],
-            'attachment'  => ['nullable', 'file', 'max:20480'],
+            'pairing_id'   => ['nullable', 'integer', 'exists:pairings,id'],
+            'pairing_ids'  => ['nullable', 'array'],
+            'pairing_ids.*'=> ['integer', 'exists:pairings,id'],
+            'title'        => ['required', 'string', 'max:255'],
+            'description'  => ['nullable', 'string'],
+            'type'         => ['nullable', 'in:file,link,video,text'],
+            'due_date'     => ['nullable', 'date'],
+            'status'       => ['nullable', 'in:draft,published,closed'],
+            'attachment'   => ['nullable', 'file', 'max:20480'],
         ];
+    }
+
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            $hasPairingId = !empty($this->input('pairing_id'));
+            $hasPairingIds = !empty($this->input('pairing_ids')) && is_array($this->input('pairing_ids')) && count($this->input('pairing_ids')) > 0;
+
+            if (!$hasPairingId && !$hasPairingIds) {
+                $validator->errors()->add('pairing_id', 'Pilih minimal satu mentee bimbingan untuk ditugaskan.');
+            }
+        });
     }
 }
