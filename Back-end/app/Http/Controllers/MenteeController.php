@@ -87,4 +87,28 @@ class MenteeController extends Controller
             ], 400);
         }
     }
+
+    /**
+     * Ambil data mentor aktif yang membimbing mentee yang sedang login
+     */
+    public function myMentor(Request $request)
+    {
+        try {
+            $user = $request->user();
+            $pairing = \App\Models\Pairing::where('mentee_id', $user->id)
+                ->with(['mentor.learningActivities'])
+                ->latest()
+                ->first();
+
+            return response()->json([
+                'status'  => 'success',
+                'data'    => $pairing,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Gagal mengambil data mentor: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

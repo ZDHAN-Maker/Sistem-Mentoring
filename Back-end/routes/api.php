@@ -93,6 +93,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/my-mentees', [MentorController::class, 'myMentees']);
         Route::get('/mentors/{id}/mentees', [MentorController::class, 'mentees']);
     });
+
+    // ==========================================
+    // AREA MENTEE (Mentee melihat mentor pembimbing)
+    // ==========================================
+    Route::middleware('role:Mentee')->group(function () {
+        Route::get('/my-mentor', [MenteeController::class, 'myMentor']);
+    });
 });
 
 

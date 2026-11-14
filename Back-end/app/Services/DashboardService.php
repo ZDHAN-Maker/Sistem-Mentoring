@@ -47,8 +47,8 @@ class DashboardService
         return [
             'total_mentee'               => Pairing::where('mentor_id', $mentor->id)->distinct('mentee_id')->count('mentee_id'),
             'pairing_aktif'              => Pairing::where('mentor_id', $mentor->id)->count(),
-            'jadwal_hari_ini'            => Schedule::where('mentor_id', $mentor->id)
-                ->whereDate('schedule_date', Carbon::today()) // Sesuaikan field date Anda
+            'jadwal_hari_ini'            => Schedule::whereIn('pairing_id', $mentorPairingIds)
+                ->whereDate('start_time', Carbon::today())
                 ->count(),
             'total_materi'               => Material::where('mentor_id', $mentor->id)->count(),
             'materi_dipublish'           => Material::where('mentor_id', $mentor->id)->where('status', 'published')->count(),
@@ -90,8 +90,8 @@ class DashboardService
 
         // Jadwal terdekat berikutnya
         $nextSchedule = Schedule::whereIn('pairing_id', $pairingIds)
-            ->where('schedule_date', '>=', Carbon::now())
-            ->orderBy('schedule_date', 'asc')
+            ->where('start_time', '>=', Carbon::now())
+            ->orderBy('start_time', 'asc')
             ->first();
 
         // Nilai submission terakhir
@@ -102,7 +102,7 @@ class DashboardService
 
         return [
             'mentor_saya'            => $mentorNames,
-            'jadwal_berikutnya'      => $nextSchedule ? $nextSchedule->schedule_date->format('Y-m-d H:i') : 'Tidak Ada Jadwal Terdekat',
+            'jadwal_berikutnya'      => $nextSchedule ? $nextSchedule->start_time->format('Y-m-d H:i') : 'Tidak Ada Jadwal Terdekat',
             'total_materi'           => $totalMaterialsAvailable,
             'materi_selesai'         => $completedMaterialsCount,
             'progress_belajar_persen' => $progressBelajarPersen,
