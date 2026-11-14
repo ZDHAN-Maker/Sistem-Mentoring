@@ -29,7 +29,20 @@ class MentorController extends Controller
     public function mentees($id)
     {
         $mentees = $this->mentorService->getMentorMentees($id);
-        return response()->json($mentees);
+        return response()->json([
+            'status' => 'success',
+            'data' => $mentees
+        ]);
+    }
+
+    public function myMentees(Request $request)
+    {
+        $mentorId = $request->user()->id;
+        $mentees = $this->mentorService->getMentorMentees($mentorId);
+        return response()->json([
+            'status' => 'success',
+            'data' => $mentees
+        ]);
     }
 
     public function schedules($id)

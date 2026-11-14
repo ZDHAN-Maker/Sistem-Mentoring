@@ -22,7 +22,7 @@ class SendScheduleUpdatedNotification implements ShouldQueue
     {
         $schedule = $event->schedule;
         $mentee = $schedule->pairing->mentee;
-        $formattedDate = $schedule->schedule_date->format('d M Y, H:i');
+        $formattedDate = $schedule->start_time ? $schedule->start_time->format('d M Y, H:i') : ($schedule->schedule_date ?? '-');
 
         // Kirim notifikasi ke Mentee bahwa ada perubahan jadwal bimbingan
         $this->notificationService->sendNotification(

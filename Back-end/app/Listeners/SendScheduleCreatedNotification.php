@@ -24,7 +24,7 @@ class SendScheduleCreatedNotification implements ShouldQueue
         
         // Asumsi model Schedule terhubung dengan model Pairing untuk mendapatkan data Mentee
         $mentee = $schedule->pairing->mentee; 
-        $formattedDate = $schedule->schedule_date->format('d M Y, H:i');
+        $formattedDate = $schedule->start_time ? $schedule->start_time->format('d M Y, H:i') : ($schedule->schedule_date ?? '-');
 
         // Kirim notifikasi ke Mentee bahwa Mentor telah mengatur jadwal baru
         $this->notificationService->sendNotification(

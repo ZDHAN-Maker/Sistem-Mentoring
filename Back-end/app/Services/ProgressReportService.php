@@ -57,10 +57,8 @@ class ProgressReportService
         $report = ProgressReport::create([
             'pairing_id'  => $data['pairing_id'],
             'mentor_id'   => $mentor->id,
-            'title'       => $data['title'],       // Misal: "Evaluasi Bulan Juni"
-            'summary'     => $data['summary'],     // Catatan rangkuman mentor
-            'performance_grade' => $data['performance_grade'], // Nilai performa (misal skala 1-100 atau A-E)
-            'status'      => 'published'
+            'report_date' => $data['report_date'] ?? now()->toDateString(),
+            'note'        => $data['note'] ?? ($data['summary'] ?? '')
         ]);
 
         // 3. Eager load relasi pairing dan mentee untuk kebutuhan data di Listener

@@ -90,6 +90,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         // Mentor menge-post keahlian untuk ID-nya sendiri
         // Disarankan frontend mengirimkan ID user yang sedang login di URL parameter
         Route::post('/my-learning-activities/{mentor}', [LearningActivityController::class, 'syncMentorActivities']);
+        Route::get('/my-mentees', [MentorController::class, 'myMentees']);
+        Route::get('/mentors/{id}/mentees', [MentorController::class, 'mentees']);
     });
 });
 
