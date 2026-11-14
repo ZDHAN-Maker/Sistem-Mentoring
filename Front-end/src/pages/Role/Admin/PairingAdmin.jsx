@@ -28,7 +28,8 @@ import {
   Award,
   TrendingUp,
   Activity,
-  BellRing
+  BellRing,
+  StopCircle
 } from "lucide-react";
 
 // Max capacity of mentees per mentor
@@ -952,40 +953,65 @@ const PairingAdmin = () => {
                           )}
                         </td>
 
-                        {/* Aksi */}
+                        {/* Aksi (Icon-only dengan Tooltip) */}
                         <td className="py-4 px-5 text-center">
-                          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                          <div className="flex items-center justify-center gap-1.5">
                             {/* Tombol Detail */}
-                            <button
-                              onClick={() => setSelectedPairingDetail(p)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
-                              title="Lihat Detail Lengkap"
-                            >
-                              <Eye size={12} />
-                              <span>Detail</span>
-                            </button>
+                            <div className="relative group">
+                              <button
+                                onClick={() => setSelectedPairingDetail(p)}
+                                title="Lihat Detail Lengkap Pairing"
+                                className="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center transition shadow-xs hover:scale-105 active:scale-95 cursor-pointer"
+                                aria-label="Lihat Detail Lengkap Pairing"
+                              >
+                                <Eye size={15} />
+                              </button>
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:flex flex-col items-center pointer-events-none z-30 animate-in fade-in zoom-in-95 duration-150">
+                                <span className="bg-gray-900 text-white text-[11px] font-medium py-1 px-2.5 rounded-lg shadow-md whitespace-nowrap">
+                                  Detail Lengkap
+                                </span>
+                                <span className="w-1.5 h-1.5 -mt-0.5 bg-gray-900 rotate-45"></span>
+                              </div>
+                            </div>
 
                             {/* Tombol Perpanjang Langganan */}
                             {isSessionActive && (
-                              <button
-                                onClick={() => openExtendModal(p)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition"
-                                title="Perpanjang Masa Langganan Pairing"
-                              >
-                                <CalendarPlus size={12} />
-                                <span>Perpanjang</span>
-                              </button>
+                              <div className="relative group">
+                                <button
+                                  onClick={() => openExtendModal(p)}
+                                  title="Perpanjang Masa Langganan"
+                                  className="w-8 h-8 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center transition shadow-xs hover:scale-105 active:scale-95 cursor-pointer"
+                                  aria-label="Perpanjang Masa Langganan"
+                                >
+                                  <CalendarPlus size={15} />
+                                </button>
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:flex flex-col items-center pointer-events-none z-30 animate-in fade-in zoom-in-95 duration-150">
+                                  <span className="bg-gray-900 text-white text-[11px] font-medium py-1 px-2.5 rounded-lg shadow-md whitespace-nowrap">
+                                    Perpanjang Langganan
+                                  </span>
+                                  <span className="w-1.5 h-1.5 -mt-0.5 bg-gray-900 rotate-45"></span>
+                                </div>
+                              </div>
                             )}
 
                             {/* Tombol Akhiri Sesi */}
                             {isSessionActive && (
-                              <button
-                                onClick={() => openEndModal(p)}
-                                className="px-2.5 py-1 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition"
-                                title="Akhiri sesi bimbingan pairing ini"
-                              >
-                                Akhiri
-                              </button>
+                              <div className="relative group">
+                                <button
+                                  onClick={() => openEndModal(p)}
+                                  title="Akhiri & Evaluasi Sesi Mentoring"
+                                  className="w-8 h-8 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 flex items-center justify-center transition shadow-xs hover:scale-105 active:scale-95 cursor-pointer"
+                                  aria-label="Akhiri & Evaluasi Sesi Mentoring"
+                                >
+                                  <StopCircle size={15} />
+                                </button>
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:flex flex-col items-center pointer-events-none z-30 animate-in fade-in zoom-in-95 duration-150">
+                                  <span className="bg-gray-900 text-white text-[11px] font-medium py-1 px-2.5 rounded-lg shadow-md whitespace-nowrap">
+                                    Akhiri & Evaluasi
+                                  </span>
+                                  <span className="w-1.5 h-1.5 -mt-0.5 bg-gray-900 rotate-45"></span>
+                                </div>
+                              </div>
                             )}
                           </div>
                         </td>
@@ -1209,7 +1235,7 @@ const PairingAdmin = () => {
                   <option value="">-- Pilih Paket Langganan (Opsional) --</option>
                   {subscriptionPlans.map((sp) => (
                     <option key={sp.id} value={sp.id}>
-                      {sp.icon || "📦"} {sp.title} — {sp.price}
+                      {sp.title} — {sp.price}
                     </option>
                   ))}
                 </select>
@@ -1426,7 +1452,7 @@ const PairingAdmin = () => {
                   <option value="">-- Pertahankan Paket Saat Ini --</option>
                   {subscriptionPlans.map(sp => (
                     <option key={sp.id} value={sp.id}>
-                      {sp.icon || "📦"} {sp.title} ({sp.price})
+                      {sp.title} ({sp.price})
                     </option>
                   ))}
                 </select>

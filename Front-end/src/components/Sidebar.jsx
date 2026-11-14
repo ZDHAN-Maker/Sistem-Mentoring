@@ -55,6 +55,12 @@ export default function Sidebar() {
         ],
       },
       {
+        section: "Komunikasi",
+        items: [
+          { name: "Notifikasi & Pengumuman", path: "/admin-dashboard/announcements", icon: Bell },
+        ],
+      },
+      {
         section: "Pengaturan",
         items: [
           { name: "Pengaturan Akun", path: "/admin-dashboard/settings", icon: Settings },

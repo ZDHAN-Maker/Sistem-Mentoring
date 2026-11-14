@@ -21,18 +21,25 @@ class DashboardService
     public function getAdminDashboardStats(): array
     {
         return [
-            'total_user'              => User::count(),
-            'total_mentor'            => User::whereHas('roles', fn($q) => $q->where('name', 'Mentor'))->count(),
-            'total_mentee'            => User::whereHas('roles', fn($q) => $q->where('name', 'Mentee'))->count(),
-            'total_admin'             => User::whereHas('roles', fn($q) => $q->where('name', 'Admin'))->count(),
-            'total_pairing_aktif'     => Pairing::where('status', 'active')->count(), // Asumsi ada field status
-            'total_learning_activity' => LearningActivity::count(),
-            'total_jadwal'            => Schedule::count(),
-            'total_materi'            => Material::count(),
-            'total_tugas'             => Task::count(),
-            'total_submission'        => Submission::count(),
-            'total_progress_report'   => ProgressReport::count(),
-            'total_notifikasi'        => Notification::count(),
+            'total_user'                    => User::count(),
+            'total_mentor'                  => User::whereHas('roles', fn($q) => $q->where('name', 'Mentor'))->count(),
+            'total_mentee'                  => User::whereHas('roles', fn($q) => $q->where('name', 'Mentee'))->count(),
+            'total_admin'                   => User::whereHas('roles', fn($q) => $q->where('name', 'Admin'))->count(),
+            'total_pairing_aktif'           => Pairing::where('status', 'active')->count(),
+            'total_pairing_selesai'         => Pairing::where('status', 'completed')->count(),
+            'total_langganan_aktif'         => Pairing::where('status', 'active')->where(fn($q) => $q->whereNull('ended_at')->orWhere('ended_at', '>=', now()))->count(),
+            'total_langganan_segera_habis'  => Pairing::where('status', 'active')->whereNotNull('ended_at')->whereBetween('ended_at', [now(), now()->addDays(14)])->count(),
+            'mentees_tanpa_pairing'         => User::whereHas('roles', fn($q) => $q->where('name', 'Mentee'))->whereDoesntHave('menteePairings', fn($q) => $q->where('status', 'active'))->count(),
+            'sertifikat_diterbitkan'        => Pairing::where('certificate_eligible', true)->count(),
+            'total_learning_activity'       => LearningActivity::count(),
+            'total_jadwal'                  => Schedule::count(),
+            'jadwal_mendatang'              => Schedule::where('start_time', '>=', now())->count(),
+            'total_materi'                  => Material::count(),
+            'total_tugas'                   => Task::count(),
+            'total_submission'              => Submission::count(),
+            'total_progress_report'         => ProgressReport::count(),
+            'total_notifikasi'              => Notification::count(),
+            'total_paket_langganan'         => \App\Models\SubscriptionPlan::count(),
         ];
     }
 

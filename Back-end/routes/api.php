@@ -71,6 +71,9 @@ Route::middleware(['auth:sanctum', 'role:Admin'])->group(function () {
     Route::put('/subscription-plans/{id}', [SubscriptionPlanController::class, 'update']);
     Route::delete('/subscription-plans/{id}', [SubscriptionPlanController::class, 'destroy']);
     Route::patch('/subscription-plans/{id}/toggle-active', [SubscriptionPlanController::class, 'toggleActive']);
+
+    // Siaran Pengumuman oleh Admin
+    Route::post('/notifications/broadcast', [NotificationController::class, 'broadcast']);
 });
 
 Route::middleware(['auth:sanctum'])->group(function () {

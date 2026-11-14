@@ -13,6 +13,7 @@ import {
   ArrowRight,
   RefreshCw
 } from "lucide-react";
+import PlanBadgeIcon from "../components/PlanBadgeIcon";
 import { paketDataMinimalis } from "../data/langganan";
 
 function Langganan() {
@@ -127,9 +128,7 @@ function Langganan() {
                   <div>
                     {/* Header Card */}
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-4xl p-2.5 bg-gray-50 rounded-2xl border border-gray-100 inline-block">
-                        {paket.icon || "📦"}
-                      </span>
+                      <PlanBadgeIcon icon={paket.icon} title={paket.title} size="lg" />
                       {isPopular && (
                         <span className="text-xs font-semibold text-[#b38867] bg-[#b38867]/10 px-2.5 py-1 rounded-full">
                           Rekomendasi

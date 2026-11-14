@@ -13,6 +13,7 @@ import {
   ToggleLeft,
   ToggleRight
 } from "lucide-react";
+import PlanBadgeIcon from "../../../components/PlanBadgeIcon";
 
 const SubscriptionPlansAdmin = () => {
   const [plans, setPlans] = useState([]);
@@ -246,7 +247,7 @@ const SubscriptionPlansAdmin = () => {
 
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-3xl">{p.icon || "📦"}</span>
+                  <PlanBadgeIcon icon={p.icon} title={p.title} size="md" />
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => handleToggleActive(p)}
@@ -354,14 +355,19 @@ const SubscriptionPlansAdmin = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Icon Emoji</label>
-                  <input
-                    type="text"
-                    placeholder="👑"
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Pilihan Icon</label>
+                  <select
                     value={formData.icon}
                     onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                    className="w-full p-2.5 text-sm border border-gray-300 rounded-xl text-center focus:ring-1 focus:ring-[#b38867] outline-none"
-                  />
+                    className="w-full p-2.5 text-sm border border-gray-300 rounded-xl focus:ring-1 focus:ring-[#b38867] outline-none"
+                  >
+                    <option value="package">📦 Standar</option>
+                    <option value="crown">👑 Premium</option>
+                    <option value="gem">💎 Eksklusif</option>
+                    <option value="zap">⚡ Intensif</option>
+                    <option value="award">🏆 Sertifikasi</option>
+                    <option value="sparkles">✨ Spesial</option>
+                  </select>
                 </div>
               </div>
 
