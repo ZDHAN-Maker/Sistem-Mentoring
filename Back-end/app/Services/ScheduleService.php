@@ -61,19 +61,28 @@ class ScheduleService
         return $schedule;
     }
     /**
-     * Mengubah status jadwal (misal: selesai atau dibatalkan).
+     * Mengubah status jadwal (misal: selesai atau dibatalkan) serta menyimpan catatan sesi.
      */
-    public function updateStatus(Schedule $schedule, string $status, User $mentor): Schedule
+    public function updateStatus(Schedule $schedule, string $status, User $mentor, ?string $sessionNotes = null, ?string $attendanceStatus = null): Schedule
     {
-        if ($schedule->pairing->mentor_id !== $mentor->id) {
+        if ($schedule->pairing && $schedule->pairing->mentor_id !== $mentor->id && !$mentor->hasRole('Admin')) {
             throw new AuthorizationException("Anda tidak berhak mengubah status jadwal ini.", 403);
         }
 
-        if (!in_array($status, ['scheduled', 'completed', 'canceled'])) {
+        $validStatuses = ['planned', 'ongoing', 'completed', 'cancelled', 'scheduled', 'canceled'];
+        if (!in_array($status, $validStatuses)) {
             throw new AuthorizationException("Status tidak valid.", 400);
         }
 
-        $schedule->update(['status' => $status]);
+        $payload = ['status' => $status];
+        if ($sessionNotes !== null) {
+            $payload['session_notes'] = $sessionNotes;
+        }
+        if ($attendanceStatus !== null) {
+            $payload['attendance_status'] = $attendanceStatus;
+        }
+
+        $schedule->update($payload);
         return $schedule;
     }
 

@@ -28,9 +28,9 @@ class ScheduleController extends Controller
         $user = Auth::user();
         
         $query = Schedule::with([
-            'pairing:id,mentor_id,mentee_id',
-            'pairing.mentor:id,name,email,avatar',
-            'pairing.mentee:id,name,email,avatar'
+            'pairing:id,mentor_id,mentee_id,subscription_name',
+            'pairing.mentor:id,name,email,avatar,phone',
+            'pairing.mentee:id,name,email,avatar,phone'
         ]);
 
         // Jika bukan admin, hanya ambil jadwal yang melibatkan user ini
@@ -98,19 +98,29 @@ class ScheduleController extends Controller
     }
 
     /**
-     * PATCH: Mentor mengubah status jadwal (completed/canceled)
+     * PATCH: Mentor mengubah status jadwal (completed/canceled) dan menyimpan notulensi
      */
     public function updateStatus(Request $request, Schedule $schedule)
     {
-        $request->validate(['status' => 'required|string']);
+        $request->validate([
+            'status' => 'required|string',
+            'session_notes' => 'nullable|string',
+            'attendance_status' => 'nullable|string'
+        ]);
 
         try {
             $user = Auth::user();
-            $updatedSchedule = $this->scheduleService->updateStatus($schedule, $request->status, $user);
+            $updatedSchedule = $this->scheduleService->updateStatus(
+                $schedule, 
+                $request->status, 
+                $user, 
+                $request->input('session_notes'),
+                $request->input('attendance_status')
+            );
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Status jadwal berhasil diperbarui.',
+                'message' => 'Status jadwal dan catatan bimbingan berhasil diperbarui.',
                 'data' => $updatedSchedule
             ], 200);
 

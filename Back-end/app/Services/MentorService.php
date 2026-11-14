@@ -35,26 +35,79 @@ class MentorService
     }
 
     /**
-     * Ambil semua mentee yang dimiliki mentor (via tabel Pairing)
+     * Ambil semua mentee yang dimiliki mentor (via tabel Pairing) beserta statistik aktivitas
      */
     public function getMentorMentees($mentorId)
     {
         // pastikan mentor ada
         $mentor = $this->getMentorById($mentorId);
 
-        // ambil semua pairing milik mentor beserta data mentee-nya
+        // ambil semua pairing milik mentor beserta relasi lengkap
         $pairings = $mentor->mentorPairings()
-            ->with('mentee')        
+            ->with([
+                'mentee:id,name,email,phone,avatar,bio',
+                'mentee.learningActivities:id,title',
+                'subscriptionPlan',
+                'schedules',
+                'tasks.submissions',
+                'progressReports' => fn($q) => $q->latest()
+            ])
+            ->latest()
             ->get();
 
-        return $pairings->map(function (Pairing $pairing) {
+        $now = now();
+
+        return $pairings->map(function (Pairing $pairing) use ($now) {
+            $endedAt = $pairing->ended_at ? \Carbon\Carbon::parse($pairing->ended_at) : null;
+            $remainingDays = 0;
+            if ($endedAt) {
+                $diff = ceil($now->diffInDays($endedAt, false));
+                $remainingDays = $diff > 0 ? (int)$diff : 0;
+            }
+
+            $totalTasks = $pairing->tasks ? $pairing->tasks->count() : 0;
+            $completedTasks = $pairing->tasks ? $pairing->tasks->filter(function ($task) {
+                return $task->submissions && $task->submissions->contains(fn($sub) => in_array($sub->status, ['completed', 'reviewed']));
+            })->count() : 0;
+
+            $totalSchedules = $pairing->schedules ? $pairing->schedules->count() : 0;
+            $completedSchedules = $pairing->schedules ? $pairing->schedules->where('status', 'completed')->count() : 0;
+            $upcomingSchedules = $pairing->schedules ? $pairing->schedules->filter(function ($s) {
+                return in_array($s->status, ['planned', 'scheduled', 'ongoing']);
+            })->count() : 0;
+
+            $latestReport = $pairing->progressReports ? $pairing->progressReports->first() : null;
+
             return [
-                'pairing_id' => $pairing->id,
-                'status'     => $pairing->status,
-                'mentee'     => [
-                    'id'    => optional($pairing->mentee)->id,
-                    'name'  => optional($pairing->mentee)->name,
-                    'email' => optional($pairing->mentee)->email,
+                'pairing_id'            => $pairing->id,
+                'status'                => $pairing->status,
+                'completion_status'     => $pairing->completion_status,
+                'certificate_eligible'  => (bool)$pairing->certificate_eligible,
+                'started_at'            => $pairing->started_at ? $pairing->started_at->format('Y-m-d') : null,
+                'ended_at'              => $pairing->ended_at ? $pairing->ended_at->format('Y-m-d') : null,
+                'duration_months'       => $pairing->duration_months,
+                'remaining_days'        => $remainingDays,
+                'subscription_name'     => $pairing->subscription_name ?: optional($pairing->subscriptionPlan)->name ?: 'Paket Reguler',
+                'subscription_plan'     => $pairing->subscriptionPlan,
+                'mentee'                => [
+                    'id'                 => optional($pairing->mentee)->id,
+                    'name'               => optional($pairing->mentee)->name,
+                    'email'              => optional($pairing->mentee)->email,
+                    'phone'              => optional($pairing->mentee)->phone,
+                    'avatar'             => optional($pairing->mentee)->avatar,
+                    'bio'                => optional($pairing->mentee)->bio,
+                    'learning_activities'=> optional($pairing->mentee)->learningActivities ?: [],
+                ],
+                'stats'                 => [
+                    'total_tasks'         => $totalTasks,
+                    'completed_tasks'     => $completedTasks,
+                    'task_progress_pct'   => $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100) : 0,
+                    'total_schedules'     => $totalSchedules,
+                    'completed_schedules' => $completedSchedules,
+                    'upcoming_schedules'  => $upcomingSchedules,
+                    'total_reports'       => $pairing->progressReports ? $pairing->progressReports->count() : 0,
+                    'latest_report_date'  => $latestReport ? $latestReport->report_date : null,
+                    'latest_report_note'  => $latestReport ? $latestReport->note : null,
                 ],
             ];
         });

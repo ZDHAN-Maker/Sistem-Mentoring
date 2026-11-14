@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import api from "../../../axiosInstance";
 import { 
   CheckSquare, 
@@ -12,7 +12,13 @@ import {
   Plus,
   MessageSquare,
   Award,
-  Trash2
+  Trash2,
+  Filter,
+  Sparkles,
+  TrendingUp,
+  User,
+  Clock,
+  Send
 } from "lucide-react";
 
 export default function ReviewReportsAndFeedback() {
@@ -22,6 +28,9 @@ export default function ReviewReportsAndFeedback() {
   const [mentees, setMentees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState(null);
+
+  // Submissions filter
+  const [submissionFilter, setSubmissionFilter] = useState("all"); // 'all' | 'pending' | 'reviewed'
 
   // Modal Review Submission State
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -37,8 +46,21 @@ export default function ReviewReportsAndFeedback() {
   const [reportForm, setReportForm] = useState({
     pairing_id: "",
     report_date: new Date().toISOString().slice(0, 10),
+    comprehension_level: "Sangat Baik",
+    activeness: "Aktif",
+    task_quality: "Memuaskan",
     note: "",
+    recommendation: "",
   });
+
+  // Template feedback siap pakai
+  const feedbackPresets = [
+    "Pemahaman konsep sudah sangat baik, eksekusi rapi dan tepat waktu!",
+    "Pekerjaan bagus! Perhatikan kerapihan format kode dan penamaan variabel.",
+    "Konsep dasar sudah dikuasai, namun implementasi fungsi masih perlu dioptimalkan.",
+    "Perlu perbaikan pada penanganan error dan validasi kasus uji (edge cases).",
+    "Sangat memuaskan! Telah melampaui ekspektasi kriteria tugas bimbingan."
+  ];
 
   const fetchData = async () => {
     setLoading(true);
@@ -64,21 +86,40 @@ export default function ReviewReportsAndFeedback() {
     fetchData();
   }, []);
 
+  // Filter Submissions
+  const filteredSubmissions = useMemo(() => {
+    if (submissionFilter === "all") return submissions;
+    if (submissionFilter === "pending") {
+      return submissions.filter((s) => s.status === "submitted" || s.status === "pending" || !s.grade);
+    }
+    if (submissionFilter === "reviewed") {
+      return submissions.filter((s) => s.status === "reviewed" || s.status === "completed" || s.grade !== null);
+    }
+    return submissions;
+  }, [submissions, submissionFilter]);
+
   // Handler Buka Modal Review
   const openReviewModal = (submission) => {
     setSelectedSub(submission);
     setReviewForm({
-      grade: submission.grade || "",
+      grade: submission.grade !== null && submission.grade !== undefined ? submission.grade : "",
       feedback: submission.feedback || "",
       status: submission.status === "completed" ? "completed" : "reviewed",
     });
     setShowReviewModal(true);
   };
 
+  const handleApplyPreset = (presetText) => {
+    setReviewForm((prev) => ({
+      ...prev,
+      feedback: prev.feedback ? `${prev.feedback} ${presetText}` : presetText
+    }));
+  };
+
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
-    if (!reviewForm.grade || !reviewForm.feedback.trim()) {
-      setFeedback({ type: "error", message: "Nilai dan feedback wajib diisi." });
+    if (reviewForm.grade === "" || !reviewForm.feedback.trim()) {
+      setFeedback({ type: "error", message: "Nilai dan ulasan feedback wajib diisi." });
       return;
     }
 
@@ -103,7 +144,11 @@ export default function ReviewReportsAndFeedback() {
     setReportForm({
       pairing_id: mentees.length > 0 ? mentees[0].pairing_id : "",
       report_date: new Date().toISOString().slice(0, 10),
+      comprehension_level: "Sangat Baik",
+      activeness: "Aktif",
+      task_quality: "Memuaskan",
       note: "",
+      recommendation: "",
     });
     setShowReportModal(true);
   };
@@ -111,12 +156,22 @@ export default function ReviewReportsAndFeedback() {
   const handleReportSubmit = async (e) => {
     e.preventDefault();
     if (!reportForm.pairing_id || !reportForm.note.trim()) {
-      setFeedback({ type: "error", message: "Pilih mentee dan isi catatan evaluasi perkembangan." });
+      setFeedback({ type: "error", message: "Pilih mentee dan isi catatan evaluasi perkembangan minimal 10 karakter." });
       return;
     }
 
+    // Gabungkan aspek evaluasi ke note terstruktur
+    const formattedNote = `[Aspek Bimbingan: Pemahaman: ${reportForm.comprehension_level} | Keaktifan: ${reportForm.activeness} | Kualitas Tugas: ${reportForm.task_quality}]\n\n${reportForm.note.trim()}${
+      reportForm.recommendation ? `\n\n📌 Rekomendasi Mentor: ${reportForm.recommendation.trim()}` : ""
+    }`;
+
     try {
-      await api.post("/progress-reports", reportForm);
+      await api.post("/progress-reports", {
+        pairing_id: Number(reportForm.pairing_id),
+        report_date: reportForm.report_date,
+        note: formattedNote,
+      });
+
       setFeedback({ type: "success", message: "Laporan perkembangan mentee berhasil disimpan!" });
       setShowReportModal(false);
       fetchData();
@@ -143,19 +198,19 @@ export default function ReviewReportsAndFeedback() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Review Mentee & Feedback</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Review Tugas & Evaluasi Mentee</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Berikan nilai dan ulasan pada tugas mentee, serta susun laporan evaluasi berkala.
+            Berikan nilai dan ulasan pada tugas mentee, gunakan preset feedback cepat, serta susun laporan perkembangan berkala.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={fetchData}
-            className="p-2.5 text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition"
+            className="p-2.5 text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition shadow-sm"
             title="Refresh Data"
           >
-            <RefreshCw size={18} />
+            <RefreshCw size={18} className={loading ? "animate-spin text-[#b38867]" : ""} />
           </button>
           {activeTab === "progress_reports" && (
             <button
@@ -189,30 +244,62 @@ export default function ReviewReportsAndFeedback() {
       )}
 
       {/* Tab Navigation */}
-      <div className="flex items-center gap-3 border-b border-gray-200 pb-3">
-        <button
-          onClick={() => setActiveTab("submissions")}
-          className={`px-5 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 ${
-            activeTab === "submissions"
-              ? "bg-[#b38867] text-white shadow-sm"
-              : "text-gray-600 hover:bg-gray-100"
-          }`}
-        >
-          <CheckSquare size={16} />
-          <span>Pengumpulan Tugas Mentee ({submissions.length})</span>
-        </button>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-gray-200 pb-3">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setActiveTab("submissions")}
+            className={`px-5 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 ${
+              activeTab === "submissions"
+                ? "bg-[#b38867] text-white shadow-sm"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            <CheckSquare size={16} />
+            <span>Pengumpulan Tugas Mentee ({submissions.length})</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab("progress_reports")}
-          className={`px-5 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 ${
-            activeTab === "progress_reports"
-              ? "bg-[#b38867] text-white shadow-sm"
-              : "text-gray-600 hover:bg-gray-100"
-          }`}
-        >
-          <FileText size={16} />
-          <span>Laporan Perkembangan ({reports.length})</span>
-        </button>
+          <button
+            onClick={() => setActiveTab("progress_reports")}
+            className={`px-5 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 ${
+              activeTab === "progress_reports"
+                ? "bg-[#b38867] text-white shadow-sm"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            <FileText size={16} />
+            <span>Laporan Perkembangan ({reports.length})</span>
+          </button>
+        </div>
+
+        {/* Filter status untuk tab Submissions */}
+        {activeTab === "submissions" && (
+          <div className="inline-flex p-1 bg-gray-100 rounded-xl text-xs font-medium">
+            <button
+              onClick={() => setSubmissionFilter("all")}
+              className={`px-3 py-1.5 rounded-lg transition ${
+                submissionFilter === "all" ? "bg-white text-gray-900 font-bold shadow-sm" : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Semua ({submissions.length})
+            </button>
+            <button
+              onClick={() => setSubmissionFilter("pending")}
+              className={`px-3 py-1.5 rounded-lg transition ${
+                submissionFilter === "pending" ? "bg-white text-rose-700 font-bold shadow-sm" : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Perlu Review ({submissions.filter((s) => s.status === "submitted" || !s.grade).length})
+            </button>
+            <button
+              onClick={() => setSubmissionFilter("reviewed")}
+              className={`px-3 py-1.5 rounded-lg transition ${
+                submissionFilter === "reviewed" ? "bg-white text-emerald-700 font-bold shadow-sm" : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Sudah Dinilai ({submissions.filter((s) => s.status === "reviewed" || s.status === "completed" || s.grade !== null).length})
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Tab Content: Submissions */}
@@ -223,10 +310,10 @@ export default function ReviewReportsAndFeedback() {
               <RefreshCw className="animate-spin text-[#b38867] mr-3" size={24} />
               <span>Memuat data pengumpulan tugas...</span>
             </div>
-          ) : submissions.length > 0 ? (
+          ) : filteredSubmissions.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {submissions.map((sub) => {
-                const isReviewed = sub.status === "reviewed" || sub.status === "completed";
+              {filteredSubmissions.map((sub) => {
+                const isReviewed = sub.status === "reviewed" || sub.status === "completed" || (sub.grade !== null && sub.grade !== undefined);
                 return (
                   <div
                     key={sub.id}
@@ -236,13 +323,13 @@ export default function ReviewReportsAndFeedback() {
                       <div className="flex items-center justify-between mb-3">
                         <span
                           className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${
-                            isReviewed ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                            isReviewed ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700 font-bold animate-pulse"
                           }`}
                         >
-                          {isReviewed ? "Sudah Dinilai" : "Menunggu Review"}
+                          {isReviewed ? "Sudah Dinilai" : "Perlu Review Segera"}
                         </span>
-                        {sub.grade !== null && (
-                          <div className="flex items-center gap-1 font-bold text-sm text-[#7B5E4A]">
+                        {sub.grade !== null && sub.grade !== undefined && (
+                          <div className="flex items-center gap-1 font-bold text-sm text-[#7B5E4A] bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
                             <Award size={15} className="text-[#b38867]" />
                             <span>Nilai: {sub.grade}/100</span>
                           </div>
@@ -257,37 +344,41 @@ export default function ReviewReportsAndFeedback() {
                       </p>
 
                       <div className="mt-4 p-3 bg-gray-50 rounded-xl text-xs space-y-2 border border-gray-100">
-                        <p className="text-gray-600 line-clamp-2">
-                          <strong>Catatan Mentee:</strong> {sub.notes || "Tidak ada catatan."}
+                        <p className="text-gray-600 line-clamp-3">
+                          <strong>Catatan/Jawaban Mentee:</strong> {sub.answer || sub.notes || "Tidak ada catatan pengumpulan."}
                         </p>
-                        {sub.submission_url && (
+                        {sub.file_path && (
                           <a
-                            href={sub.submission_url}
+                            href={sub.file_path.startsWith("http") ? sub.file_path : `/storage/${sub.file_path}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-blue-600 hover:underline flex items-center gap-1 font-semibold"
+                            className="text-blue-600 hover:underline flex items-center gap-1 font-semibold pt-1"
                           >
-                            <ExternalLink size={13} /> Buka Tautan Tugas
+                            <ExternalLink size={13} /> Buka Berkas Tugas Mentee
                           </a>
                         )}
                       </div>
 
                       {sub.feedback && (
-                        <div className="mt-3 p-3 bg-amber-50/60 rounded-xl text-xs text-amber-900 border border-amber-100">
-                          <strong>Feedback Mentor:</strong> {sub.feedback}
+                        <div className="mt-3 p-3 bg-amber-50/70 rounded-xl text-xs text-amber-900 border border-amber-200/70">
+                          <strong className="block text-amber-950 mb-0.5">Feedback Mentor:</strong>
+                          <p className="italic leading-relaxed">{sub.feedback}</p>
                         </div>
                       )}
                     </div>
 
                     <div className="pt-4 mt-4 border-t border-gray-100 flex items-center justify-between">
                       <span className="text-[11px] text-gray-400">
-                        {sub.submitted_at ? new Date(sub.submitted_at).toLocaleDateString("id-ID") : ""}
+                        {sub.created_at ? new Date(sub.created_at).toLocaleDateString("id-ID", {
+                          day: "numeric", month: "short", year: "numeric"
+                        }) : ""}
                       </span>
                       <button
                         onClick={() => openReviewModal(sub)}
-                        className="px-4 py-2 bg-[#b38867] hover:bg-[#a27355] text-white text-xs font-semibold rounded-xl transition shadow-sm"
+                        className="px-4 py-2 bg-[#b38867] hover:bg-[#a27355] text-white text-xs font-semibold rounded-xl transition shadow-sm flex items-center gap-1.5"
                       >
-                        {isReviewed ? "Ubah Nilai & Feedback" : "Beri Nilai & Review"}
+                        <Award size={14} />
+                        <span>{isReviewed ? "Ubah Nilai & Feedback" : "Beri Nilai & Review"}</span>
                       </button>
                     </div>
                   </div>
@@ -323,8 +414,10 @@ export default function ReviewReportsAndFeedback() {
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3 text-xs text-gray-400">
-                      <span className="font-mono">Report #{rep.id}</span>
-                      <span>
+                      <span className="font-mono bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
+                        Report #{rep.id}
+                      </span>
+                      <span className="font-medium text-gray-600">
                         {rep.report_date
                           ? new Date(rep.report_date).toLocaleDateString("id-ID", {
                               day: "numeric", month: "short", year: "numeric"
@@ -333,11 +426,19 @@ export default function ReviewReportsAndFeedback() {
                       </span>
                     </div>
 
-                    <h3 className="font-bold text-gray-900 text-base">
-                      Mentee: {rep.pairing?.mentee?.name || "Mentee Bimbingan"}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 rounded-full bg-[#b38867]/20 text-[#b38867] font-bold text-xs flex items-center justify-center">
+                        {rep.pairing?.mentee?.name ? rep.pairing.mentee.name.charAt(0) : "M"}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900 text-sm">
+                          {rep.pairing?.mentee?.name || "Mentee Bimbingan"}
+                        </h3>
+                        <p className="text-[11px] text-gray-400">{rep.pairing?.subscription_name || "Paket Bimbingan"}</p>
+                      </div>
+                    </div>
 
-                    <div className="mt-3 p-3.5 bg-gray-50 rounded-xl text-xs text-gray-700 leading-relaxed border border-gray-100 whitespace-pre-wrap">
+                    <div className="p-3.5 bg-gray-50 rounded-xl text-xs text-gray-700 leading-relaxed border border-gray-100 whitespace-pre-wrap">
                       {rep.note || rep.notes || "Tidak ada catatan evaluasi."}
                     </div>
                   </div>
@@ -372,29 +473,42 @@ export default function ReviewReportsAndFeedback() {
         </div>
       )}
 
-      {/* Modal Review Submission */}
+      {/* Modal Review Submission & Grading */}
       {showReviewModal && selectedSub && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl border border-gray-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl border border-gray-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-800">Nilai & Review Tugas Mentee</h2>
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-amber-50 text-amber-800 rounded-xl">
+                  <Award size={18} />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-gray-800">Nilai & Review Tugas Mentee</h2>
+                  <p className="text-xs text-gray-400">ID Pengumpulan #{selectedSub.id}</p>
+                </div>
+              </div>
               <button onClick={() => setShowReviewModal(false)} className="text-gray-400 hover:text-gray-600">
                 <X size={20} />
               </button>
             </div>
 
             <form onSubmit={handleReviewSubmit} className="p-6 space-y-4">
-              <div className="p-3 bg-gray-50 rounded-xl text-xs">
-                <p className="font-bold text-gray-800">{selectedSub.task?.title || "Tugas"}</p>
-                <p className="text-gray-500 mt-0.5">Mentee: {selectedSub.mentee?.name}</p>
-                {selectedSub.submission_url && (
+              <div className="p-3 bg-gray-50 rounded-xl text-xs space-y-1 border border-gray-100">
+                <p className="font-bold text-gray-800 text-sm">{selectedSub.task?.title || "Tugas"}</p>
+                <p className="text-gray-500">Mentee: {selectedSub.mentee?.name}</p>
+                {selectedSub.answer && (
+                  <p className="text-gray-600 mt-2 bg-white p-2.5 rounded-lg border border-gray-200 italic">
+                    "{selectedSub.answer}"
+                  </p>
+                )}
+                {selectedSub.file_path && (
                   <a
-                    href={selectedSub.submission_url}
+                    href={selectedSub.file_path.startsWith("http") ? selectedSub.file_path : `/storage/${selectedSub.file_path}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-blue-600 hover:underline flex items-center gap-1 font-semibold mt-2"
+                    className="text-blue-600 hover:underline flex items-center gap-1 font-semibold pt-1"
                   >
-                    <ExternalLink size={12} /> Buka Hasil Tugas Mentee
+                    <ExternalLink size={12} /> Buka Berkas Tugas Mentee
                   </a>
                 )}
               </div>
@@ -415,6 +529,28 @@ export default function ReviewReportsAndFeedback() {
                 />
               </div>
 
+              {/* Template Feedback Cepat */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-gray-700 flex items-center gap-1">
+                    <Sparkles size={13} className="text-amber-600" />
+                    Pilihan Preset Feedback Cepat
+                  </label>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {feedbackPresets.map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleApplyPreset(preset)}
+                      className="text-[11px] text-left px-2.5 py-1 bg-amber-50/70 hover:bg-amber-100 text-amber-900 border border-amber-200/70 rounded-lg transition"
+                    >
+                      + {preset.length > 40 ? preset.slice(0, 40) + "..." : preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
                   Ulasan / Catatan Feedback <span className="text-red-500">*</span>
@@ -425,7 +561,7 @@ export default function ReviewReportsAndFeedback() {
                   placeholder="Berikan apresiasi dan catatan perbaikan teknikal yang konstruktif..."
                   value={reviewForm.feedback}
                   onChange={(e) => setReviewForm({ ...reviewForm, feedback: e.target.value })}
-                  className="w-full p-2.5 text-sm border border-gray-300 rounded-xl focus:ring-1 focus:ring-[#b38867] outline-none resize-none"
+                  className="w-full p-2.5 text-xs border border-gray-300 rounded-xl focus:ring-1 focus:ring-[#b38867] outline-none resize-none leading-relaxed"
                 />
               </div>
 
@@ -453,7 +589,7 @@ export default function ReviewReportsAndFeedback() {
                   type="submit"
                   className="px-5 py-2.5 text-xs font-semibold text-white bg-[#b38867] hover:bg-[#a27355] rounded-xl transition shadow-sm"
                 >
-                  Simpan Review
+                  Simpan Penilaian
                 </button>
               </div>
             </form>
@@ -463,10 +599,18 @@ export default function ReviewReportsAndFeedback() {
 
       {/* Modal Create Progress Report */}
       {showReportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl border border-gray-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl border border-gray-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-800">Buat Evaluasi Perkembangan</h2>
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-[#b38867]/20 text-[#b38867] rounded-xl">
+                  <FileText size={18} />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-gray-800">Buat Evaluasi Perkembangan Mentee</h2>
+                  <p className="text-xs text-gray-400">Laporan resmi bimbingan berkala</p>
+                </div>
+              </div>
               <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-gray-600">
                 <X size={20} />
               </button>
@@ -486,7 +630,7 @@ export default function ReviewReportsAndFeedback() {
                   <option value="">-- Pilih Mentee --</option>
                   {mentees.map((m) => (
                     <option key={m.pairing_id} value={m.pairing_id}>
-                      {m.mentee?.name} ({m.mentee?.email})
+                      {m.mentee?.name} ({m.mentee?.email}) - {m.subscription_name}
                     </option>
                   ))}
                 </select>
@@ -505,6 +649,56 @@ export default function ReviewReportsAndFeedback() {
                 />
               </div>
 
+              {/* Rubrik Aspek Penilaian */}
+              <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
+                <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  Indikator Penilaian Berkala
+                </p>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-[11px] text-gray-600 mb-1">Pemahaman</label>
+                    <select
+                      value={reportForm.comprehension_level}
+                      onChange={(e) => setReportForm({ ...reportForm, comprehension_level: e.target.value })}
+                      className="w-full p-2 text-xs border border-gray-300 rounded-lg bg-white"
+                    >
+                      <option value="Sangat Baik">Sangat Baik</option>
+                      <option value="Baik">Baik</option>
+                      <option value="Cukup">Cukup</option>
+                      <option value="Perlu Bimbingan">Perlu Bimbingan</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] text-gray-600 mb-1">Keaktifan</label>
+                    <select
+                      value={reportForm.activeness}
+                      onChange={(e) => setReportForm({ ...reportForm, activeness: e.target.value })}
+                      className="w-full p-2 text-xs border border-gray-300 rounded-lg bg-white"
+                    >
+                      <option value="Sangat Aktif">Sangat Aktif</option>
+                      <option value="Aktif">Aktif</option>
+                      <option value="Pasif">Pasif</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] text-gray-600 mb-1">Kualitas Tugas</label>
+                    <select
+                      value={reportForm.task_quality}
+                      onChange={(e) => setReportForm({ ...reportForm, task_quality: e.target.value })}
+                      className="w-full p-2 text-xs border border-gray-300 rounded-lg bg-white"
+                    >
+                      <option value="Istimewa">Istimewa</option>
+                      <option value="Memuaskan">Memuaskan</option>
+                      <option value="Standar">Standar</option>
+                      <option value="Perlu Revisi">Perlu Revisi</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
                   Catatan Evaluasi Perkembangan <span className="text-red-500">*</span>
@@ -515,7 +709,20 @@ export default function ReviewReportsAndFeedback() {
                   placeholder="Tuliskan kemajuan mentee, materi yang telah dikuasai, sikap belajar, dan poin yang masih perlu diperbaiki..."
                   value={reportForm.note}
                   onChange={(e) => setReportForm({ ...reportForm, note: e.target.value })}
-                  className="w-full p-2.5 text-sm border border-gray-300 rounded-xl focus:ring-1 focus:ring-[#b38867] outline-none resize-none"
+                  className="w-full p-2.5 text-xs border border-gray-300 rounded-xl focus:ring-1 focus:ring-[#b38867] outline-none resize-none leading-relaxed"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Rekomendasi Langkah Selanjutnya (Opsional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Misal: Perbanyak latihan styling Tailwind, lanjutkan bab integrasi API..."
+                  value={reportForm.recommendation}
+                  onChange={(e) => setReportForm({ ...reportForm, recommendation: e.target.value })}
+                  className="w-full p-2.5 text-xs border border-gray-300 rounded-xl focus:ring-1 focus:ring-[#b38867] outline-none"
                 />
               </div>
 

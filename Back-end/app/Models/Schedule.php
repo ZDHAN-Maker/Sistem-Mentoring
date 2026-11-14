@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Schedule extends Model
 {
     protected $fillable = [
-        'pairing_id', 'title', 'description', 'location', 'meeting_link', 'start_time', 'end_time', 'status'
+        'pairing_id', 'title', 'description', 'session_notes', 'location', 'meeting_link', 'start_time', 'end_time', 'status', 'attendance_status'
     ];
 
     protected $casts = [
