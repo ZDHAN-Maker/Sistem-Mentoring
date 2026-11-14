@@ -56,12 +56,15 @@ class ProgressReportController extends Controller
     public function store(StoreProgressReportRequest $request): JsonResponse
     {
         try {
-            $report = $this->reportService->createReport($request->validated(), $request->user());
+            $reports = $this->reportService->createReports($request->validated(), $request->user());
 
             return response()->json([
                 'status'  => 'success',
-                'message' => 'Laporan perkembangan berhasil disimpan.',
-                'data'    => $report
+                'message' => count($reports) > 1
+                    ? count($reports) . ' laporan evaluasi perkembangan berhasil dibagikan sekaligus ke mentee terpilih.'
+                    : 'Laporan perkembangan berhasil disimpan.',
+                'data'    => count($reports) === 1 ? $reports[0] : $reports,
+                'count'   => count($reports)
             ], 201);
 
         } catch (AuthorizationException $e) {
@@ -72,7 +75,7 @@ class ProgressReportController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Gagal menyimpan laporan.'
+                'message' => 'Gagal menyimpan laporan: ' . $e->getMessage()
             ], 400);
         }
     }

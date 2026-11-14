@@ -8,17 +8,21 @@ import {
   CheckCircle2, 
   AlertCircle, 
   X, 
-  ExternalLink,
-  Plus,
-  MessageSquare,
-  Award,
-  Trash2,
-  Filter,
-  Sparkles,
-  TrendingUp,
-  User,
-  Clock,
-  Send
+  ExternalLink, 
+  Plus, 
+  MessageSquare, 
+  Award, 
+  Trash2, 
+  Filter, 
+  Sparkles, 
+  TrendingUp, 
+  User, 
+  Clock, 
+  Send,
+  Users,
+  Search,
+  Square,
+  UserCheck
 } from "lucide-react";
 
 export default function ReviewReportsAndFeedback() {
@@ -27,10 +31,17 @@ export default function ReviewReportsAndFeedback() {
   const [reports, setReports] = useState([]);
   const [mentees, setMentees] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
-  // Submissions filter
+  // Submissions Search & Filter
+  const [submissionSearch, setSubmissionSearch] = useState("");
   const [submissionFilter, setSubmissionFilter] = useState("all"); // 'all' | 'pending' | 'reviewed'
+  const [submissionMenteeFilter, setSubmissionMenteeFilter] = useState("all");
+
+  // Progress Reports Search & Filter
+  const [reportSearch, setReportSearch] = useState("");
+  const [reportMenteeFilter, setReportMenteeFilter] = useState("all");
 
   // Modal Review Submission State
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -43,8 +54,8 @@ export default function ReviewReportsAndFeedback() {
 
   // Modal Create Progress Report State
   const [showReportModal, setShowReportModal] = useState(false);
+  const [selectedPairingIds, setSelectedPairingIds] = useState([]);
   const [reportForm, setReportForm] = useState({
-    pairing_id: "",
     report_date: new Date().toISOString().slice(0, 10),
     comprehension_level: "Sangat Baik",
     activeness: "Aktif",
@@ -88,15 +99,44 @@ export default function ReviewReportsAndFeedback() {
 
   // Filter Submissions
   const filteredSubmissions = useMemo(() => {
-    if (submissionFilter === "all") return submissions;
-    if (submissionFilter === "pending") {
-      return submissions.filter((s) => s.status === "submitted" || s.status === "pending" || !s.grade);
-    }
-    if (submissionFilter === "reviewed") {
-      return submissions.filter((s) => s.status === "reviewed" || s.status === "completed" || s.grade !== null);
-    }
-    return submissions;
-  }, [submissions, submissionFilter]);
+    return submissions.filter((s) => {
+      const isPending = s.status === "submitted" || s.status === "pending" || !s.grade;
+      const isReviewed = s.status === "reviewed" || s.status === "completed" || s.grade !== null;
+
+      const matchesStatus =
+        submissionFilter === "all" ? true :
+        submissionFilter === "pending" ? isPending : isReviewed;
+
+      const matchesMentee =
+        submissionMenteeFilter === "all" ? true :
+        String(s.mentee_id) === String(submissionMenteeFilter);
+
+      const menteeName = s.mentee?.name || "";
+      const taskTitle = s.task?.title || "";
+      const matchesSearch =
+        menteeName.toLowerCase().includes(submissionSearch.toLowerCase()) ||
+        taskTitle.toLowerCase().includes(submissionSearch.toLowerCase());
+
+      return matchesStatus && matchesMentee && matchesSearch;
+    });
+  }, [submissions, submissionFilter, submissionMenteeFilter, submissionSearch]);
+
+  // Filter Progress Reports
+  const filteredReports = useMemo(() => {
+    return reports.filter((r) => {
+      const matchesMentee =
+        reportMenteeFilter === "all" ? true :
+        String(r.pairing_id) === String(reportMenteeFilter);
+
+      const menteeName = r.pairing?.mentee?.name || "";
+      const note = r.note || r.notes || "";
+      const matchesSearch =
+        menteeName.toLowerCase().includes(reportSearch.toLowerCase()) ||
+        note.toLowerCase().includes(reportSearch.toLowerCase());
+
+      return matchesMentee && matchesSearch;
+    });
+  }, [reports, reportMenteeFilter, reportSearch]);
 
   // Handler Buka Modal Review
   const openReviewModal = (submission) => {
@@ -123,6 +163,7 @@ export default function ReviewReportsAndFeedback() {
       return;
     }
 
+    setSubmitting(true);
     try {
       await api.patch(`/submissions/${selectedSub.id}/review`, {
         grade: Number(reviewForm.grade),
@@ -136,13 +177,18 @@ export default function ReviewReportsAndFeedback() {
     } catch (err) {
       const msg = err.response?.data?.message || "Gagal menyimpan review tugas.";
       setFeedback({ type: "error", message: msg });
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  // Handler Buka Modal Buat Report
+  // Handler Buka Modal Buat Report (Group / Multi-Mentee)
   const openReportModal = () => {
+    // Default pilih semua mentee
+    const allIds = mentees.map((m) => m.pairing_id);
+    setSelectedPairingIds(allIds);
+
     setReportForm({
-      pairing_id: mentees.length > 0 ? mentees[0].pairing_id : "",
       report_date: new Date().toISOString().slice(0, 10),
       comprehension_level: "Sangat Baik",
       activeness: "Aktif",
@@ -153,10 +199,33 @@ export default function ReviewReportsAndFeedback() {
     setShowReportModal(true);
   };
 
+  const handleTogglePairing = (pairingId) => {
+    if (selectedPairingIds.includes(pairingId)) {
+      setSelectedPairingIds(selectedPairingIds.filter((id) => id !== pairingId));
+    } else {
+      setSelectedPairingIds([...selectedPairingIds, pairingId]);
+    }
+  };
+
+  const handleSelectAllMentees = () => {
+    const allIds = mentees.map((m) => m.pairing_id);
+    setSelectedPairingIds(allIds);
+  };
+
+  const handleDeselectAllMentees = () => {
+    setSelectedPairingIds([]);
+  };
+
   const handleReportSubmit = async (e) => {
     e.preventDefault();
-    if (!reportForm.pairing_id || !reportForm.note.trim()) {
-      setFeedback({ type: "error", message: "Pilih mentee dan isi catatan evaluasi perkembangan minimal 10 karakter." });
+
+    if (selectedPairingIds.length === 0) {
+      setFeedback({ type: "error", message: "Pilih minimal satu mentee bimbingan untuk ditugaskan evaluasi." });
+      return;
+    }
+
+    if (!reportForm.note.trim() || reportForm.note.trim().length < 10) {
+      setFeedback({ type: "error", message: "Isi catatan evaluasi perkembangan minimal 10 karakter." });
       return;
     }
 
@@ -165,19 +234,29 @@ export default function ReviewReportsAndFeedback() {
       reportForm.recommendation ? `\n\n📌 Rekomendasi Mentor: ${reportForm.recommendation.trim()}` : ""
     }`;
 
+    setSubmitting(true);
     try {
-      await api.post("/progress-reports", {
-        pairing_id: Number(reportForm.pairing_id),
+      const payload = {
+        pairing_ids: selectedPairingIds,
         report_date: reportForm.report_date,
         note: formattedNote,
-      });
+      };
 
-      setFeedback({ type: "success", message: "Laporan perkembangan mentee berhasil disimpan!" });
+      await api.post("/progress-reports", payload);
+      const count = selectedPairingIds.length;
+      setFeedback({ 
+        type: "success", 
+        message: count > 1
+          ? `Laporan evaluasi perkembangan berhasil dibagikan sekaligus kepada ${count} mentee bimbingan terpilih!`
+          : "Laporan perkembangan mentee berhasil disimpan!"
+      });
       setShowReportModal(false);
       fetchData();
     } catch (err) {
       const msg = err.response?.data?.message || "Gagal menyimpan laporan perkembangan.";
       setFeedback({ type: "error", message: msg });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -200,7 +279,7 @@ export default function ReviewReportsAndFeedback() {
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Review Tugas & Evaluasi Mentee</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Berikan nilai dan ulasan pada tugas mentee, gunakan preset feedback cepat, serta susun laporan perkembangan berkala.
+            Berikan nilai dan ulasan pada tugas mentee, serta susun laporan evaluasi berkala secara individual maupun ke grup mentee sekaligus.
           </p>
         </div>
 
@@ -270,41 +349,71 @@ export default function ReviewReportsAndFeedback() {
             <span>Laporan Perkembangan ({reports.length})</span>
           </button>
         </div>
-
-        {/* Filter status untuk tab Submissions */}
-        {activeTab === "submissions" && (
-          <div className="inline-flex p-1 bg-gray-100 rounded-xl text-xs font-medium">
-            <button
-              onClick={() => setSubmissionFilter("all")}
-              className={`px-3 py-1.5 rounded-lg transition ${
-                submissionFilter === "all" ? "bg-white text-gray-900 font-bold shadow-sm" : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Semua ({submissions.length})
-            </button>
-            <button
-              onClick={() => setSubmissionFilter("pending")}
-              className={`px-3 py-1.5 rounded-lg transition ${
-                submissionFilter === "pending" ? "bg-white text-rose-700 font-bold shadow-sm" : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Perlu Review ({submissions.filter((s) => s.status === "submitted" || !s.grade).length})
-            </button>
-            <button
-              onClick={() => setSubmissionFilter("reviewed")}
-              className={`px-3 py-1.5 rounded-lg transition ${
-                submissionFilter === "reviewed" ? "bg-white text-emerald-700 font-bold shadow-sm" : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Sudah Dinilai ({submissions.filter((s) => s.status === "reviewed" || s.status === "completed" || s.grade !== null).length})
-            </button>
-          </div>
-        )}
       </div>
 
-      {/* Tab Content: Submissions */}
+      {/* ============================================================== */}
+      {/* TAB 1: SUBMISSIONS (REVIEW TUGAS)                              */}
+      {/* ============================================================== */}
       {activeTab === "submissions" && (
         <div className="space-y-4">
+          {/* Toolbar Pencarian & Filter Submissions */}
+          <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
+            <div className="relative w-full md:w-80">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Cari nama mentee atau judul tugas..."
+                value={submissionSearch}
+                onChange={(e) => setSubmissionSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 text-xs md:text-sm border border-gray-200 rounded-xl focus:ring-1 focus:ring-[#b38867] outline-none"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+              {/* Filter Mentee */}
+              <select
+                value={submissionMenteeFilter}
+                onChange={(e) => setSubmissionMenteeFilter(e.target.value)}
+                className="p-2 text-xs border border-gray-200 rounded-xl bg-white text-gray-700 outline-none focus:ring-1 focus:ring-[#b38867]"
+              >
+                <option value="all">Semua Mentee</option>
+                {mentees.map((m) => (
+                  <option key={m.mentee?.id || m.pairing_id} value={m.mentee?.id}>
+                    Mentee: {m.mentee?.name}
+                  </option>
+                ))}
+              </select>
+
+              {/* Filter Status Submission */}
+              <div className="inline-flex p-1 bg-gray-100 rounded-xl text-xs font-semibold">
+                <button
+                  onClick={() => setSubmissionFilter("all")}
+                  className={`px-3 py-1.5 rounded-lg transition ${
+                    submissionFilter === "all" ? "bg-white text-gray-900 font-bold shadow-sm" : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Semua ({submissions.length})
+                </button>
+                <button
+                  onClick={() => setSubmissionFilter("pending")}
+                  className={`px-3 py-1.5 rounded-lg transition ${
+                    submissionFilter === "pending" ? "bg-white text-rose-700 font-bold shadow-sm" : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Perlu Review ({submissions.filter((s) => s.status === "submitted" || !s.grade).length})
+                </button>
+                <button
+                  onClick={() => setSubmissionFilter("reviewed")}
+                  className={`px-3 py-1.5 rounded-lg transition ${
+                    submissionFilter === "reviewed" ? "bg-white text-emerald-700 font-bold shadow-sm" : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Sudah Dinilai ({submissions.filter((s) => s.status === "reviewed" || s.status === "completed" || s.grade !== null).length})
+                </button>
+              </div>
+            </div>
+          </div>
+
           {loading ? (
             <div className="p-16 text-center text-gray-500 bg-white rounded-2xl border border-gray-200">
               <RefreshCw className="animate-spin text-[#b38867] mr-3" size={24} />
@@ -397,17 +506,48 @@ export default function ReviewReportsAndFeedback() {
         </div>
       )}
 
-      {/* Tab Content: Progress Reports */}
+      {/* ============================================================== */}
+      {/* TAB 2: PROGRESS REPORTS (EVALUASI PERKEMBANGAN MENTEE)         */}
+      {/* ============================================================== */}
       {activeTab === "progress_reports" && (
         <div className="space-y-4">
+          {/* Toolbar Pencarian & Filter Progress Reports */}
+          <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
+            <div className="relative w-full md:w-80">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Cari catatan evaluasi atau nama mentee..."
+                value={reportSearch}
+                onChange={(e) => setReportSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 text-xs md:text-sm border border-gray-200 rounded-xl focus:ring-1 focus:ring-[#b38867] outline-none"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+              <select
+                value={reportMenteeFilter}
+                onChange={(e) => setReportMenteeFilter(e.target.value)}
+                className="p-2 text-xs border border-gray-200 rounded-xl bg-white text-gray-700 outline-none focus:ring-1 focus:ring-[#b38867]"
+              >
+                <option value="all">Semua Mentee ({reports.length})</option>
+                {mentees.map((m) => (
+                  <option key={m.pairing_id} value={m.pairing_id}>
+                    Mentee: {m.mentee?.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           {loading ? (
             <div className="p-16 text-center text-gray-500 bg-white rounded-2xl border border-gray-200">
               <RefreshCw className="animate-spin text-[#b38867] mr-3" size={24} />
               <span>Memuat laporan evaluasi...</span>
             </div>
-          ) : reports.length > 0 ? (
+          ) : filteredReports.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {reports.map((rep) => (
+              {filteredReports.map((rep) => (
                 <div
                   key={rep.id}
                   className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition p-6 flex flex-col justify-between"
@@ -460,7 +600,7 @@ export default function ReviewReportsAndFeedback() {
               <FileText size={40} className="mx-auto mb-3 text-gray-300" />
               <h3 className="text-base font-bold text-gray-700">Belum Ada Laporan Evaluasi Berkala</h3>
               <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-                Susun evaluasi kemajuan mentee secara berkala agar perkembangan mereka dapat terpantau dengan baik.
+                Susun evaluasi kemajuan mentee secara berkala secara individu atau ke beberapa mentee sekaligus.
               </p>
               <button
                 onClick={openReportModal}
@@ -587,9 +727,10 @@ export default function ReviewReportsAndFeedback() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 text-xs font-semibold text-white bg-[#b38867] hover:bg-[#a27355] rounded-xl transition shadow-sm"
+                  disabled={submitting}
+                  className="px-5 py-2.5 text-xs font-semibold text-white bg-[#b38867] hover:bg-[#a27355] rounded-xl transition shadow-sm disabled:opacity-50"
                 >
-                  Simpan Penilaian
+                  {submitting ? "Menyimpan..." : "Simpan Penilaian"}
                 </button>
               </div>
             </form>
@@ -597,18 +738,20 @@ export default function ReviewReportsAndFeedback() {
         </div>
       )}
 
-      {/* Modal Create Progress Report */}
+      {/* Modal Create Progress Report (Dukungan Multi-Mentee & Group Feedback) */}
       {showReportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl border border-gray-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
+          <div className="bg-white w-full max-w-xl rounded-2xl shadow-xl border border-gray-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-amber-50/50 to-white">
+              <div className="flex items-center gap-2.5">
                 <div className="p-2 bg-[#b38867]/20 text-[#b38867] rounded-xl">
-                  <FileText size={18} />
+                  <FileText size={20} />
                 </div>
                 <div>
                   <h2 className="text-base font-bold text-gray-800">Buat Evaluasi Perkembangan Mentee</h2>
-                  <p className="text-xs text-gray-400">Laporan resmi bimbingan berkala</p>
+                  <p className="text-xs text-gray-500">
+                    Beri evaluasi berkala ke satu mentee atau langsung ke beberapa mentee bimbingan
+                  </p>
                 </div>
               </div>
               <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -617,23 +760,91 @@ export default function ReviewReportsAndFeedback() {
             </div>
 
             <form onSubmit={handleReportSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  Pilih Mentee Bimbingan <span className="text-red-500">*</span>
-                </label>
-                <select
-                  required
-                  value={reportForm.pairing_id}
-                  onChange={(e) => setReportForm({ ...reportForm, pairing_id: e.target.value })}
-                  className="w-full p-2.5 text-sm border border-gray-300 rounded-xl focus:ring-1 focus:ring-[#b38867] outline-none"
-                >
-                  <option value="">-- Pilih Mentee --</option>
-                  {mentees.map((m) => (
-                    <option key={m.pairing_id} value={m.pairing_id}>
-                      {m.mentee?.name} ({m.mentee?.email}) - {m.subscription_name}
-                    </option>
-                  ))}
-                </select>
+              {/* BAGIAN TARGET MENTEE PENERIMA EVALUASI (MULTI-SELECT / GROUP) */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <Users size={14} className="text-[#b38867]" />
+                    <span>Target Mentee Penerima Evaluasi</span>
+                    <span className="text-red-500">*</span>
+                  </label>
+
+                  <div className="flex items-center gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={handleSelectAllMentees}
+                      className="text-[#b38867] hover:underline font-semibold"
+                    >
+                      Pilih Semua ({mentees.length})
+                    </button>
+                    <span className="text-gray-300">•</span>
+                    <button
+                      type="button"
+                      onClick={handleDeselectAllMentees}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      Hapus Pilihan
+                    </button>
+                  </div>
+                </div>
+
+                {/* Checklist Card Mentee */}
+                <div className="max-h-48 overflow-y-auto space-y-2 border border-gray-200 rounded-xl p-2.5 bg-gray-50/50">
+                  {mentees.length > 0 ? (
+                    mentees.map((m) => {
+                      const isSelected = selectedPairingIds.includes(m.pairing_id);
+                      return (
+                        <div
+                          key={m.pairing_id}
+                          onClick={() => handleTogglePairing(m.pairing_id)}
+                          className={`p-2.5 rounded-xl border transition cursor-pointer flex items-center justify-between gap-3 ${
+                            isSelected
+                              ? "bg-amber-50/70 border-amber-300 shadow-2xs"
+                              : "bg-white border-gray-200 hover:border-gray-300"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className={`p-1 rounded-md transition ${isSelected ? "text-[#b38867]" : "text-gray-400"}`}>
+                              {isSelected ? <CheckSquare size={18} /> : <Square size={18} />}
+                            </div>
+
+                            <div className="w-7 h-7 rounded-full bg-[#b38867]/20 text-[#b38867] font-bold text-xs flex items-center justify-center shrink-0">
+                              {m.mentee?.name ? m.mentee.name.charAt(0) : "M"}
+                            </div>
+
+                            <div className="min-w-0">
+                              <p className="font-bold text-gray-800 text-xs truncate">
+                                {m.mentee?.name || "Mentee"}
+                              </p>
+                              <p className="text-[11px] text-gray-400 truncate">{m.mentee?.email}</p>
+                            </div>
+                          </div>
+
+                          <div className="shrink-0 text-right">
+                            <span className="text-[10px] font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md border border-gray-200">
+                              {m.subscription_name}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="text-xs text-amber-700 p-2 text-center">
+                      Belum ada mentee bimbingan aktif.
+                    </p>
+                  )}
+                </div>
+
+                {/* Counter Mentee Terpilih */}
+                <div className="flex items-center justify-between text-xs bg-amber-50 text-amber-900 p-2.5 rounded-xl border border-amber-200 font-medium">
+                  <span className="flex items-center gap-1.5">
+                    <UserCheck size={14} className="text-[#b38867]" />
+                    <span>Mentee yang menerima evaluasi ini:</span>
+                  </span>
+                  <span className="font-bold bg-white px-2 py-0.5 rounded-md border border-amber-300">
+                    {selectedPairingIds.length} dari {mentees.length} Mentee
+                  </span>
+                </div>
               </div>
 
               <div>
@@ -736,9 +947,15 @@ export default function ReviewReportsAndFeedback() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 text-xs font-semibold text-white bg-[#b38867] hover:bg-[#a27355] rounded-xl transition shadow-sm"
+                  disabled={submitting}
+                  className="px-5 py-2.5 text-xs font-semibold text-white bg-[#b38867] hover:bg-[#a27355] rounded-xl transition shadow-sm disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  Simpan Laporan
+                  <Send size={13} />
+                  <span>
+                    {submitting 
+                      ? "Menyimpan..." 
+                      : `Simpan & Bagikan (${selectedPairingIds.length} Mentee)`}
+                  </span>
                 </button>
               </div>
             </form>
