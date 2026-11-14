@@ -11,28 +11,68 @@ use Illuminate\Support\Facades\Storage;
 class MaterialService
 {
     /**
-     * Membuat materi baru.
+     * Membuat materi baru (bisa umum untuk semua mentee, atau untuk mentee/pairing tertentu).
      */
-    public function createMaterial(array $data, User $mentor, $file = null): Material
+    public function createMaterials(array $data, User $mentor, $file = null): array
     {
-        // Jika materi spesifik untuk satu pairing, pastikan pairing itu milik mentor ini
-        if (isset($data['pairing_id'])) {
-            $pairing = Pairing::find($data['pairing_id']);
-            if ($pairing->mentor_id !== $mentor->id) {
-                throw new Exception("Anda tidak berhak menambahkan materi ke sesi mentoring ini.", 403);
-            }
-        }
-
-        // Handle File Upload
+        // 1. Simpan berkas upload jika ada
+        $filePath = null;
         if ($file && in_array($data['type'], ['pdf', 'video'])) {
-            $path = $file->store('materials', 'public');
-            $data['file_path'] = $path;
+            $filePath = $file->store('materials', 'public');
+            $data['file_path'] = $filePath;
         }
 
         $data['mentor_id'] = $mentor->id;
-        $data['status'] = $data['status'] ?? 'published'; // Default status
+        $data['status']    = $data['status'] ?? 'published';
 
-        return Material::create($data);
+        $pairingIds = [];
+        if (!empty($data['pairing_ids']) && is_array($data['pairing_ids'])) {
+            $pairingIds = array_values(array_filter($data['pairing_ids']));
+        } elseif (!empty($data['pairing_id'])) {
+            $pairingIds = [$data['pairing_id']];
+        }
+
+        // Jika tidak ada pairing_id spesifik (artinya materi umum untuk SEMUA mentee mentor)
+        if (empty($pairingIds) || !empty($data['is_general'])) {
+            $generalData = $data;
+            unset($generalData['pairing_ids'], $generalData['is_general']);
+            $generalData['pairing_id'] = null;
+
+            $material = Material::create($generalData);
+            return [$material];
+        }
+
+        // Jika ditujukan untuk pairing-pairing tertentu
+        $validPairings = Pairing::whereIn('id', $pairingIds)
+            ->where('mentor_id', $mentor->id)
+            ->get();
+
+        if ($validPairings->isEmpty()) {
+            throw new Exception("Sesi pairing tidak valid atau bukan milik Anda.", 403);
+        }
+
+        $created = [];
+        foreach ($validPairings as $pairing) {
+            $matData = $data;
+            unset($matData['pairing_ids'], $matData['is_general']);
+            $matData['pairing_id'] = $pairing->id;
+            if ($filePath) {
+                $matData['file_path'] = $filePath;
+            }
+
+            $created[] = Material::create($matData);
+        }
+
+        return $created;
+    }
+
+    /**
+     * Membuat materi tunggal (backward compatibility)
+     */
+    public function createMaterial(array $data, User $mentor, $file = null): Material
+    {
+        $materials = $this->createMaterials($data, $mentor, $file);
+        return $materials[0];
     }
 
     /**
@@ -46,16 +86,16 @@ class MaterialService
         }
 
         if ($file && in_array($data['type'], ['pdf', 'video'])) {
-            if ($material->file_path && Storage::disk('s3')->exists($material->file_path)) {
-                Storage::disk('s3')->delete($material->file_path);
+            if ($material->file_path && Storage::disk('public')->exists($material->file_path)) {
+                Storage::disk('public')->delete($material->file_path);
             }
-            $data['file_path'] = $file->store('materials', 's3');
+            $data['file_path'] = $file->store('materials', 'public');
         }
 
         if ($data['type'] === 'link') {
             $data['file_path'] = null;
-            if ($material->file_path) {
-                Storage::disk('s3')->delete($material->file_path);
+            if ($material->file_path && Storage::disk('public')->exists($material->file_path)) {
+                Storage::disk('public')->delete($material->file_path);
             }
         }
 

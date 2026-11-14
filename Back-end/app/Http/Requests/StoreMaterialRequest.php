@@ -14,27 +14,37 @@ class StoreMaterialRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'pairing_id' => ['nullable', 'integer', 'exists:pairings,id'],
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'type' => ['required', 'string', 'in:video,pdf,link'],
-
-            // Wajib upload file jika tipe adalah video atau pdf (Maksimal 50MB)
-            'file' => ['required_if:type,video,pdf', 'file', 'mimes:pdf,mp4,avi,mov', 'max:51200'],
-
-            // Wajib isi URL jika tipe adalah link
-            'external_url' => ['required_if:type,link', 'nullable', 'url', 'max:255'],
-
-            'duration' => ['nullable', 'integer'], // Misalnya durasi dalam menit
-            'status' => ['nullable', 'string', 'in:draft,published'],
+            'pairing_id'   => ['nullable'],
+            'pairing_ids'  => ['nullable', 'array'],
+            'pairing_ids.*'=> ['integer', 'exists:pairings,id'],
+            'is_general'   => ['nullable'],
+            'title'        => ['required', 'string', 'max:255'],
+            'description'  => ['nullable', 'string'],
+            'type'         => ['required', 'string', 'in:video,pdf,link'],
+            'file'         => ['nullable', 'file', 'mimes:pdf,mp4,avi,mov,mkv,webm,png,jpg,jpeg', 'max:51200'],
+            'external_url' => ['nullable', 'string', 'max:500'],
+            'duration'     => ['nullable', 'integer'],
+            'status'       => ['nullable', 'string', 'in:draft,published'],
         ];
+    }
+
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            $hasFile = $this->hasFile('file');
+            $hasUrl = !empty($this->input('external_url'));
+
+            if (!$hasFile && !$hasUrl) {
+                $validator->errors()->add('file', 'Unggah berkas dokumen/video atau masukkan tautan URL materi (YouTube / Google Drive).');
+            }
+        });
     }
 
     public function messages(): array
     {
         return [
-            'file.required_if' => 'File wajib diunggah untuk tipe materi PDF atau Video.',
-            'external_url.required_if' => 'Tautan eksternal wajib diisi untuk tipe materi Link.'
+            'file.mimes' => 'Format file yang didukung: PDF, MP4, AVI, MOV, MKV, WEBM, PNG, JPG.',
+            'file.max'   => 'Ukuran file maksimal adalah 50MB.',
         ];
     }
 }
