@@ -22,8 +22,12 @@ class PairingController extends Controller
      */
     public function index()
     {
-        // Mengambil semua data pairing beserta relasi mentor dan mentee-nya
-        $pairings = Pairing::with(['mentor:id,name,email', 'mentee:id,name,email'])->get();
+        // Mengambil semua data pairing beserta relasi mentor, mentee, dan subscription plan
+        $pairings = Pairing::with([
+            'mentor:id,name,email,phone,avatar',
+            'mentee:id,name,email,phone,avatar',
+            'subscriptionPlan'
+        ])->latest()->get();
 
         return response()->json([
             'status' => 'success',

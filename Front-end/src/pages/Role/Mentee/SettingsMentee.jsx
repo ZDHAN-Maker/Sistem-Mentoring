@@ -24,6 +24,7 @@ export default function SettingsMentee() {
   const [profileData, setProfileData] = useState({
     name: user?.name || "",
     email: user?.email || "",
+    phone: user?.phone || "",
     bio: user?.bio || "",
     institution: localStorage.getItem("mentee_institution") || "Universitas Indonesia",
   });
@@ -56,6 +57,7 @@ export default function SettingsMentee() {
         ...prev,
         name: user.name || "",
         email: user.email || "",
+        phone: user.phone || "",
         bio: user.bio || "",
       }));
     }
@@ -69,6 +71,7 @@ export default function SettingsMentee() {
       const res = await api.put("/user/profile", {
         name: profileData.name,
         email: profileData.email,
+        phone: profileData.phone,
         bio: profileData.bio,
       });
 
@@ -246,6 +249,19 @@ export default function SettingsMentee() {
                 value={profileData.email}
                 onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
                 required
+                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-[#b38867] focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Nomor WhatsApp / HP (Untuk Dihubungi Mentor & Admin)
+              </label>
+              <input
+                type="tel"
+                value={profileData.phone}
+                onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                placeholder="Contoh: 085712345678"
                 className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-[#b38867] focus:outline-none"
               />
             </div>

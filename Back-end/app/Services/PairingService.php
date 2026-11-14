@@ -36,13 +36,22 @@ class PairingService
                 throw new Exception("Mentee ini sudah memiliki sesi mentoring yang sedang aktif.");
             }
 
-            // 3. Buat Pairing
+            // 3. Hitung Durasi dan Tanggal Mulai / Berakhir
+            $durationMonths = (int) ($data['duration_months'] ?? 1);
+            $startedAt = !empty($data['started_at']) ? \Carbon\Carbon::parse($data['started_at']) : now();
+            $endedAt = !empty($data['ended_at']) ? \Carbon\Carbon::parse($data['ended_at']) : (clone $startedAt)->addMonths($durationMonths);
+
+            // 4. Buat Pairing
             return Pairing::create([
-                'mentor_id' => $data['mentor_id'],
-                'mentee_id' => $data['mentee_id'],
-                'status' => 'active', // Status default saat baru dipasangkan
-                'started_at' => now(), // Tanggal mulai otomatis hari ini
-                'notes' => $data['notes'] ?? null,
+                'mentor_id'             => $data['mentor_id'],
+                'mentee_id'             => $data['mentee_id'],
+                'subscription_plan_id'  => $data['subscription_plan_id'] ?? null,
+                'subscription_name'     => $data['subscription_name'] ?? null,
+                'duration_months'       => $durationMonths,
+                'status'                => 'active', // Status default saat baru dipasangkan
+                'started_at'            => $startedAt->toDateString(),
+                'ended_at'              => $endedAt->toDateString(),
+                'notes'                 => $data['notes'] ?? null,
             ]);
         });
     }

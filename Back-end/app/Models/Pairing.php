@@ -9,13 +9,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Pairing extends Model
 {
     protected $fillable = [
-        'mentor_id', 'mentee_id', 'status', 'started_at', 'ended_at', 'notes'
+        'mentor_id', 'mentee_id', 'subscription_plan_id', 'subscription_name', 'duration_months', 'status', 'started_at', 'ended_at', 'notes'
     ];
 
     protected $casts = [
         'started_at' => 'date',
         'ended_at' => 'date',
+        'duration_months' => 'integer',
     ];
+
+    public function subscriptionPlan(): BelongsTo
+    {
+        return $this->belongsTo(SubscriptionPlan::class);
+    }
 
     public function mentor(): BelongsTo
     {

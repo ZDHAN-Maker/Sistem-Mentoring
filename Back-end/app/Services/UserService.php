@@ -34,6 +34,9 @@ class UserService
         // Update field yang diperbolehkan
         $user->name  = $data['name'] ?? $user->name;
         $user->email = $data['email'] ?? $user->email;
+        if (array_key_exists('phone', $data)) {
+            $user->phone = $data['phone'];
+        }
         if (array_key_exists('bio', $data)) {
             $user->bio = $data['bio'];
         }

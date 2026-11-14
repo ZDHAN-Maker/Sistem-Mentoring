@@ -26,7 +26,7 @@ class UserController extends Controller
 
     public function update(Request $request, $id)
     {
-        $data = $request->only(['name', 'email', 'password']);
+        $data = $request->only(['name', 'email', 'phone', 'bio', 'password']);
         $user = $this->userService->updateProfile($id, $data);
 
         return response()->json([
@@ -54,7 +54,7 @@ class UserController extends Controller
     {
         try {
             $user = $request->user();
-            $data = $request->only(['name', 'email', 'bio', 'avatar']);
+            $data = $request->only(['name', 'email', 'phone', 'bio', 'avatar']);
             $updatedUser = $this->userService->updateProfile($user->id, $data);
 
             return response()->json([

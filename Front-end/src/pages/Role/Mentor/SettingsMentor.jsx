@@ -23,6 +23,7 @@ export default function SettingsMentor() {
   const [profileData, setProfileData] = useState({
     name: user?.name || "",
     email: user?.email || "",
+    phone: user?.phone || "",
     bio: user?.bio || "",
     meeting_url: localStorage.getItem("mentor_default_meet") || "",
   });
@@ -55,6 +56,7 @@ export default function SettingsMentor() {
         ...prev,
         name: user.name || "",
         email: user.email || "",
+        phone: user.phone || "",
         bio: user.bio || "",
       }));
     }
@@ -89,6 +91,7 @@ export default function SettingsMentor() {
       const res = await api.put("/user/profile", {
         name: profileData.name,
         email: profileData.email,
+        phone: profileData.phone,
         bio: profileData.bio,
       });
 
@@ -271,6 +274,19 @@ export default function SettingsMentor() {
                 value={profileData.email}
                 onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
                 required
+                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-[#b38867] focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Nomor WhatsApp / HP (Untuk Koordinasi Bimbingan & Pairing)
+              </label>
+              <input
+                type="tel"
+                value={profileData.phone}
+                onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                placeholder="Contoh: 081234567890"
                 className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-[#b38867] focus:outline-none"
               />
             </div>
