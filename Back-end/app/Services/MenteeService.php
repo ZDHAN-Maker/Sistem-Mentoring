@@ -15,7 +15,10 @@ class MenteeService
     public function getAllMentees()
     {
         return User::whereHas('roles', fn($q) => $q->where('name', 'Mentee'))
-            ->with('roles')
+            ->with(['roles', 'learningActivities'])
+            ->withCount(['menteePairings as active_pairings_count' => function ($q) {
+                $q->where('status', 'active');
+            }])
             ->get();
     }
 

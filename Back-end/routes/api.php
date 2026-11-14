@@ -53,6 +53,9 @@ Route::middleware(['auth:sanctum', 'role:Admin'])->group(function () {
     // Mengakhiri masa pairing
     Route::patch('/pairings/{pairing}/complete', [PairingController::class, 'complete']);
 
+    // Memperpanjang masa langganan / durasi pairing
+    Route::patch('/pairings/{pairing}/extend', [PairingController::class, 'extend']);
+
     // Manajemen User
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/users/{id}', [UserController::class, 'show']);

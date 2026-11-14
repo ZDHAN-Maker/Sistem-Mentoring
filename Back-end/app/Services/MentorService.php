@@ -18,6 +18,9 @@ class MentorService
     {
         return User::whereHas('roles', fn($q) => $q->where('name', 'Mentor'))
             ->with(['roles', 'learningActivities'])
+            ->withCount(['mentorPairings as active_pairings_count' => function ($q) {
+                $q->where('status', 'active');
+            }])
             ->get();
     }
 

@@ -22,8 +22,17 @@ import {
   ChevronRight,
   ShieldCheck,
   Eye,
-  Filter
+  Filter,
+  Download,
+  CalendarPlus,
+  Award,
+  TrendingUp,
+  Activity,
+  BellRing
 } from "lucide-react";
+
+// Max capacity of mentees per mentor
+const MAX_MENTEES_PER_MENTOR = 5;
 
 // Official WhatsApp Icon SVG
 const WhatsAppIcon = ({ className = "w-4 h-4" }) => (
@@ -40,6 +49,7 @@ const PairingAdmin = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submittingEnd, setSubmittingEnd] = useState(false);
+  const [submittingExtend, setSubmittingExtend] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [copiedPhone, setCopiedPhone] = useState(null);
 
@@ -50,8 +60,12 @@ const PairingAdmin = () => {
 
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [pairingToEnd, setPairingToEnd] = useState(null); // For Custom Confirmation Modal
+  const [pairingToEnd, setPairingToEnd] = useState(null); // For Custom Confirmation Modal with Evaluation
+  const [pairingToExtend, setPairingToExtend] = useState(null); // For Extend Subscription Modal
   const [selectedPairingDetail, setSelectedPairingDetail] = useState(null); // For Detail Modal
+
+  // Smart Matchmaking filter in Create Modal
+  const [smartMatchOnly, setSmartMatchOnly] = useState(false);
 
   // Form State for Create Pairing
   const todayStr = new Date().toISOString().split("T")[0];
@@ -64,6 +78,21 @@ const PairingAdmin = () => {
     started_at: todayStr,
     ended_at: "",
     notes: ""
+  });
+
+  // Form State for Extend Pairing
+  const [extendData, setExtendData] = useState({
+    additional_months: 1,
+    subscription_plan_id: "",
+    subscription_name: "",
+    notes: ""
+  });
+
+  // Form State for End Pairing with Evaluation & Certificate
+  const [endData, setEndData] = useState({
+    completion_status: "lulus_memuaskan",
+    completion_notes: "",
+    certificate_eligible: true
   });
 
   // Calculate default ended_at whenever duration_months or started_at changes
@@ -170,6 +199,46 @@ const PairingAdmin = () => {
     return { total, active, activeSub, completed };
   }, [pairings]);
 
+  // Selected Mentor & Mentee preview objects for modal
+  const selectedMentor = mentors.find(m => String(m.id) === String(formData.mentor_id));
+  const selectedMentee = mentees.find(m => String(m.id) === String(formData.mentee_id));
+
+  // Smart Matchmaking logic
+  // Checks which mentors have activities matching the selected mentee's bio or interests
+  const rankedMentors = useMemo(() => {
+    if (!selectedMentee) return mentors;
+
+    const menteeKeywords = (selectedMentee.bio || selectedMentee.name || "").toLowerCase();
+
+    return [...mentors].sort((a, b) => {
+      const aMatches = (a.learning_activities || a.learningActivities || []).filter(act => 
+        menteeKeywords.includes(act.title.toLowerCase()) || 
+        (act.title.toLowerCase().includes("react") && menteeKeywords.includes("frontend")) ||
+        (act.title.toLowerCase().includes("laravel") && menteeKeywords.includes("web"))
+      ).length;
+
+      const bMatches = (b.learning_activities || b.learningActivities || []).filter(act => 
+        menteeKeywords.includes(act.title.toLowerCase()) || 
+        (act.title.toLowerCase().includes("react") && menteeKeywords.includes("frontend")) ||
+        (act.title.toLowerCase().includes("laravel") && menteeKeywords.includes("web"))
+      ).length;
+
+      return bMatches - aMatches;
+    });
+  }, [mentors, selectedMentee]);
+
+  const displayedMentors = useMemo(() => {
+    if (!smartMatchOnly || !selectedMentee) return rankedMentors;
+    const menteeKeywords = (selectedMentee.bio || "").toLowerCase();
+    return rankedMentors.filter(m => {
+      const acts = m.learning_activities || m.learningActivities || [];
+      return acts.some(act => 
+        menteeKeywords.includes(act.title.toLowerCase()) ||
+        act.title.toLowerCase().includes("web")
+      );
+    });
+  }, [rankedMentors, smartMatchOnly, selectedMentee]);
+
   // Form Handlers
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -229,15 +298,61 @@ const PairingAdmin = () => {
     }
   };
 
+  // Open Extend Modal
+  const openExtendModal = (pairing) => {
+    setPairingToExtend(pairing);
+    setExtendData({
+      additional_months: 1,
+      subscription_plan_id: pairing.subscription_plan_id || "",
+      subscription_name: pairing.subscription_name || "",
+      notes: ""
+    });
+  };
+
+  // Submit Extend Pairing
+  const handleExtendPairingSubmit = async (e) => {
+    e.preventDefault();
+    if (!pairingToExtend) return;
+
+    setSubmittingExtend(true);
+    try {
+      const res = await api.patch(`/pairings/${pairingToExtend.id}/extend`, extendData);
+      setFeedback({
+        type: "success",
+        message: res.data.message || `Masa langganan untuk ${pairingToExtend.mentee?.name} berhasil diperpanjang!`
+      });
+      setPairingToExtend(null);
+      fetchData();
+    } catch (err) {
+      setFeedback({
+        type: "error",
+        message: err.response?.data?.message || "Gagal memperpanjang masa langganan."
+      });
+    } finally {
+      setSubmittingExtend(false);
+    }
+  };
+
+  // Open End Modal with Evaluation
+  const openEndModal = (pairing) => {
+    setPairingToEnd(pairing);
+    setEndData({
+      completion_status: "lulus_memuaskan",
+      completion_notes: "",
+      certificate_eligible: true
+    });
+  };
+
+  // Complete Pairing with Evaluation
   const handleCompletePairingConfirmed = async () => {
     if (!pairingToEnd) return;
 
     setSubmittingEnd(true);
     try {
-      const res = await api.patch(`/pairings/${pairingToEnd.id}/complete`);
+      const res = await api.patch(`/pairings/${pairingToEnd.id}/complete`, endData);
       setFeedback({ 
         type: "success", 
-        message: res.data.message || `Sesi mentoring untuk ${pairingToEnd.mentee?.name || "Mentee"} berhasil diselesaikan.` 
+        message: res.data.message || `Sesi mentoring untuk ${pairingToEnd.mentee?.name || "Mentee"} resmi diselesaikan.` 
       });
       setPairingToEnd(null);
       if (selectedPairingDetail?.id === pairingToEnd.id) {
@@ -252,6 +367,74 @@ const PairingAdmin = () => {
     } finally {
       setSubmittingEnd(false);
     }
+  };
+
+  // Export Data to CSV
+  const handleExportCSV = () => {
+    if (pairings.length === 0) {
+      setFeedback({ type: "error", message: "Tidak ada data pairing untuk diekspor." });
+      return;
+    }
+
+    const headers = [
+      "ID Pairing",
+      "Mentor",
+      "Email Mentor",
+      "No HP Mentor",
+      "Mentee",
+      "Email Mentee",
+      "No HP Mentee",
+      "Paket Langganan",
+      "Durasi (Bulan)",
+      "Tanggal Mulai",
+      "Tanggal Selesai",
+      "Hari Berjalan",
+      "Sisa Hari",
+      "Status Pairing",
+      "Status Kelulusan",
+      "Sertifikat",
+      "Total Sesi Tutoring",
+      "Total Tugas",
+      "Catatan"
+    ];
+
+    const rows = pairings.map(p => {
+      const elapsed = getElapsedDays(p.started_at);
+      const remaining = getRemainingDays(p.ended_at);
+      return [
+        `#${p.id}`,
+        `"${p.mentor?.name || ""}"`,
+        `"${p.mentor?.email || ""}"`,
+        `"${p.mentor?.phone || ""}"`,
+        `"${p.mentee?.name || ""}"`,
+        `"${p.mentee?.email || ""}"`,
+        `"${p.mentee?.phone || ""}"`,
+        `"${p.subscription_name || p.subscription_plan?.title || "Standar"}"`,
+        p.duration_months || 1,
+        p.started_at ? new Date(p.started_at).toISOString().split("T")[0] : "-",
+        p.ended_at ? new Date(p.ended_at).toISOString().split("T")[0] : "-",
+        elapsed,
+        remaining !== null ? remaining : "-",
+        p.status === "active" ? "Aktif" : "Selesai",
+        p.completion_status || "-",
+        p.certificate_eligible ? "Ya (Layak)" : "Tidak",
+        p.schedules_count || 0,
+        p.tasks_count || 0,
+        `"${(p.notes || "").replace(/"/g, '""')}"`
+      ];
+    });
+
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Rekap_Pairing_Mentoring_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setFeedback({ type: "success", message: "Data pairing berhasil diekspor ke format CSV / Excel." });
   };
 
   // Filtered Pairings
@@ -287,12 +470,8 @@ const PairingAdmin = () => {
     });
   }, [pairings, searchTerm, statusFilter, planFilter]);
 
-  // Selected Mentor & Mentee preview objects for modal
-  const selectedMentor = mentors.find(m => String(m.id) === String(formData.mentor_id));
-  const selectedMentee = mentees.find(m => String(m.id) === String(formData.mentee_id));
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       {/* Toast Notifikasi Tersalin */}
       {copiedPhone && (
         <div className="fixed bottom-6 right-6 z-50 bg-gray-900 text-white px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2 text-sm animate-in fade-in slide-in-from-bottom-3 duration-200">
@@ -306,10 +485,20 @@ const PairingAdmin = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Manajemen Pairing Mentor & Mentee</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Jodohkan mentee dengan mentor yang tepat, pantau masa langganan aktif, durasi bimbingan, dan kelola nomor kontak.
+            Jodohkan mentee dengan mentor yang tepat, pantau masa langganan aktif, durasi bimbingan, keaktifan sesi, dan kelola nomor kontak.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Tombol Ekspor CSV */}
+          <button
+            onClick={handleExportCSV}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition shadow-sm text-xs font-semibold"
+            title="Ekspor rekap data pairing ke CSV/Excel"
+          >
+            <Download size={16} className="text-gray-500" />
+            <span>Ekspor CSV</span>
+          </button>
+
           <button
             onClick={fetchData}
             disabled={loading}
@@ -318,6 +507,7 @@ const PairingAdmin = () => {
           >
             <RefreshCw size={18} className={loading ? "animate-spin text-[#b38867]" : ""} />
           </button>
+
           <button
             onClick={() => {
               setFeedback(null);
@@ -332,7 +522,7 @@ const PairingAdmin = () => {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Pairing</p>
@@ -398,7 +588,7 @@ const PairingAdmin = () => {
       )}
 
       {/* Filter & Search Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 w-full">
         {/* Input Cari */}
         <div className="flex-1 flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-xl border border-gray-200 focus-within:border-[#b38867] focus-within:bg-white transition">
           <Search size={18} className="text-gray-400 flex-shrink-0" />
@@ -464,22 +654,23 @@ const PairingAdmin = () => {
       </div>
 
       {/* Tabel Pairing */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden w-full">
         {loading ? (
           <div className="p-16 flex flex-col items-center justify-center text-gray-500 gap-3">
             <RefreshCw className="animate-spin text-[#b38867]" size={28} />
             <span className="text-sm font-medium">Memuat data pasangan mentoring...</span>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto w-full">
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-gray-600 font-semibold border-b border-gray-200">
                 <tr>
                   <th className="py-4 px-5">ID</th>
-                  <th className="py-4 px-5">Mentor & Kontak</th>
+                  <th className="py-4 px-5">Mentor & Beban Kuota</th>
                   <th className="py-4 px-5">Mentee & Kontak</th>
                   <th className="py-4 px-5">Masa Langganan Aktif</th>
                   <th className="py-4 px-5">Durasi Pairing</th>
+                  <th className="py-4 px-5">Keaktifan Sesi</th>
                   <th className="py-4 px-5 text-center">Status</th>
                   <th className="py-4 px-5 text-center">Aksi</th>
                 </tr>
@@ -491,10 +682,12 @@ const PairingAdmin = () => {
                     const remainingDays = getRemainingDays(p.ended_at);
                     const progressPct = getProgressPercentage(p.started_at, p.ended_at);
                     const isSessionActive = p.status === "active";
-                    const isSubActive = remainingDays === null || remainingDays >= 0;
 
                     const mentorWA = formatPhoneForWA(p.mentor?.phone);
                     const menteeWA = formatPhoneForWA(p.mentee?.phone);
+
+                    // Health check: has schedules or tasks?
+                    const totalActivities = (p.schedules_count || 0) + (p.tasks_count || 0);
 
                     return (
                       <tr key={p.id} className="hover:bg-gray-50/80 transition">
@@ -505,7 +698,7 @@ const PairingAdmin = () => {
                           </span>
                         </td>
 
-                        {/* Mentor & Contact */}
+                        {/* Mentor & Workload */}
                         <td className="py-4 px-5">
                           <div className="flex items-start gap-3">
                             <div className="w-9 h-9 rounded-full bg-[#b38867]/15 text-[#b38867] flex items-center justify-center font-bold text-sm flex-shrink-0">
@@ -648,9 +841,16 @@ const PairingAdmin = () => {
                                 </span>
                               )
                             ) : (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-500">
-                                Langganan Selesai
-                              </span>
+                              <div className="space-y-1">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-600">
+                                  Langganan Selesai
+                                </span>
+                                {p.certificate_eligible && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
+                                    <Award size={11} /> e-Sertifikat Diterbitkan
+                                  </span>
+                                )}
+                              </div>
                             )}
 
                             <div className="text-[11px] text-gray-500 flex items-center gap-1">
@@ -690,8 +890,50 @@ const PairingAdmin = () => {
                               ></div>
                             </div>
                             <div className="text-[10px] text-gray-400 text-right">
-                              {progressPct}% dari durasi
+                              {progressPct}% dari total durasi
                             </div>
+                          </div>
+                        </td>
+
+                        {/* Keaktifan Sesi (Session Health Indicator) */}
+                        <td className="py-4 px-5">
+                          <div className="space-y-1 text-xs">
+                            {isSessionActive ? (
+                              totalActivities > 0 ? (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                  <Activity size={12} className="text-emerald-500" />
+                                  Aktif ({p.schedules_count || 0} Sesi, {p.tasks_count || 0} Tugas)
+                                </span>
+                              ) : (
+                                <div className="space-y-1">
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                    <Clock size={11} className="text-amber-600" />
+                                    Perlu Jadwal Sesi
+                                  </span>
+                                  {mentorWA && (
+                                    <a
+                                      href={`https://wa.me/${mentorWA}?text=${encodeURIComponent(
+                                        `Halo Mentor ${p.mentor?.name || ""}, admin memantau belum ada agenda bimbingan aktif bersama mentee ${p.mentee?.name || ""}. Mohon jadwalkan sesi di portal ya.`
+                                      )}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-[10px] text-[#b38867] hover:underline flex items-center gap-1"
+                                      title="Kirim pengingat via WhatsApp"
+                                    >
+                                      <BellRing size={10} /> Ingatkan Mentor
+                                    </a>
+                                  )}
+                                </div>
+                              )
+                            ) : (
+                              <span className="text-[11px] text-gray-500">
+                                {p.completion_status === "lulus_memuaskan"
+                                  ? "🏆 Lulus Memuaskan"
+                                  : p.completion_status === "lulus_baik"
+                                  ? "⭐ Lulus Baik"
+                                  : "Selesai Standar"}
+                              </span>
+                            )}
                           </div>
                         </td>
 
@@ -712,28 +954,38 @@ const PairingAdmin = () => {
 
                         {/* Aksi */}
                         <td className="py-4 px-5 text-center">
-                          <div className="flex items-center justify-center gap-2">
+                          <div className="flex items-center justify-center gap-1.5 flex-wrap">
                             {/* Tombol Detail */}
                             <button
                               onClick={() => setSelectedPairingDetail(p)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
                               title="Lihat Detail Lengkap"
                             >
-                              <Eye size={13} />
+                              <Eye size={12} />
                               <span>Detail</span>
                             </button>
 
-                            {/* Tombol Akhiri Sesi */}
-                            {isSessionActive ? (
+                            {/* Tombol Perpanjang Langganan */}
+                            {isSessionActive && (
                               <button
-                                onClick={() => setPairingToEnd(p)}
-                                className="px-2.5 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition"
+                                onClick={() => openExtendModal(p)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition"
+                                title="Perpanjang Masa Langganan Pairing"
+                              >
+                                <CalendarPlus size={12} />
+                                <span>Perpanjang</span>
+                              </button>
+                            )}
+
+                            {/* Tombol Akhiri Sesi */}
+                            {isSessionActive && (
+                              <button
+                                onClick={() => openEndModal(p)}
+                                className="px-2.5 py-1 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition"
                                 title="Akhiri sesi bimbingan pairing ini"
                               >
-                                Akhiri Sesi
+                                Akhiri
                               </button>
-                            ) : (
-                              <span className="text-xs text-gray-400 italic">Arsip</span>
                             )}
                           </div>
                         </td>
@@ -742,7 +994,7 @@ const PairingAdmin = () => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-gray-400">
+                    <td colSpan={8} className="py-12 text-center text-gray-400">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <Users size={32} className="text-gray-300" />
                         <p className="text-sm font-medium">
@@ -769,7 +1021,7 @@ const PairingAdmin = () => {
       </div>
 
       {/* ======================================================== */}
-      {/* MODAL 1: BUAT PASANGAN MENTORING BARU (UPGRADED UI)      */}
+      {/* MODAL 1: BUAT PASANGAN MENTORING (SMART MATCHMAKING)     */}
       {/* ======================================================== */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-200">
@@ -783,7 +1035,7 @@ const PairingAdmin = () => {
                 <div>
                   <h2 className="text-lg font-bold text-gray-800">Buat Pasangan Mentoring</h2>
                   <p className="text-xs text-gray-500">
-                    Jodohkan mentor & mentee serta tetapkan paket langganan dan durasi.
+                    Jodohkan mentor & mentee dengan rekomendasi kecocokan keahlian dan kuota.
                   </p>
                 </div>
               </div>
@@ -797,53 +1049,10 @@ const PairingAdmin = () => {
 
             {/* Modal Body / Form */}
             <form onSubmit={handleCreatePairing} className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
-              {/* 1. Pilih Mentor */}
+              {/* 1. Pilih Mentee Pertama (Untuk Smart Matching Mentor) */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
-                  1. Pilih Mentor <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="mentor_id"
-                  value={formData.mentor_id}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#b38867]/20 focus:border-[#b38867] outline-none transition"
-                >
-                  <option value="">-- Pilih Mentor Bimbingan --</option>
-                  {mentors.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} ({m.email}) {m.phone ? `• Telp: ${m.phone}` : ""}
-                    </option>
-                  ))}
-                </select>
-
-                {/* Mentor Preview Card */}
-                {selectedMentor && (
-                  <div className="mt-2.5 p-3 rounded-xl bg-[#b38867]/5 border border-[#b38867]/20 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-[#b38867] text-white flex items-center justify-center font-bold text-xs">
-                        {selectedMentor.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="font-semibold text-gray-800">{selectedMentor.name}</div>
-                        <div className="text-gray-500">{selectedMentor.email}</div>
-                      </div>
-                    </div>
-                    {selectedMentor.phone ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
-                        <Phone size={11} /> {selectedMentor.phone}
-                      </span>
-                    ) : (
-                      <span className="text-[11px] text-gray-400 italic">Belum ada no. HP</span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* 2. Pilih Mentee */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
-                  2. Pilih Mentee <span className="text-red-500">*</span>
+                  1. Pilih Mentee Bimbingan <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="mentee_id"
@@ -852,7 +1061,7 @@ const PairingAdmin = () => {
                   required
                   className="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#b38867]/20 focus:border-[#b38867] outline-none transition"
                 >
-                  <option value="">-- Pilih Mentee Bimbingan --</option>
+                  <option value="">-- Pilih Mentee Terdaftar --</option>
                   {mentees.map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.name} ({m.email}) {m.phone ? `• Telp: ${m.phone}` : ""}
@@ -870,6 +1079,11 @@ const PairingAdmin = () => {
                       <div>
                         <div className="font-semibold text-gray-800">{selectedMentee.name}</div>
                         <div className="text-gray-500">{selectedMentee.email}</div>
+                        {selectedMentee.bio && (
+                          <div className="text-[11px] text-blue-700 mt-0.5 line-clamp-1">
+                            Minat/Fokus: {selectedMentee.bio}
+                          </div>
+                        )}
                       </div>
                     </div>
                     {selectedMentee.phone ? (
@@ -878,6 +1092,104 @@ const PairingAdmin = () => {
                       </span>
                     ) : (
                       <span className="text-[11px] text-gray-400 italic">Belum ada no. HP</span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Pilih Mentor (dengan Kuota & Smart Matchmaking) */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    2. Pilih Mentor Pembimbing <span className="text-red-500">*</span>
+                  </label>
+                  {selectedMentee && (
+                    <button
+                      type="button"
+                      onClick={() => setSmartMatchOnly(!smartMatchOnly)}
+                      className={`text-[11px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 transition ${
+                        smartMatchOnly
+                          ? "bg-amber-100 text-amber-800 border border-amber-300"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      <Sparkles size={11} className="text-amber-500" />
+                      <span>{smartMatchOnly ? "Semua Mentor" : "Filter Mentor Cocok"}</span>
+                    </button>
+                  )}
+                </div>
+
+                <select
+                  name="mentor_id"
+                  value={formData.mentor_id}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#b38867]/20 focus:border-[#b38867] outline-none transition"
+                >
+                  <option value="">-- Pilih Mentor Pembimbing --</option>
+                  {displayedMentors.map((m) => {
+                    const activeCount = m.active_pairings_count || 0;
+                    const isFull = activeCount >= MAX_MENTEES_PER_MENTOR;
+                    const activities = (m.learning_activities || m.learningActivities || []).map(a => a.title).join(", ");
+                    return (
+                      <option key={m.id} value={m.id}>
+                        {m.name} — Kuota: {activeCount}/{MAX_MENTEES_PER_MENTOR} {isFull ? "(Penuh)" : "(Tersedia)"} {activities ? `[${activities}]` : ""}
+                      </option>
+                    );
+                  })}
+                </select>
+
+                {/* Mentor Preview & Capacity Card */}
+                {selectedMentor && (
+                  <div className="mt-2.5 p-3.5 rounded-xl bg-[#b38867]/5 border border-[#b38867]/20 space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-[#b38867] text-white flex items-center justify-center font-bold text-xs">
+                          {selectedMentor.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-800">{selectedMentor.name}</div>
+                          <div className="text-gray-500">{selectedMentor.email}</div>
+                        </div>
+                      </div>
+                      {selectedMentor.phone && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
+                          <Phone size={11} /> {selectedMentor.phone}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Kuota & Kapasitas Indicator */}
+                    <div className="pt-2 border-t border-[#b38867]/15 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-600 font-medium">Beban Bimbingan:</span>
+                        <span className={`px-2 py-0.5 rounded-md font-bold text-[11px] ${
+                          (selectedMentor.active_pairings_count || 0) >= MAX_MENTEES_PER_MENTOR
+                            ? "bg-red-100 text-red-700"
+                            : (selectedMentor.active_pairings_count || 0) >= 3
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-emerald-100 text-emerald-700"
+                        }`}>
+                          {selectedMentor.active_pairings_count || 0} / {MAX_MENTEES_PER_MENTOR} Mentee Aktif
+                        </span>
+                      </div>
+                      {(selectedMentor.active_pairings_count || 0) >= MAX_MENTEES_PER_MENTOR && (
+                        <span className="text-red-500 font-bold text-[11px] flex items-center gap-1">
+                          <AlertTriangle size={12} /> Kuota Penuh
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Bidang Keahlian */}
+                    {(selectedMentor.learning_activities || selectedMentor.learningActivities || []).length > 0 && (
+                      <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                        <span className="text-[10px] text-gray-400 font-semibold">Keahlian:</span>
+                        {(selectedMentor.learning_activities || selectedMentor.learningActivities).map(a => (
+                          <span key={a.id} className="text-[10px] bg-white text-gray-700 px-2 py-0.5 rounded-md border border-gray-200">
+                            {a.title}
+                          </span>
+                        ))}
+                      </div>
                     )}
                   </div>
                 )}
@@ -901,7 +1213,6 @@ const PairingAdmin = () => {
                     </option>
                   ))}
                 </select>
-                {/* Fallback custom package title if not choosing plan */}
                 {!formData.subscription_plan_id && (
                   <input
                     type="text"
@@ -914,7 +1225,7 @@ const PairingAdmin = () => {
                 )}
               </div>
 
-              {/* 4. Durasi & Tanggal Mulai / Selesai */}
+              {/* 4. Durasi & Periode */}
               <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -925,7 +1236,6 @@ const PairingAdmin = () => {
                   </span>
                 </div>
 
-                {/* Duration Presets */}
                 <div className="grid grid-cols-4 gap-2">
                   {[1, 3, 6, 12].map((m) => (
                     <button
@@ -943,7 +1253,6 @@ const PairingAdmin = () => {
                   ))}
                 </div>
 
-                {/* Date pickers */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   <div>
                     <label className="block text-[11px] font-medium text-gray-600 mb-1">
@@ -1027,43 +1336,235 @@ const PairingAdmin = () => {
       )}
 
       {/* ======================================================== */}
-      {/* MODAL 2: KONFIRMASI AKHIRI SESI (REPLACES NATIVE ALERT)  */}
+      {/* MODAL 2: PERPANJANG MASA LANGGANAN (EXTEND PAIRING)      */}
+      {/* ======================================================== */}
+      {pairingToExtend && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-emerald-50/50 to-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                  <CalendarPlus size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">
+                    Perpanjang Masa Langganan
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Tambah durasi bimbingan aktif untuk #{pairingToExtend.id} ({pairingToExtend.mentee?.name})
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setPairingToExtend(null)}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <form onSubmit={handleExtendPairingSubmit} className="p-6 space-y-4">
+              {/* Ringkasan Pasangan */}
+              <div className="p-3.5 rounded-xl bg-gray-50 border border-gray-200 text-xs space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Mentee:</span>
+                  <span className="font-semibold text-gray-800">{pairingToExtend.mentee?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Mentor:</span>
+                  <span className="font-semibold text-gray-800">{pairingToExtend.mentor?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Berakhir Saat Ini:</span>
+                  <span className="font-semibold text-amber-700">{formatDateIndo(pairingToExtend.ended_at)}</span>
+                </div>
+              </div>
+
+              {/* Pilihan Penambahan Durasi */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
+                  Tambah Durasi Bimbingan
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[1, 2, 3, 6].map(num => (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => setExtendData(prev => ({ ...prev, additional_months: num }))}
+                      className={`py-2 text-xs font-bold rounded-xl border transition ${
+                        Number(extendData.additional_months) === num
+                          ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                          : "bg-white text-gray-700 border-gray-200 hover:bg-gray-100"
+                      }`}
+                    >
+                      +{num} Bulan
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ganti / Upgrade Paket (Opsional) */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Paket Langganan (Opsional)
+                </label>
+                <select
+                  value={extendData.subscription_plan_id}
+                  onChange={(e) => {
+                    const pid = e.target.value;
+                    const plan = subscriptionPlans.find(p => String(p.id) === String(pid));
+                    setExtendData(prev => ({
+                      ...prev,
+                      subscription_plan_id: pid,
+                      subscription_name: plan ? plan.title : ""
+                    }));
+                  }}
+                  className="w-full p-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-emerald-600"
+                >
+                  <option value="">-- Pertahankan Paket Saat Ini --</option>
+                  {subscriptionPlans.map(sp => (
+                    <option key={sp.id} value={sp.id}>
+                      {sp.icon || "📦"} {sp.title} ({sp.price})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Catatan Perpanjangan */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                  Catatan Pembayaran / Referensi Perpanjangan
+                </label>
+                <input
+                  type="text"
+                  value={extendData.notes}
+                  onChange={(e) => setExtendData(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Misal: Perpanjangan paket via transfer manual..."
+                  className="w-full p-2.5 text-xs border border-gray-200 rounded-xl outline-none focus:border-emerald-600"
+                />
+              </div>
+
+              {/* Footer */}
+              <div className="pt-2 flex items-center justify-end gap-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setPairingToExtend(null)}
+                  className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingExtend}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition disabled:opacity-50"
+                >
+                  {submittingExtend ? (
+                    <>
+                      <RefreshCw size={15} className="animate-spin" />
+                      <span>Memproses...</span>
+                    </>
+                  ) : (
+                    <span>Konfirmasi Perpanjangan</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL 3: KONFIRMASI AKHIRI SESI DENGAN EVALUASI & SERTIF */}
       {/* ======================================================== */}
       {pairingToEnd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Header Alert */}
-            <div className="p-6 text-center space-y-3">
-              <div className="w-14 h-14 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto shadow-inner">
-                <AlertTriangle size={28} />
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-amber-50 to-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
+                  <Award size={22} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">
+                    Akhiri & Evaluasi Sesi Mentoring
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Tandai sesi bimbingan selesai dan tetapkan evaluasi kelulusan.
+                  </p>
+                </div>
               </div>
-              <h3 className="text-lg font-bold text-gray-800">
-                Akhiri Sesi Mentoring?
-              </h3>
-              <p className="text-xs text-gray-500 max-w-sm mx-auto leading-relaxed">
-                Tindakan ini akan menandai status pairing sebagai <strong>Selesai</strong> dan mengakhiri masa bimbingan aktif untuk pasangan ini.
-              </p>
+              <button
+                onClick={() => setPairingToEnd(null)}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
+            {/* Form Body */}
+            <div className="p-6 space-y-4">
               {/* Info Pasangan Ringkas */}
-              <div className="mt-4 p-3.5 rounded-xl bg-gray-50 border border-gray-200 text-left text-xs space-y-2">
+              <div className="p-3.5 rounded-xl bg-gray-50 border border-gray-200 text-left text-xs space-y-2">
                 <div className="flex justify-between items-center pb-2 border-b border-gray-200">
                   <span className="text-gray-500">Pairing ID:</span>
                   <span className="font-mono font-semibold text-gray-700">#{pairingToEnd.id}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-500">Mentor:</span>
-                  <span className="font-semibold text-gray-800">{pairingToEnd.mentor?.name}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-500">Mentee:</span>
                   <span className="font-semibold text-gray-800">{pairingToEnd.mentee?.name}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500">Paket:</span>
-                  <span className="font-semibold text-[#b38867]">
-                    {pairingToEnd.subscription_name || pairingToEnd.subscription_plan?.title || "Paket Standar"}
-                  </span>
+                  <span className="text-gray-500">Mentor:</span>
+                  <span className="font-semibold text-gray-800">{pairingToEnd.mentor?.name}</span>
                 </div>
+              </div>
+
+              {/* Status Kelulusan */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Predikat Hasil Bimbingan
+                </label>
+                <select
+                  value={endData.completion_status}
+                  onChange={(e) => setEndData(prev => ({ ...prev, completion_status: e.target.value }))}
+                  className="w-full p-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-amber-600"
+                >
+                  <option value="lulus_memuaskan">🏆 Lulus Sangat Memuaskan (Target Tercapai)</option>
+                  <option value="lulus_baik">⭐ Lulus Baik (Kompeten)</option>
+                  <option value="selesai_standar">✅ Selesai Masa Bimbingan Standar</option>
+                  <option value="berhenti_awal">⚠️ Selesai Lebih Awal / Batal</option>
+                </select>
+              </div>
+
+              {/* Checkbox Sertifikat */}
+              <div className="flex items-center gap-2 p-3 bg-purple-50 rounded-xl border border-purple-200">
+                <input
+                  type="checkbox"
+                  id="certCheck"
+                  checked={endData.certificate_eligible}
+                  onChange={(e) => setEndData(prev => ({ ...prev, certificate_eligible: e.target.checked }))}
+                  className="w-4 h-4 text-[#b38867] rounded focus:ring-[#b38867]"
+                />
+                <label htmlFor="certCheck" className="text-xs text-purple-900 font-semibold cursor-pointer">
+                  Terbitkan e-Sertifikat Kelulusan Resmi untuk Mentee
+                </label>
+              </div>
+
+              {/* Catatan Evaluasi */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                  Catatan Evaluasi / Rekomendasi Karir
+                </label>
+                <textarea
+                  rows={2}
+                  value={endData.completion_notes}
+                  onChange={(e) => setEndData(prev => ({ ...prev, completion_notes: e.target.value }))}
+                  placeholder="Misal: Mentee telah menyelesaikan seluruh tugas roadmap dengan portofolio siap kerja..."
+                  className="w-full p-2.5 text-xs border border-gray-200 rounded-xl outline-none focus:border-amber-600 resize-none"
+                />
               </div>
             </div>
 
@@ -1086,10 +1587,10 @@ const PairingAdmin = () => {
                 {submittingEnd ? (
                   <>
                     <RefreshCw size={15} className="animate-spin" />
-                    <span>Memproses...</span>
+                    <span>Menyimpan...</span>
                   </>
                 ) : (
-                  <span>Ya, Akhiri Sesi</span>
+                  <span>Selesaikan & Simpan Evaluasi</span>
                 )}
               </button>
             </div>
@@ -1098,7 +1599,7 @@ const PairingAdmin = () => {
       )}
 
       {/* ======================================================== */}
-      {/* MODAL 3: DETAIL LENGKAP PAIRING & KONTAK                 */}
+      {/* MODAL 4: DETAIL LENGKAP PAIRING & KONTAK                 */}
       {/* ======================================================== */}
       {selectedPairingDetail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-200">
@@ -1343,7 +1844,7 @@ const PairingAdmin = () => {
                 <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider block mb-1">
                   Catatan Tambahan
                 </span>
-                <p className="text-xs text-gray-600 leading-relaxed">
+                <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">
                   {selectedPairingDetail.notes || "Tidak ada catatan khusus untuk pasangan ini."}
                 </p>
               </div>
@@ -1351,16 +1852,26 @@ const PairingAdmin = () => {
 
             {/* Footer */}
             <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-              <div>
+              <div className="flex items-center gap-2">
                 {selectedPairingDetail.status === "active" && (
-                  <button
-                    onClick={() => {
-                      setPairingToEnd(selectedPairingDetail);
-                    }}
-                    className="px-3.5 py-2 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition"
-                  >
-                    Akhiri Sesi Pairing
-                  </button>
+                  <>
+                    <button
+                      onClick={() => {
+                        openExtendModal(selectedPairingDetail);
+                      }}
+                      className="px-3.5 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition"
+                    >
+                      Perpanjang Langganan
+                    </button>
+                    <button
+                      onClick={() => {
+                        openEndModal(selectedPairingDetail);
+                      }}
+                      className="px-3.5 py-2 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition"
+                    >
+                      Akhiri Sesi
+                    </button>
+                  </>
                 )}
               </div>
               <button

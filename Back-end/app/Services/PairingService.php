@@ -57,14 +57,64 @@ class PairingService
     }
 
     /**
-     * (Opsional) Mengakhiri masa pairing
+     * Mengakhiri masa pairing dengan opsi evaluasi dan sertifikat
      */
-    public function endPairing(Pairing $pairing): Pairing
+    public function endPairing(Pairing $pairing, array $data = []): Pairing
     {
-        $pairing->update([
-            'status' => 'completed', // atau 'inactive'
+        $updateData = [
+            'status' => 'completed',
             'ended_at' => now(),
-        ]);
+        ];
+
+        if (isset($data['completion_status'])) {
+            $updateData['completion_status'] = $data['completion_status'];
+        }
+        if (isset($data['completion_notes'])) {
+            $updateData['completion_notes'] = $data['completion_notes'];
+        }
+        if (isset($data['certificate_eligible'])) {
+            $updateData['certificate_eligible'] = (bool) $data['certificate_eligible'];
+        }
+
+        $pairing->update($updateData);
+
+        return $pairing;
+    }
+
+    /**
+     * Memperpanjang masa langganan / durasi bimbingan pairing
+     */
+    public function extendPairing(Pairing $pairing, array $data): Pairing
+    {
+        $additionalMonths = (int) ($data['additional_months'] ?? 1);
+        if ($additionalMonths < 1) {
+            $additionalMonths = 1;
+        }
+
+        // Hitung tanggal berakhir baru
+        $currentEnd = $pairing->ended_at ? \Carbon\Carbon::parse($pairing->ended_at) : now();
+        $baseDate = $currentEnd->isFuture() ? $currentEnd : now();
+        $newEnd = (clone $baseDate)->addMonths($additionalMonths);
+
+        $updateData = [
+            'duration_months' => ($pairing->duration_months ?? 0) + $additionalMonths,
+            'ended_at'        => $newEnd->toDateString(),
+            'extended_at'      => now(),
+            'status'          => 'active', // Pastikan aktif jika sebelumnya telah selesai
+        ];
+
+        if (!empty($data['subscription_plan_id'])) {
+            $updateData['subscription_plan_id'] = $data['subscription_plan_id'];
+        }
+        if (!empty($data['subscription_name'])) {
+            $updateData['subscription_name'] = $data['subscription_name'];
+        }
+        if (!empty($data['notes'])) {
+            $notePrefix = $pairing->notes ? $pairing->notes . "\n---\n" : "";
+            $updateData['notes'] = $notePrefix . "[" . now()->toDateString() . "] Perpanjangan +" . $additionalMonths . " bulan: " . $data['notes'];
+        }
+
+        $pairing->update($updateData);
 
         return $pairing;
     }
