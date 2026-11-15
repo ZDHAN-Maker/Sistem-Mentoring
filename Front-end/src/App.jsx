@@ -9,6 +9,7 @@ import DashboardMentor from './pages/Role/Mentor/DashboardMentor';
 import DashboardMentee from './pages/Role/Mentee/DashboardMentee';
 import ProtectedRoute from './components/PrivateRoute';
 import Header from './components/Header';
+import Footer from './components/Footer';
 import Langganan from './pages/Langganan';
 import ELearning from './pages/E-Learning';
 
@@ -27,12 +28,12 @@ const AppContent = () => {
   // Halaman publik (tidak perlu login)
   const publicPaths = ['/login', '/register', '/program', '/langganan', '/e-learning', '/elearning'];
 
-  // Hanya tampilkan Header di halaman publik (case-insensitive)
-  const showHeader = publicPaths.includes(location.pathname.toLowerCase()) && !isAuthenticated;
+  // Hanya tampilkan Header dan Footer di halaman publik (case-insensitive)
+  const isPublicPage = publicPaths.includes(location.pathname.toLowerCase()) && !isAuthenticated;
 
   return (
     <>
-      {showHeader && <Header />}
+      {isPublicPage && <Header />}
       <Routes>
         {/* Halaman Publik */}
         <Route path='/program' element={<Program />} />
@@ -93,6 +94,7 @@ const AppContent = () => {
         {/* Fallback 404 Route */}
         <Route path="*" element={<Navigate to="/program" replace />} />
       </Routes>
+      {isPublicPage && <Footer />}
     </>
   );
 };
