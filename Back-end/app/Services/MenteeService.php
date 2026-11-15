@@ -14,7 +14,12 @@ class MenteeService
      */
     public function getAllMentees()
     {
-        return User::where('role', 'mentee')->get();
+        return User::whereHas('roles', fn($q) => $q->where('name', 'Mentee'))
+            ->with(['roles', 'learningActivities'])
+            ->withCount(['menteePairings as active_pairings_count' => function ($q) {
+                $q->where('status', 'active');
+            }])
+            ->get();
     }
 
     /**
@@ -22,7 +27,10 @@ class MenteeService
      */
     public function getMenteeById($id)
     {
-        $mentee = User::where('role', 'mentee')->where('id', $id)->first();
+        $mentee = User::whereHas('roles', fn($q) => $q->where('name', 'Mentee'))
+            ->with('roles')
+            ->where('id', $id)
+            ->first();
 
         if (!$mentee) {
             throw new \Exception("Mentee not found");

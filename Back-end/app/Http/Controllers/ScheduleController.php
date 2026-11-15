@@ -27,13 +27,21 @@ class ScheduleController extends Controller
     {
         $user = Auth::user();
         
-        // Ambil semua jadwal di mana user menjadi Mentor ATAU Mentee melalui relasi Pairing
-        $schedules = Schedule::whereHas('pairing', function ($query) use ($user) {
-            $query->where('mentor_id', $user->id)
+        $query = Schedule::with([
+            'pairing:id,mentor_id,mentee_id,subscription_name',
+            'pairing.mentor:id,name,email,avatar,phone',
+            'pairing.mentee:id,name,email,avatar,phone'
+        ]);
+
+        // Jika bukan admin, hanya ambil jadwal yang melibatkan user ini
+        if (!$user->hasRole('Admin')) {
+            $query->whereHas('pairing', function ($q) use ($user) {
+                $q->where('mentor_id', $user->id)
                   ->orWhere('mentee_id', $user->id);
-        })->with('pairing:id,mentor_id,mentee_id') // Load data relasi yang relevan
-          ->orderBy('start_time', 'asc')
-          ->get();
+            });
+        }
+
+        $schedules = $query->orderBy('start_time', 'asc')->get();
 
         return response()->json([
             'status' => 'success',
@@ -90,19 +98,29 @@ class ScheduleController extends Controller
     }
 
     /**
-     * PATCH: Mentor mengubah status jadwal (completed/canceled)
+     * PATCH: Mentor mengubah status jadwal (completed/canceled) dan menyimpan notulensi
      */
     public function updateStatus(Request $request, Schedule $schedule)
     {
-        $request->validate(['status' => 'required|string']);
+        $request->validate([
+            'status' => 'required|string',
+            'session_notes' => 'nullable|string',
+            'attendance_status' => 'nullable|string'
+        ]);
 
         try {
             $user = Auth::user();
-            $updatedSchedule = $this->scheduleService->updateStatus($schedule, $request->status, $user);
+            $updatedSchedule = $this->scheduleService->updateStatus(
+                $schedule, 
+                $request->status, 
+                $user, 
+                $request->input('session_notes'),
+                $request->input('attendance_status')
+            );
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Status jadwal berhasil diperbarui.',
+                'message' => 'Status jadwal dan catatan bimbingan berhasil diperbarui.',
                 'data' => $updatedSchedule
             ], 200);
 

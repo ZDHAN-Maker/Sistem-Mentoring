@@ -1,0 +1,35 @@
+# Archives
+*.zip
+*.tar.gz
+*.rar
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Dependencies
+/Back-end/vendor/
+/Back-end/node_modules/
+/Front-end/node_modules/
+
+# Frontend Build
+/Front-end/dist/
+/Front-end/dist-ssr/
+
+# SQLite local database
+/Back-end/database/*.sqlite
+/Back-end/database/*.sqlite-journal
+
+# Laravel Storage & Logs
+/Back-end/storage/*.key
+/Back-end/storage/logs/*.log
+/Back-end/storage/framework/cache/data/*
+/Back-end/storage/framework/sessions/*
+/Back-end/storage/framework/views/*
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

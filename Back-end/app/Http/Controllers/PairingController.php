@@ -18,12 +18,21 @@ class PairingController extends Controller
     }
 
     /**
-     * Menampilkan daftar semua pairing (opsional, untuk dashboard admin)
+     * Menampilkan daftar semua pairing (untuk dashboard admin)
      */
     public function index()
     {
-        // Mengambil semua data pairing beserta relasi mentor dan mentee-nya
-        $pairings = Pairing::with(['mentor:id,name,email', 'mentee:id,name,email'])->get();
+        // Mengambil semua data pairing beserta relasi mentor, mentee, subscription plan, dan statistik aktivitas
+        $pairings = Pairing::with([
+            'mentor:id,name,email,phone,avatar',
+            'mentor.learningActivities:id,title',
+            'mentee:id,name,email,phone,avatar',
+            'mentee.learningActivities:id,title',
+            'subscriptionPlan'
+        ])
+        ->withCount(['schedules', 'tasks', 'progressReports'])
+        ->latest()
+        ->get();
 
         return response()->json([
             'status' => 'success',
@@ -42,24 +51,25 @@ class PairingController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Pairing berhasil dibuat. Hubungan mentoring resmi terbentuk.',
-                'data' => $pairing->load(['mentor:id,name', 'mentee:id,name']) // Load data relasi untuk respons
-            ], 201); // 201 Created
+                'data' => $pairing->load(['mentor:id,name', 'mentee:id,name'])
+            ], 201);
 
         } catch (Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal membuat pairing: ' . $e->getMessage()
-            ], 400); // 400 Bad Request
+            ], 400);
         }
     }
 
     /**
-     * Mengakhiri sesi mentoring
+     * Mengakhiri sesi mentoring dengan opsi evaluasi dan sertifikat
      */
-    public function complete(Pairing $pairing)
+    public function complete(Request $request, Pairing $pairing)
     {
         try {
-            $completedPairing = $this->pairingService->endPairing($pairing);
+            $data = $request->only(['completion_status', 'completion_notes', 'certificate_eligible']);
+            $completedPairing = $this->pairingService->endPairing($pairing, $data);
 
             return response()->json([
                 'status' => 'success',
@@ -71,6 +81,35 @@ class PairingController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengakhiri pairing: ' . $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * Memperpanjang masa langganan / durasi pairing
+     */
+    public function extend(Request $request, Pairing $pairing)
+    {
+        $validated = $request->validate([
+            'additional_months'    => 'required|integer|min:1|max:36',
+            'subscription_plan_id' => 'nullable|exists:subscription_plans,id',
+            'subscription_name'    => 'nullable|string|max:255',
+            'notes'                => 'nullable|string|max:500',
+        ]);
+
+        try {
+            $extendedPairing = $this->pairingService->extendPairing($pairing, $validated);
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Masa langganan pairing berhasil diperpanjang +' . $validated['additional_months'] . ' bulan.',
+                'data'    => $extendedPairing->load(['mentor:id,name,email,phone', 'mentee:id,name,email,phone', 'subscriptionPlan'])
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Gagal memperpanjang masa langganan: ' . $e->getMessage()
             ], 400);
         }
     }

@@ -26,7 +26,7 @@ class UserController extends Controller
 
     public function update(Request $request, $id)
     {
-        $data = $request->only(['name', 'email', 'password']);
+        $data = $request->only(['name', 'email', 'phone', 'bio', 'password']);
         $user = $this->userService->updateProfile($id, $data);
 
         return response()->json([
@@ -45,6 +45,54 @@ class UserController extends Controller
         $this->userService->changePassword($id, $request->old_password, $request->new_password);
 
         return response()->json(['message' => 'Password changed successfully']);
+    }
+
+    /**
+     * Memperbarui profil akun user yang sedang login (semua role)
+     */
+    public function updateMyProfile(Request $request)
+    {
+        try {
+            $user = $request->user();
+            $data = $request->only(['name', 'email', 'phone', 'bio', 'avatar']);
+            $updatedUser = $this->userService->updateProfile($user->id, $data);
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Profil berhasil diperbarui.',
+                'data'    => $updatedUser->load('roles')
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Gagal memperbarui profil: ' . $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * Mengubah password akun user yang sedang login (semua role)
+     */
+    public function changeMyPassword(Request $request)
+    {
+        try {
+            $request->validate([
+                'old_password' => 'required',
+                'new_password' => 'required|min:6'
+            ]);
+
+            $this->userService->changePassword($request->user()->id, $request->old_password, $request->new_password);
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Password berhasil diubah.'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage()
+            ], 400);
+        }
     }
 
     public function destroy($id)

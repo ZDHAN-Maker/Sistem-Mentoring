@@ -13,7 +13,7 @@ class UserService
      */
     public function getAllUsers()
     {
-        return User::all();
+        return User::with('roles')->get();
     }
 
     /**
@@ -21,7 +21,7 @@ class UserService
      */
     public function getUserById($id)
     {
-        return User::findOrFail($id);
+        return User::with('roles')->findOrFail($id);
     }
 
     /**
@@ -34,6 +34,15 @@ class UserService
         // Update field yang diperbolehkan
         $user->name  = $data['name'] ?? $user->name;
         $user->email = $data['email'] ?? $user->email;
+        if (array_key_exists('phone', $data)) {
+            $user->phone = $data['phone'];
+        }
+        if (array_key_exists('bio', $data)) {
+            $user->bio = $data['bio'];
+        }
+        if (array_key_exists('avatar', $data)) {
+            $user->avatar = $data['avatar'];
+        }
 
         if (isset($data['password'])) {
             $user->password = Hash::make($data['password']);

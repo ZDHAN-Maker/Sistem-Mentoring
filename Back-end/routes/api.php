@@ -15,10 +15,14 @@ use App\Http\Controllers\LearningActivityController;
 use App\Http\Controllers\PairingController;
 use App\Http\Controllers\MaterialProgressController;
 use App\Http\Controllers\ProgressReportController;
+use App\Http\Controllers\MentorController;
+use App\Http\Controllers\MenteeController;
+use App\Http\Controllers\SubscriptionPlanController;
 
-// ✅ Route tanpa middleware dulu (untuk login/register)
+// ✅ Route tanpa middleware dulu (untuk login/register/publik)
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
+Route::get('/subscription-plans', [SubscriptionPlanController::class, 'index']);
 
 // ✅ Route yang memerlukan autentikasi
 Route::middleware('auth:sanctum')->group(function () {
@@ -33,6 +37,10 @@ Route::middleware('auth:sanctum')->group(function () {
             'data' => $request->user()->load('roles')
         ]);
     });
+
+    // Profil dan Password user yang sedang login (semua role)
+    Route::put('/user/profile', [UserController::class, 'updateMyProfile']);
+    Route::put('/user/change-password', [UserController::class, 'changeMyPassword']);
 });
 
 Route::middleware(['auth:sanctum', 'role:Admin'])->group(function () {
@@ -44,6 +52,28 @@ Route::middleware(['auth:sanctum', 'role:Admin'])->group(function () {
 
     // Mengakhiri masa pairing
     Route::patch('/pairings/{pairing}/complete', [PairingController::class, 'complete']);
+
+    // Memperpanjang masa langganan / durasi pairing
+    Route::patch('/pairings/{pairing}/extend', [PairingController::class, 'extend']);
+
+    // Manajemen User
+    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::put('/users/{id}', [UserController::class, 'update']);
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
+
+    // Daftar Mentor dan Mentee untuk keperluan Admin / Pairing
+    Route::get('/mentors', [MentorController::class, 'index']);
+    Route::get('/mentees', [MenteeController::class, 'index']);
+
+    // Manajemen Paket Langganan (Admin CRUD)
+    Route::post('/subscription-plans', [SubscriptionPlanController::class, 'store']);
+    Route::put('/subscription-plans/{id}', [SubscriptionPlanController::class, 'update']);
+    Route::delete('/subscription-plans/{id}', [SubscriptionPlanController::class, 'destroy']);
+    Route::patch('/subscription-plans/{id}/toggle-active', [SubscriptionPlanController::class, 'toggleActive']);
+
+    // Siaran Pengumuman oleh Admin
+    Route::post('/notifications/broadcast', [NotificationController::class, 'broadcast']);
 });
 
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -70,6 +100,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
         // Mentor menge-post keahlian untuk ID-nya sendiri
         // Disarankan frontend mengirimkan ID user yang sedang login di URL parameter
         Route::post('/my-learning-activities/{mentor}', [LearningActivityController::class, 'syncMentorActivities']);
+        Route::get('/my-mentees', [MentorController::class, 'myMentees']);
+        Route::get('/mentors/{id}/mentees', [MentorController::class, 'mentees']);
+    });
+
+    // ==========================================
+    // AREA MENTEE (Mentee melihat mentor pembimbing)
+    // ==========================================
+    Route::middleware('role:Mentee')->group(function () {
+        Route::get('/my-mentor', [MenteeController::class, 'myMentor']);
     });
 });
 

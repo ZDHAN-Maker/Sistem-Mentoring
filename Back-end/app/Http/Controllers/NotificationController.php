@@ -93,6 +93,47 @@ class NotificationController extends Controller
     }
 
     /**
+     * POST /api/notifications/broadcast
+     * Admin: menyiarkan pengumuman ke seluruh user atau role tertentu
+     */
+    public function broadcast(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'title'       => 'required|string|max:150',
+            'message'     => 'required|string|max:1000',
+            'target_role' => 'nullable|string|in:all,Mentor,Mentee,Admin',
+        ]);
+
+        try {
+            $query = \App\Models\User::query();
+            if (!empty($validated['target_role']) && $validated['target_role'] !== 'all') {
+                $query->whereHas('roles', fn($q) => $q->where('name', $validated['target_role']));
+            }
+            $targetUsers = $query->get();
+
+            foreach ($targetUsers as $targetUser) {
+                \App\Models\Notification::create([
+                    'user_id' => $targetUser->id,
+                    'title'   => $validated['title'],
+                    'message' => $validated['message'],
+                    'type'    => 'announcement',
+                    'is_read' => false,
+                ]);
+            }
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Pengumuman berhasil disiarkan ke ' . $targetUsers->count() . ' pengguna.',
+            ], 201);
+        } catch (Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Gagal menyiarkan pengumuman: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * DELETE /api/notifications/{id}
      * Menghapus notifikasi
      */

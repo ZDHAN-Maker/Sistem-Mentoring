@@ -42,34 +42,56 @@ class ProgressReportService
     /**
      * Mentor membuat laporan penilaian / evaluasi perkembangan mentee
      */
-    public function createReport(array $data, User $mentor): ProgressReport
+    /**
+     * Mentor membuat laporan penilaian / evaluasi perkembangan mentee (bisa satu atau banyak mentee sekaligus)
+     */
+    public function createReports(array $data, User $mentor): array
     {
-        // 1. Keamanan RESTful: Pastikan ID Pairing yang dikirim adalah milik Mentor yang sedang login
-        $pairing = Pairing::where('id', $data['pairing_id'])
-            ->where('mentor_id', $mentor->id)
-            ->first();
+        $pairingIds = [];
+        if (!empty($data['pairing_ids']) && is_array($data['pairing_ids'])) {
+            $pairingIds = array_values(array_filter($data['pairing_ids']));
+        } elseif (!empty($data['pairing_id'])) {
+            $pairingIds = [$data['pairing_id']];
+        }
 
-        if (!$pairing) {
+        if (empty($pairingIds)) {
+            throw new AuthorizationException('Pilih minimal satu mentee bimbingan untuk diberikan penilaian/evaluasi.');
+        }
+
+        $validPairings = Pairing::whereIn('id', $pairingIds)
+            ->where('mentor_id', $mentor->id)
+            ->with('mentee')
+            ->get();
+
+        if ($validPairings->isEmpty()) {
             throw new AuthorizationException('Anda tidak memiliki hak akses untuk memberikan penilaian pada sesi pairing ini.');
         }
 
-        // 2. Simpan data evaluasi perkembangan ke database
-        $report = ProgressReport::create([
-            'pairing_id'  => $data['pairing_id'],
-            'mentor_id'   => $mentor->id,
-            'title'       => $data['title'],       // Misal: "Evaluasi Bulan Juni"
-            'summary'     => $data['summary'],     // Catatan rangkuman mentor
-            'performance_grade' => $data['performance_grade'], // Nilai performa (misal skala 1-100 atau A-E)
-            'status'      => 'published'
-        ]);
+        $createdReports = [];
+        foreach ($validPairings as $pairing) {
+            $report = ProgressReport::create([
+                'pairing_id'  => $pairing->id,
+                'mentor_id'   => $mentor->id,
+                'report_date' => $data['report_date'] ?? now()->toDateString(),
+                'note'        => $data['note'] ?? ($data['summary'] ?? '')
+            ]);
 
-        // 3. Eager load relasi pairing dan mentee untuk kebutuhan data di Listener
-        $report->load(['pairing.mentee']);
+            $report->load(['pairing.mentee']);
+            event(new ProgressReportCreated($report));
 
-        // 4. PICU EVENT: Sistem mengurus notifikasi di background proses secara otomatis
-        event(new ProgressReportCreated($report));
+            $createdReports[] = $report;
+        }
 
-        return $report;
+        return $createdReports;
+    }
+
+    /**
+     * Mentor membuat laporan penilaian tunggal (backward compatibility)
+     */
+    public function createReport(array $data, User $mentor): ProgressReport
+    {
+        $reports = $this->createReports($data, $mentor);
+        return $reports[0];
     }
 
     /**

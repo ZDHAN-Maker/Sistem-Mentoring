@@ -21,18 +21,25 @@ class DashboardService
     public function getAdminDashboardStats(): array
     {
         return [
-            'total_user'              => User::count(),
-            'total_mentor'            => User::whereHas('roles', fn($q) => $q->where('name', 'Mentor'))->count(),
-            'total_mentee'            => User::whereHas('roles', fn($q) => $q->where('name', 'Mentee'))->count(),
-            'total_admin'             => User::whereHas('roles', fn($q) => $q->where('name', 'Admin'))->count(),
-            'total_pairing_aktif'     => Pairing::where('status', 'active')->count(), // Asumsi ada field status
-            'total_learning_activity' => LearningActivity::count(),
-            'total_jadwal'            => Schedule::count(),
-            'total_materi'            => Material::count(),
-            'total_tugas'             => Task::count(),
-            'total_submission'        => Submission::count(),
-            'total_progress_report'   => ProgressReport::count(),
-            'total_notifikasi'        => Notification::count(),
+            'total_user'                    => User::count(),
+            'total_mentor'                  => User::whereHas('roles', fn($q) => $q->where('name', 'Mentor'))->count(),
+            'total_mentee'                  => User::whereHas('roles', fn($q) => $q->where('name', 'Mentee'))->count(),
+            'total_admin'                   => User::whereHas('roles', fn($q) => $q->where('name', 'Admin'))->count(),
+            'total_pairing_aktif'           => Pairing::where('status', 'active')->count(),
+            'total_pairing_selesai'         => Pairing::where('status', 'completed')->count(),
+            'total_langganan_aktif'         => Pairing::where('status', 'active')->where(fn($q) => $q->whereNull('ended_at')->orWhere('ended_at', '>=', now()))->count(),
+            'total_langganan_segera_habis'  => Pairing::where('status', 'active')->whereNotNull('ended_at')->whereBetween('ended_at', [now(), now()->addDays(14)])->count(),
+            'mentees_tanpa_pairing'         => User::whereHas('roles', fn($q) => $q->where('name', 'Mentee'))->whereDoesntHave('menteePairings', fn($q) => $q->where('status', 'active'))->count(),
+            'sertifikat_diterbitkan'        => Pairing::where('certificate_eligible', true)->count(),
+            'total_learning_activity'       => LearningActivity::count(),
+            'total_jadwal'                  => Schedule::count(),
+            'jadwal_mendatang'              => Schedule::where('start_time', '>=', now())->count(),
+            'total_materi'                  => Material::count(),
+            'total_tugas'                   => Task::count(),
+            'total_submission'              => Submission::count(),
+            'total_progress_report'         => ProgressReport::count(),
+            'total_notifikasi'              => Notification::count(),
+            'total_paket_langganan'         => \App\Models\SubscriptionPlan::count(),
         ];
     }
 
@@ -47,8 +54,8 @@ class DashboardService
         return [
             'total_mentee'               => Pairing::where('mentor_id', $mentor->id)->distinct('mentee_id')->count('mentee_id'),
             'pairing_aktif'              => Pairing::where('mentor_id', $mentor->id)->count(),
-            'jadwal_hari_ini'            => Schedule::where('mentor_id', $mentor->id)
-                ->whereDate('schedule_date', Carbon::today()) // Sesuaikan field date Anda
+            'jadwal_hari_ini'            => Schedule::whereIn('pairing_id', $mentorPairingIds)
+                ->whereDate('start_time', Carbon::today())
                 ->count(),
             'total_materi'               => Material::where('mentor_id', $mentor->id)->count(),
             'materi_dipublish'           => Material::where('mentor_id', $mentor->id)->where('status', 'published')->count(),
@@ -90,8 +97,8 @@ class DashboardService
 
         // Jadwal terdekat berikutnya
         $nextSchedule = Schedule::whereIn('pairing_id', $pairingIds)
-            ->where('schedule_date', '>=', Carbon::now())
-            ->orderBy('schedule_date', 'asc')
+            ->where('start_time', '>=', Carbon::now())
+            ->orderBy('start_time', 'asc')
             ->first();
 
         // Nilai submission terakhir
@@ -102,7 +109,7 @@ class DashboardService
 
         return [
             'mentor_saya'            => $mentorNames,
-            'jadwal_berikutnya'      => $nextSchedule ? $nextSchedule->schedule_date->format('Y-m-d H:i') : 'Tidak Ada Jadwal Terdekat',
+            'jadwal_berikutnya'      => $nextSchedule ? $nextSchedule->start_time->format('Y-m-d H:i') : 'Tidak Ada Jadwal Terdekat',
             'total_materi'           => $totalMaterialsAvailable,
             'materi_selesai'         => $completedMaterialsCount,
             'progress_belajar_persen' => $progressBelajarPersen,

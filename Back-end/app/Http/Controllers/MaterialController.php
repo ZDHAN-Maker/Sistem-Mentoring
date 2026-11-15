@@ -29,7 +29,7 @@ class MaterialController extends Controller
         if ($user->hasRole('Mentor')) {
             // Mentor melihat semua materi yang dia buat
             $materials = Material::where('mentor_id', $user->id)
-                ->with('pairing:id,mentee_id') // Optional: Lihat spesifik pairing
+                ->with(['pairing.mentee:id,name,email,avatar'])
                 ->latest()
                 ->get();
         } else if ($user->hasRole('Mentee')) {
@@ -63,12 +63,15 @@ class MaterialController extends Controller
             $user = Auth::user();
             $file = $request->file('file'); // Ambil file jika ada
 
-            $material = $this->materialService->createMaterial($request->validated(), $user, $file);
+            $materials = $this->materialService->createMaterials($request->validated(), $user, $file);
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Materi berhasil diunggah.',
-                'data' => $material
+                'message' => count($materials) > 1
+                    ? count($materials) . ' materi berhasil dibagikan ke mentee terpilih.'
+                    : 'Materi berhasil diunggah.',
+                'data' => count($materials) === 1 ? $materials[0] : $materials,
+                'count' => count($materials)
             ], 201);
 
         } catch (Exception $e) {
