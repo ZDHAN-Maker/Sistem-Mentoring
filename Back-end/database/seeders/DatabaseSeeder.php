@@ -52,5 +52,7 @@ class DatabaseSeeder extends Seeder
         if ($menteeRole) {
             $mentee->roles()->syncWithoutDetaching([$menteeRole->id]);
         }
+
+        $this->call(CertificateAndChatSeeder::class);
     }
 }

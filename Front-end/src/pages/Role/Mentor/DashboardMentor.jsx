@@ -13,6 +13,7 @@ import ReviewReportsAndFeedback from "./Review Reports & Feedback";
 import UploadMaterials from "./UploadMaterials";
 import AnnouncementsMentor from "./AnnouncementsMentor";
 import SettingsMentor from "./SettingsMentor";
+import MentorChat from "./MentorChat";
 
 const DashboardMentor = () => {
   const { role } = useAuth();
@@ -34,6 +35,7 @@ const DashboardMentor = () => {
             <Route path="/schedules" element={<MentoringSchedule />} />
             <Route path="/reports" element={<ReviewReportsAndFeedback />} />
             <Route path="/materials" element={<UploadMaterials />} />
+            <Route path="/chat" element={<MentorChat />} />
             <Route path="/announcements" element={<AnnouncementsMentor />} />
             <Route path="/settings" element={<SettingsMentor />} />
           </Routes>

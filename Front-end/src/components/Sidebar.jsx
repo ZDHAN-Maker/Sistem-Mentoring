@@ -16,7 +16,8 @@ import {
   LogOut,
   Sparkles,
   ChevronRight,
-  Settings
+  Settings,
+  MessageSquare
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -87,6 +88,7 @@ export default function Sidebar() {
       {
         section: "Komunikasi",
         items: [
+          { name: "Pesan & Chat Mentee", path: "/mentor-dashboard/chat", icon: MessageSquare },
           { name: "Pengumuman", path: "/mentor-dashboard/announcements", icon: Bell },
         ],
       },
@@ -111,6 +113,7 @@ export default function Sidebar() {
           { name: "Materi & Aktivitas", path: "/mentee-dashboard/learning-activities", icon: BookOpen },
           { name: "Tugas Saya", path: "/mentee-dashboard/tasks", icon: CheckSquare },
           { name: "Laporan Perkembangan", path: "/mentee-dashboard/reports", icon: FileText },
+          { name: "Sertifikat Saya", path: "/mentee-dashboard/certificates", icon: Award },
         ],
       },
       {
@@ -118,6 +121,7 @@ export default function Sidebar() {
         items: [
           { name: "Jadwal Bimbingan", path: "/mentee-dashboard/schedule", icon: Calendar },
           { name: "Mentor Pembimbing", path: "/mentee-dashboard/mentor", icon: UserCheck },
+          { name: "Chat Mentor", path: "/mentee-dashboard/chat", icon: MessageSquare },
           { name: "Pengumuman", path: "/mentee-dashboard/announcements", icon: Bell },
         ],
       },

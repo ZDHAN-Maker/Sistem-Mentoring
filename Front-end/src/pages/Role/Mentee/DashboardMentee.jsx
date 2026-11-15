@@ -14,6 +14,8 @@ import AnnouncementsMentee from "./AnnouncementsMentee";
 import StudentPortal from "./StudentPortalMentee";
 import LearningActivities from "./LearningActivities";
 import SettingsMentee from "./SettingsMentee";
+import MyCertificates from "./MyCertificates";
+import MenteeChat from "./MenteeChat";
 
 const DashboardMentee = () => {
   return (
@@ -32,8 +34,10 @@ const DashboardMentee = () => {
             <Route path="/" element={<DashboardHome />} />
             <Route path="/tasks" element={<MyTasks />} />
             <Route path="/reports" element={<MyReports />} />
+            <Route path="/certificates" element={<MyCertificates />} />
             <Route path="/schedule" element={<TutoringSchedule />} />
             <Route path="/mentor" element={<MyMentor />} />
+            <Route path="/chat" element={<MenteeChat />} />
             <Route path="/announcements" element={<AnnouncementsMentee />} />
             <Route path="/student-portal" element={<StudentPortal />} />
             <Route path="/learning-activities" element={<LearningActivities />} />
