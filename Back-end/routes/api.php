@@ -20,6 +20,7 @@ use App\Http\Controllers\MenteeController;
 use App\Http\Controllers\SubscriptionPlanController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\PushSubscriptionController;
 
 // ✅ Route tanpa middleware dulu (untuk login/register/publik)
 Route::post('/login', [AuthController::class, 'login']);
@@ -251,4 +252,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/chat/messages/{contactId}', [ChatController::class, 'getMessages']);
     Route::post('/chat/messages', [ChatController::class, 'sendMessage']);
     Route::patch('/chat/messages/{contactId}/read', [ChatController::class, 'markAsRead']);
+
+    // Web Push VAPID Notifications
+    Route::post('/push-subscriptions', [PushSubscriptionController::class, 'store']);
+    Route::delete('/push-subscriptions', [PushSubscriptionController::class, 'destroy']);
+    Route::post('/push-subscriptions/test', [PushSubscriptionController::class, 'sendTestPush']);
 });
+
+// VAPID Public Key (Akses Publik untuk Inisialisasi Service Worker)
+Route::get('/push-subscriptions/vapid-key', [PushSubscriptionController::class, 'getVapidPublicKey']);

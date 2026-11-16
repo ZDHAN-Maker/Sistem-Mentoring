@@ -19,8 +19,17 @@ import {
   CheckCircle2, 
   ExternalLink,
   Inbox,
-  Info
+  Info,
+  Radio,
+  Send
 } from 'lucide-react';
+import { 
+  isPushSupported, 
+  getNotificationPermission, 
+  subscribeUserToPush, 
+  sendTestPushNotification, 
+  registerServiceWorker 
+} from '../services/webPush';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -37,6 +46,13 @@ const Navbar = () => {
   const [liveToast, setLiveToast] = useState(null);
   const lastFetchedIdRef = useRef(null);
   const dropdownRef = useRef(null);
+
+  // Web Push VAPID state
+  const [pushSupported, setPushSupported] = useState(false);
+  const [pushPermission, setPushPermission] = useState('default'); // 'default' | 'granted' | 'denied'
+  const [subscribingPush, setSubscribingPush] = useState(false);
+  const [testingPush, setTestingPush] = useState(false);
+  const [pushAlert, setPushAlert] = useState(null);
 
   const fetchNotifs = async (silent = true) => {
     if (!silent) setIsRefreshing(true);
@@ -72,8 +88,52 @@ const Navbar = () => {
     fetchNotifs(true);
     // Polling setiap 30 detik untuk memperbarui notifikasi real-time
     const interval = setInterval(() => fetchNotifs(true), 30000);
+
+    // Inisialisasi Service Worker & Web Push status
+    if (isPushSupported()) {
+      setPushSupported(true);
+      setPushPermission(getNotificationPermission());
+      registerServiceWorker();
+    }
+
     return () => clearInterval(interval);
   }, []);
+
+  const handleEnablePush = async (e) => {
+    e?.stopPropagation();
+    setSubscribingPush(true);
+    setPushAlert(null);
+    try {
+      await subscribeUserToPush();
+      setPushPermission('granted');
+      setPushAlert({ type: 'success', text: 'Notifikasi Desktop VAPID berhasil diaktifkan!' });
+      setTimeout(() => setPushAlert(null), 4000);
+    } catch (err) {
+      console.error(err);
+      setPushPermission(getNotificationPermission());
+      setPushAlert({ type: 'error', text: err.response?.data?.message || err.message || 'Gagal mengaktifkan notifikasi.' });
+      setTimeout(() => setPushAlert(null), 5000);
+    } finally {
+      setSubscribingPush(false);
+    }
+  };
+
+  const handleTestPush = async (e) => {
+    e?.stopPropagation();
+    setTestingPush(true);
+    setPushAlert(null);
+    try {
+      const res = await sendTestPushNotification();
+      setPushAlert({ type: 'success', text: res.message || 'Notifikasi uji coba dikirim! Cek layar Anda.' });
+      setTimeout(() => setPushAlert(null), 4000);
+    } catch (err) {
+      console.error(err);
+      setPushAlert({ type: 'error', text: err.response?.data?.message || err.message || 'Gagal mengirim push test.' });
+      setTimeout(() => setPushAlert(null), 5000);
+    } finally {
+      setTestingPush(false);
+    }
+  };
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -323,6 +383,58 @@ const Navbar = () => {
                       )}
                     </div>
                   </div>
+
+                  {/* Web Push VAPID Control Box */}
+                  {pushSupported && (
+                    <div className="mt-2.5 p-2 rounded-xl bg-amber-50/60 border border-amber-200/60 text-xs">
+                      {pushPermission === 'granted' ? (
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 text-emerald-700 font-semibold">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span className="text-[11px]">Push Notif Desktop Aktif</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleTestPush}
+                            disabled={testingPush}
+                            className="text-[10px] font-bold bg-white text-emerald-700 hover:bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-lg shadow-2xs transition flex items-center gap-1 disabled:opacity-60 cursor-pointer"
+                            title="Kirim notifikasi push uji coba ke perangkat ini"
+                          >
+                            <Send size={10} />
+                            <span>{testingPush ? 'Mengirim...' : 'Tes Notif'}</span>
+                          </button>
+                        </div>
+                      ) : pushPermission === 'denied' ? (
+                        <div className="flex items-center gap-1.5 text-rose-700 text-[11px]">
+                          <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                          <span>Izin notifikasi peramban terblokir.</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-[11px] text-slate-700 font-medium">
+                            Aktifkan notifikasi tugas & jadwal
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleEnablePush}
+                            disabled={subscribingPush}
+                            className="text-[10px] font-bold bg-[#b38867] hover:bg-[#9c7557] text-white px-2.5 py-1 rounded-lg shadow-2xs transition flex items-center gap-1 shrink-0 disabled:opacity-60 cursor-pointer"
+                          >
+                            <Radio size={11} />
+                            <span>{subscribingPush ? 'Mengaktifkan...' : 'Aktifkan Push'}</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {pushAlert && (
+                        <div className={`mt-1.5 text-[10px] font-medium px-2 py-1 rounded-md ${
+                          pushAlert.type === 'success' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                        }`}>
+                          {pushAlert.text}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Filter Tabs: Semua vs Belum Dibaca */}
                   <div className="flex items-center gap-1 mt-3 p-0.5 bg-slate-200/70 rounded-xl text-xs">
