@@ -11,6 +11,8 @@ import {
   Eye,
   X
 } from "lucide-react";
+import ExportButton from "../../../components/ExportButton";
+import { exportToExcel, exportToPDF } from "../../../utils/exportReport";
 
 export default function MyReports() {
   const [reports, setReports] = useState([]);
@@ -36,6 +38,49 @@ export default function MyReports() {
     fetchReports();
   }, []);
 
+  const handleExportExcel = () => {
+    const headers = ["No", "ID Evaluasi", "Tanggal Laporan", "Mentor Pembimbing", "Catatan Evaluasi / Rekomendasi"];
+    const rows = reports.map((r, idx) => [
+      idx + 1,
+      r.id,
+      r.report_date ? new Date(r.report_date).toLocaleDateString("id-ID") : "-",
+      r.mentor?.name || r.pairing?.mentor?.name || "Mentor",
+      r.note || r.notes || "-",
+    ]);
+
+    exportToExcel({
+      fileName: `transkrip-evaluasi-mentee-${new Date().toISOString().slice(0, 10)}`,
+      sheetName: "Transkrip Evaluasi",
+      headers,
+      rows,
+      title: "Transkrip Laporan Perkembangan Pembelajaran (Aeterna Mentoring)",
+    });
+  };
+
+  const handleExportPDF = () => {
+    const headers = ["No", "ID", "Tanggal", "Mentor", "Catatan Evaluasi / Rekomendasi"];
+    const rows = reports.map((r, idx) => [
+      idx + 1,
+      r.id,
+      r.report_date ? new Date(r.report_date).toLocaleDateString("id-ID") : "-",
+      r.mentor?.name || r.pairing?.mentor?.name || "Mentor",
+      r.note || r.notes || "-",
+    ]);
+
+    exportToPDF({
+      title: "AETERNA MENTORING - TRANSKRIP EVALUASI BELAJAR",
+      subTitle: "Laporan Resmi Hasil Evaluasi & Rekomendasi Pembelajaran Mentee",
+      fileName: `transkrip-evaluasi-mentee-${new Date().toISOString().slice(0, 10)}`,
+      headers,
+      rows,
+      orientation: "portrait",
+      metadata: {
+        "Total Evaluasi": `${reports.length} Laporan`,
+        "Status": "Mentee Aktif",
+      },
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -47,13 +92,21 @@ export default function MyReports() {
           </p>
         </div>
 
-        <button
-          onClick={fetchReports}
-          className="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition"
-        >
-          <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <ExportButton
+            onExportExcel={handleExportExcel}
+            onExportPDF={handleExportPDF}
+            label="Unduh Transkrip"
+            disabled={reports.length === 0}
+          />
+          <button
+            onClick={fetchReports}
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition cursor-pointer"
+          >
+            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {error && (
