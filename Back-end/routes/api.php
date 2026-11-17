@@ -18,11 +18,15 @@ use App\Http\Controllers\ProgressReportController;
 use App\Http\Controllers\MentorController;
 use App\Http\Controllers\MenteeController;
 use App\Http\Controllers\SubscriptionPlanController;
+use App\Http\Controllers\CertificateController;
+use App\Http\Controllers\ChatController;
+use App\Http\Controllers\PushSubscriptionController;
 
 // ✅ Route tanpa middleware dulu (untuk login/register/publik)
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::get('/subscription-plans', [SubscriptionPlanController::class, 'index']);
+Route::get('/public/verify-certificate/{code}', [CertificateController::class, 'verify']);
 
 // ✅ Route yang memerlukan autentikasi
 Route::middleware('auth:sanctum')->group(function () {
@@ -237,4 +241,23 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Satu rute untuk semua Dashboard (Otomatis membedakan data Admin, Mentor, dan Mentee)
     Route::get('/dashboard', [DashboardController::class, 'index']);
+
+    // Sertifikat Digital SKKNI
+    Route::get('/certificates', [CertificateController::class, 'index']);
+    Route::get('/certificates/{code}', [CertificateController::class, 'show']);
+    Route::post('/certificates', [CertificateController::class, 'store']);
+
+    // Direct Messaging / Chat Mentor & Mentee
+    Route::get('/chat/contacts', [ChatController::class, 'getContacts']);
+    Route::get('/chat/messages/{contactId}', [ChatController::class, 'getMessages']);
+    Route::post('/chat/messages', [ChatController::class, 'sendMessage']);
+    Route::patch('/chat/messages/{contactId}/read', [ChatController::class, 'markAsRead']);
+
+    // Web Push VAPID Notifications
+    Route::post('/push-subscriptions', [PushSubscriptionController::class, 'store']);
+    Route::delete('/push-subscriptions', [PushSubscriptionController::class, 'destroy']);
+    Route::post('/push-subscriptions/test', [PushSubscriptionController::class, 'sendTestPush']);
 });
+
+// VAPID Public Key (Akses Publik untuk Inisialisasi Service Worker)
+Route::get('/push-subscriptions/vapid-key', [PushSubscriptionController::class, 'getVapidPublicKey']);

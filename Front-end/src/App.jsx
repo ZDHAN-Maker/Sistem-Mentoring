@@ -9,8 +9,10 @@ import DashboardMentor from './pages/Role/Mentor/DashboardMentor';
 import DashboardMentee from './pages/Role/Mentee/DashboardMentee';
 import ProtectedRoute from './components/PrivateRoute';
 import Header from './components/Header';
+import Footer from './components/Footer';
 import Langganan from './pages/Langganan';
 import ELearning from './pages/E-Learning';
+import VerifyCertificate from './pages/VerifyCertificate';
 
 const AppContent = () => {
   const { isAuthenticated, role, loading } = useAuth();
@@ -25,14 +27,15 @@ const AppContent = () => {
   }
 
   // Halaman publik (tidak perlu login)
-  const publicPaths = ['/login', '/register', '/program', '/langganan', '/e-learning', '/elearning'];
-
-  // Hanya tampilkan Header di halaman publik (case-insensitive)
-  const showHeader = publicPaths.includes(location.pathname.toLowerCase()) && !isAuthenticated;
+  const currentPath = location.pathname.toLowerCase();
+  const isPublicPage = (
+    ['/login', '/register', '/program', '/langganan', '/e-learning', '/elearning'].includes(currentPath) ||
+    currentPath.startsWith('/verify-certificate')
+  ) && !isAuthenticated;
 
   return (
     <>
-      {showHeader && <Header />}
+      {isPublicPage && <Header />}
       <Routes>
         {/* Halaman Publik */}
         <Route path='/program' element={<Program />} />
@@ -43,6 +46,9 @@ const AppContent = () => {
         <Route path='/e-learning' element={<ELearning />} />
         <Route path='/E-Learning' element={<Navigate to='/e-learning' replace />} />
         <Route path='/elearning' element={<Navigate to='/e-learning' replace />} />
+
+        <Route path='/verify-certificate' element={<VerifyCertificate />} />
+        <Route path='/verify-certificate/:code' element={<VerifyCertificate />} />
 
         {/* Jika user sudah login, arahkan ke dashboard sesuai role */}
         <Route
@@ -93,6 +99,7 @@ const AppContent = () => {
         {/* Fallback 404 Route */}
         <Route path="*" element={<Navigate to="/program" replace />} />
       </Routes>
+      {isPublicPage && <Footer />}
     </>
   );
 };

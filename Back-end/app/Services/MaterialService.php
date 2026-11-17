@@ -5,11 +5,19 @@ namespace App\Services;
 use App\Models\Material;
 use App\Models\Pairing;
 use App\Models\User;
+use App\Services\NotificationService;
 use Exception;
 use Illuminate\Support\Facades\Storage;
 
 class MaterialService
 {
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
+
     /**
      * Membuat materi baru (bisa umum untuk semua mentee, atau untuk mentee/pairing tertentu).
      */
@@ -39,12 +47,32 @@ class MaterialService
             $generalData['pairing_id'] = null;
 
             $material = Material::create($generalData);
+
+            // Beri notifikasi ke semua mentee yang sedang aktif bimbingan dengan mentor ini
+            try {
+                $pairings = Pairing::where('mentor_id', $mentor->id)->with('mentee')->get();
+                foreach ($pairings as $p) {
+                    if ($p->mentee) {
+                        $this->notificationService->sendNotification(
+                            $p->mentee,
+                            "Materi Baru Diunggah: {$material->title}",
+                            "Mentor {$mentor->name} baru saja mengunggah modul materi baru. Silakan akses sekarang di portal pembelajaran.",
+                            'new_material',
+                            $material
+                        );
+                    }
+                }
+            } catch (\Exception $e) {
+                // Jangan batalkan proses upload jika notifikasi gagal
+            }
+
             return [$material];
         }
 
         // Jika ditujukan untuk pairing-pairing tertentu
         $validPairings = Pairing::whereIn('id', $pairingIds)
             ->where('mentor_id', $mentor->id)
+            ->with('mentee')
             ->get();
 
         if ($validPairings->isEmpty()) {
@@ -60,7 +88,23 @@ class MaterialService
                 $matData['file_path'] = $filePath;
             }
 
-            $created[] = Material::create($matData);
+            $mat = Material::create($matData);
+            $created[] = $mat;
+
+            // Beri notifikasi ke mentee terkait
+            try {
+                if ($pairing->mentee) {
+                    $this->notificationService->sendNotification(
+                        $pairing->mentee,
+                        "Materi Pembelajaran Baru: {$mat->title}",
+                        "Mentor {$mentor->name} membagikan materi khusus: {$mat->title}. Silakan pelajari di portal e-learning.",
+                        'new_material',
+                        $mat
+                    );
+                }
+            } catch (\Exception $e) {
+                // Lanjut jika notifikasi gagal
+            }
         }
 
         return $created;

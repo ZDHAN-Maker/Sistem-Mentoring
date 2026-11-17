@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Notification;
 use App\Models\User;
+use App\Services\WebPushService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Auth\Access\AuthorizationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -11,13 +12,19 @@ use Illuminate\Database\Eloquent\Model;
 
 class NotificationService
 {
+    protected $webPushService;
+
+    public function __construct(WebPushService $webPushService)
+    {
+        $this->webPushService = $webPushService;
+    }
+
     /**
-     * FUNGSI INTERNAL: Mengirim notifikasi (Dipanggil oleh Service lain, bukan dari Controller API)
-     * Contoh: TaskService memanggil fungsi ini setelah tugas baru dibuat.
+     * FUNGSI INTERNAL: Mengirim notifikasi ke database & Web Push VAPID browser
      */
     public function sendNotification(User $user, string $title, string $message, string $type, Model $reference = null): Notification
     {
-        return Notification::create([
+        $notification = Notification::create([
             'user_id'        => $user->id,
             'title'          => $title,
             'message'        => $message,
@@ -26,6 +33,26 @@ class NotificationService
             'reference_id'   => $reference ? $reference->getKey() : null,
             'is_read'        => false,
         ]);
+
+        // Kirim Web Push VAPID Notification langsung ke browser perangkat
+        try {
+            $url = '/dashboard';
+            $t = strtolower($type);
+            if (str_contains($t, 'task')) $url = '/mentee-dashboard/tasks';
+            elseif (str_contains($t, 'schedule')) $url = '/mentee-dashboard/schedule';
+            elseif (str_contains($t, 'submission')) $url = '/mentor-dashboard/reports';
+            elseif (str_contains($t, 'material')) $url = '/mentee-dashboard/learning-activities';
+            elseif (str_contains($t, 'message') || str_contains($t, 'chat')) $url = '/mentee-dashboard/chat';
+
+            $this->webPushService->sendToUser($user, $title, $message, [
+                'type' => $type,
+                'url'  => $url,
+            ]);
+        } catch (\Exception $e) {
+            // Lanjut jika web push gagal
+        }
+
+        return $notification;
     }
 
     /**
