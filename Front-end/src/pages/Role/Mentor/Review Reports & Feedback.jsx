@@ -24,6 +24,8 @@ import {
   Square,
   UserCheck
 } from "lucide-react";
+import ExportButton from "../../../components/ExportButton";
+import { exportToExcel, exportToPDF } from "../../../utils/exportReport";
 
 export default function ReviewReportsAndFeedback() {
   const [activeTab, setActiveTab] = useState("submissions"); // 'submissions' | 'progress_reports'
@@ -272,6 +274,108 @@ export default function ReviewReportsAndFeedback() {
     }
   };
 
+  // Ekspor Laporan Sesuai Tab Aktif (Excel & PDF)
+  const handleExportExcel = () => {
+    if (activeTab === "submissions") {
+      const headers = ["No", "Judul Tugas", "Nama Mentee", "Tanggal Kumpul", "Nilai", "Status", "Feedback Mentor"];
+      const rows = filteredSubmissions.map((s, idx) => [
+        idx + 1,
+        s.task?.title || "Tugas",
+        s.mentee?.name || "-",
+        s.submitted_at ? new Date(s.submitted_at).toLocaleDateString("id-ID") : "-",
+        s.grade !== null && s.grade !== undefined ? s.grade : "Belum Dinilai",
+        s.grade !== null && s.grade !== undefined ? "Dinilai" : "Menunggu Review",
+        s.feedback || "-",
+      ]);
+
+      exportToExcel({
+        fileName: `rekap-tugas-mentee-${new Date().toISOString().slice(0, 10)}`,
+        sheetName: "Rekap Nilai Tugas",
+        headers,
+        rows,
+        title: "Rekapitulasi Pengumpulan & Penilaian Tugas Mentee (Mentor Portal)",
+      });
+    } else {
+      const headers = ["No", "ID", "Tanggal Laporan", "Nama Mentee", "Catatan Evaluasi / Kemajuan"];
+      const rows = filteredReports.map((r, idx) => [
+        idx + 1,
+        r.id,
+        r.report_date ? new Date(r.report_date).toLocaleDateString("id-ID") : "-",
+        r.pairing?.mentee?.name || "-",
+        r.note || r.notes || "-",
+      ]);
+
+      exportToExcel({
+        fileName: `laporan-evaluasi-mentee-${new Date().toISOString().slice(0, 10)}`,
+        sheetName: "Evaluasi Mentee",
+        headers,
+        rows,
+        title: "Laporan Evaluasi Perkembangan Mentee (Mentor Portal)",
+      });
+    }
+  };
+
+  const handleExportPDF = () => {
+    if (activeTab === "submissions") {
+      const headers = ["No", "Judul Tugas", "Mentee", "Tgl Kumpul", "Nilai", "Status", "Feedback"];
+      const rows = filteredSubmissions.map((s, idx) => [
+        idx + 1,
+        s.task?.title || "Tugas",
+        s.mentee?.name || "-",
+        s.submitted_at ? new Date(s.submitted_at).toLocaleDateString("id-ID") : "-",
+        s.grade !== null && s.grade !== undefined ? s.grade : "-",
+        s.grade !== null && s.grade !== undefined ? "Dinilai" : "Menunggu",
+        s.feedback ? (s.feedback.length > 50 ? s.feedback.substring(0, 50) + "..." : s.feedback) : "-",
+      ]);
+
+      const reviewedCount = filteredSubmissions.filter((s) => s.grade !== null && s.grade !== undefined).length;
+      const avgGrade =
+        reviewedCount > 0
+          ? (
+              filteredSubmissions
+                .filter((s) => s.grade !== null && s.grade !== undefined)
+                .reduce((acc, curr) => acc + Number(curr.grade), 0) / reviewedCount
+            ).toFixed(1)
+          : "-";
+
+      exportToPDF({
+        title: "AETERNA MENTORING - REKAPITULASI PENILAIAN TUGAS",
+        subTitle: "Rekapitulasi Hasil Pengumpulan & Penilaian Tugas Mentee Bimbingan",
+        fileName: `rekap-tugas-mentee-${new Date().toISOString().slice(0, 10)}`,
+        headers,
+        rows,
+        orientation: "landscape",
+        metadata: {
+          "Total Pengumpulan": `${filteredSubmissions.length} Tugas`,
+          "Sudah Dinilai": `${reviewedCount} Tugas`,
+          "Rata-rata Nilai": avgGrade,
+        },
+      });
+    } else {
+      const headers = ["No", "ID", "Tanggal", "Mentee", "Catatan Evaluasi / Kemajuan"];
+      const rows = filteredReports.map((r, idx) => [
+        idx + 1,
+        r.id,
+        r.report_date ? new Date(r.report_date).toLocaleDateString("id-ID") : "-",
+        r.pairing?.mentee?.name || "-",
+        r.note || r.notes || "-",
+      ]);
+
+      exportToPDF({
+        title: "AETERNA MENTORING - LAPORAN EVALUASI PERKEMBANGAN MENTEE",
+        subTitle: "Rekapitulasi Evaluasi & Catatan Perkembangan Belajar Mentee Bimbingan",
+        fileName: `laporan-evaluasi-mentee-${new Date().toISOString().slice(0, 10)}`,
+        headers,
+        rows,
+        orientation: "portrait",
+        metadata: {
+          "Total Laporan": `${filteredReports.length} Laporan`,
+          "Dicetak Oleh": "Portal Mentor",
+        },
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -283,10 +387,16 @@ export default function ReviewReportsAndFeedback() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <ExportButton
+            onExportExcel={handleExportExcel}
+            onExportPDF={handleExportPDF}
+            label={activeTab === "submissions" ? "Export Nilai Tugas" : "Export Evaluasi"}
+            disabled={activeTab === "submissions" ? filteredSubmissions.length === 0 : filteredReports.length === 0}
+          />
           <button
             onClick={fetchData}
-            className="p-2.5 text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition shadow-sm"
+            className="p-2.5 text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition shadow-sm cursor-pointer"
             title="Refresh Data"
           >
             <RefreshCw size={18} className={loading ? "animate-spin text-[#b38867]" : ""} />
@@ -294,7 +404,7 @@ export default function ReviewReportsAndFeedback() {
           {activeTab === "progress_reports" && (
             <button
               onClick={openReportModal}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#b38867] hover:bg-[#a27355] text-white text-sm font-semibold rounded-xl shadow-sm transition"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#b38867] hover:bg-[#a27355] text-white text-sm font-semibold rounded-xl shadow-sm transition cursor-pointer"
             >
               <Plus size={18} />
               Buat Evaluasi Baru

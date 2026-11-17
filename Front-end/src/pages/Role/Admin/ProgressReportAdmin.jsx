@@ -10,6 +10,8 @@ import {
   CheckCircle2, 
   X 
 } from "lucide-react";
+import ExportButton from "../../../components/ExportButton";
+import { exportToExcel, exportToPDF } from "../../../utils/exportReport";
 
 const ProgressReportAdmin = () => {
   const [reports, setReports] = useState([]);
@@ -41,6 +43,50 @@ const ProgressReportAdmin = () => {
     return mentorName.includes(term) || menteeName.includes(term) || notes.includes(term);
   });
 
+  const handleExportExcel = () => {
+    const headers = ["No", "ID", "Tanggal Laporan", "Mentor", "Mentee", "Catatan Evaluasi / Kemajuan"];
+    const rows = filteredReports.map((r, idx) => [
+      idx + 1,
+      r.id,
+      r.report_date ? new Date(r.report_date).toLocaleDateString("id-ID") : "-",
+      r.mentor?.name || r.pairing?.mentor?.name || "-",
+      r.pairing?.mentee?.name || "-",
+      r.note || r.notes || r.feedback || "-",
+    ]);
+
+    exportToExcel({
+      fileName: `laporan-perkembangan-admin-${new Date().toISOString().slice(0, 10)}`,
+      sheetName: "Laporan Perkembangan",
+      headers,
+      rows,
+      title: "Laporan Perkembangan Mentoring Aeterna Platform (Admin)",
+    });
+  };
+
+  const handleExportPDF = () => {
+    const headers = ["No", "ID", "Tanggal", "Mentor", "Mentee", "Evaluasi / Kemajuan"];
+    const rows = filteredReports.map((r, idx) => [
+      idx + 1,
+      r.id,
+      r.report_date ? new Date(r.report_date).toLocaleDateString("id-ID") : "-",
+      r.mentor?.name || r.pairing?.mentor?.name || "-",
+      r.pairing?.mentee?.name || "-",
+      r.note || r.notes || r.feedback || "-",
+    ]);
+
+    exportToPDF({
+      title: "AETERNA MENTORING - LAPORAN PERKEMBANGAN MENTEE",
+      subTitle: "Rekapitulasi Evaluasi & Perkembangan Seluruh Program Bimbingan (Admin)",
+      fileName: `laporan-perkembangan-admin-${new Date().toISOString().slice(0, 10)}`,
+      headers,
+      rows,
+      metadata: {
+        "Total Laporan": `${filteredReports.length} Laporan`,
+        "Dicetak Oleh": "Admin Portal",
+      },
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -51,13 +97,20 @@ const ProgressReportAdmin = () => {
             Pantau seluruh laporan evaluasi, kemajuan mentee, dan feedback yang diberikan oleh mentor.
           </p>
         </div>
-        <button
-          onClick={fetchReports}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 text-gray-700 text-sm font-medium transition self-start sm:self-auto"
-        >
-          <RefreshCw size={16} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <ExportButton
+            onExportExcel={handleExportExcel}
+            onExportPDF={handleExportPDF}
+            disabled={filteredReports.length === 0}
+          />
+          <button
+            onClick={fetchReports}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 text-gray-700 text-sm font-medium transition cursor-pointer"
+          >
+            <RefreshCw size={16} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Search Bar */}
