@@ -21,12 +21,18 @@ use App\Http\Controllers\SubscriptionPlanController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\GoogleAuthController;
 
 // ✅ Route tanpa middleware dulu (untuk login/register/publik)
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::get('/subscription-plans', [SubscriptionPlanController::class, 'index']);
 Route::get('/public/verify-certificate/{code}', [CertificateController::class, 'verify']);
+
+// Google OAuth & SSO Authentication
+Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect']);
+Route::post('/auth/google/callback', [GoogleAuthController::class, 'callback']);
+Route::post('/auth/google/simulate', [GoogleAuthController::class, 'simulate']);
 
 // ✅ Route yang memerlukan autentikasi
 Route::middleware('auth:sanctum')->group(function () {

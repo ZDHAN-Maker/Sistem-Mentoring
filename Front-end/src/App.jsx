@@ -13,6 +13,7 @@ import Footer from './components/Footer';
 import Langganan from './pages/Langganan';
 import ELearning from './pages/E-Learning';
 import VerifyCertificate from './pages/VerifyCertificate';
+import GoogleCallback from './pages/Auth/GoogleCallback';
 
 const AppContent = () => {
   const { isAuthenticated, role, loading } = useAuth();
@@ -65,6 +66,7 @@ const AppContent = () => {
         {/* Auth Routes */}
         <Route path='/login' element={<Login />} />
         <Route path='/register' element={<Register />} />
+        <Route path='/auth/google/callback' element={<GoogleCallback />} />
 
         {/* Admin Dashboard */}
         <Route

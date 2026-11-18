@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
+import api from "../axiosInstance";
+import GoogleAccountChooser from "../components/GoogleAccountChooser";
 import { 
   Mail, 
   Lock, 
@@ -20,6 +22,8 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showGoogleChooser, setShowGoogleChooser] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -66,8 +70,24 @@ export default function Login() {
     setErrorMessage("");
   };
 
-  const handleGoogleLogin = () => {
-    alert("Login SSO Google saat ini sedang dalam proses konfigurasi OAuth 2.0. Silakan gunakan akun demo atau email terdaftar.");
+  const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true);
+    setErrorMessage("");
+    try {
+      const res = await api.get("/auth/google/redirect");
+      if (res.data?.configured && res.data?.url) {
+        // Mode Produksi: Redirect ke Google OAuth sungguhan
+        window.location.href = res.data.url;
+      } else {
+        // Mode Simulator: Buka Google Account Chooser
+        setShowGoogleChooser(true);
+      }
+    } catch (err) {
+      console.error(err);
+      setShowGoogleChooser(true);
+    } finally {
+      setIsGoogleLoading(false);
+    }
   };
 
   return (
@@ -185,10 +205,15 @@ export default function Login() {
             <button
               type="button"
               onClick={handleGoogleLogin}
-              className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold transition shadow-2xs"
+              disabled={isGoogleLoading || isLoading}
+              className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer disabled:opacity-60"
             >
-              <img src="/assets/google.png" alt="Google" className="w-4 h-4 object-contain" />
-              <span>Masuk dengan Google</span>
+              {isGoogleLoading ? (
+                <div className="w-4 h-4 border-2 border-[#b38867]/30 border-t-[#b38867] rounded-full animate-spin" />
+              ) : (
+                <img src="/assets/google.png" alt="Google" className="w-4 h-4 object-contain" />
+              )}
+              <span>{isGoogleLoading ? "Menghubungkan ke Google..." : "Masuk dengan Google"}</span>
             </button>
 
             {/* Divider */}
@@ -344,6 +369,12 @@ export default function Login() {
         </div>
 
       </div>
+
+      {/* Google Account Chooser Modal (Simulator Mode) */}
+      <GoogleAccountChooser
+        isOpen={showGoogleChooser}
+        onClose={() => setShowGoogleChooser(false)}
+      />
     </div>
   );
 }

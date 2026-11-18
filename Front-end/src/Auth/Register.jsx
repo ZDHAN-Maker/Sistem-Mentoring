@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api, getCsrfCookie } from '../axiosInstance';
+import GoogleAccountChooser from '../components/GoogleAccountChooser';
 import { 
   User, 
   Mail, 
@@ -26,6 +27,8 @@ export default function Register() {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showGoogleChooser, setShowGoogleChooser] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -87,8 +90,22 @@ export default function Register() {
     }
   };
 
-  const handleGoogleSignup = () => {
-    alert("Pendaftaran SSO Google sedang dalam proses konfigurasi OAuth 2.0. Silakan isi form registrasi di bawah.");
+  const handleGoogleSignup = async () => {
+    setIsGoogleLoading(true);
+    setErrorMessage('');
+    try {
+      const res = await api.get('/auth/google/redirect');
+      if (res.data?.configured && res.data?.url) {
+        window.location.href = res.data.url;
+      } else {
+        setShowGoogleChooser(true);
+      }
+    } catch (err) {
+      console.error(err);
+      setShowGoogleChooser(true);
+    } finally {
+      setIsGoogleLoading(false);
+    }
   };
 
   return (
@@ -229,10 +246,15 @@ export default function Register() {
             <button
               type="button"
               onClick={handleGoogleSignup}
-              className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold transition shadow-2xs"
+              disabled={isGoogleLoading || isLoading}
+              className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer disabled:opacity-60"
             >
-              <img src="/assets/google.png" alt="Google" className="w-4 h-4 object-contain" />
-              <span>Daftar dengan Google</span>
+              {isGoogleLoading ? (
+                <div className="w-4 h-4 border-2 border-[#b38867]/30 border-t-[#b38867] rounded-full animate-spin" />
+              ) : (
+                <img src="/assets/google.png" alt="Google" className="w-4 h-4 object-contain" />
+              )}
+              <span>{isGoogleLoading ? "Menghubungkan ke Google..." : "Daftar dengan Google"}</span>
             </button>
 
             {/* Divider */}
@@ -406,6 +428,12 @@ export default function Register() {
         </div>
 
       </div>
+
+      {/* Google Account Chooser Modal (Simulator Mode) */}
+      <GoogleAccountChooser
+        isOpen={showGoogleChooser}
+        onClose={() => setShowGoogleChooser(false)}
+      />
     </div>
   );
 }

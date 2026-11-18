@@ -57,6 +57,17 @@ export const AuthProvider = ({ children }) => {
     return { user: userData, role: userRole };
   };
 
+  const loginWithToken = (token, userData, roles = []) => {
+    localStorage.setItem("auth_token", token);
+    const userRole = (roles?.[0]?.name || roles?.[0] || "mentee").toLowerCase();
+    setAuthData({
+      isAuthenticated: true,
+      user: userData,
+      role: userRole,
+    });
+    return { user: userData, role: userRole };
+  };
+
   const logout = async () => {
     try {
       await api.post("/logout");
@@ -123,6 +134,7 @@ export const AuthProvider = ({ children }) => {
         role,
         loading,
         login,
+        loginWithToken,
         logout,
       }}
     >
